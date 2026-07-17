@@ -185,6 +185,7 @@ function TripDetail() {
           <Info icon={User} label="السائق" value={trip.driver ? `${trip.driver.name} — ${trip.driver.sap_number}` : (trip.driver_name_rental ?? null)} />
           <Info icon={Car} label="كود السيارة" value={trip.car_code} />
           <Info icon={Hash} label="رقم لوحة السيارة" value={trip.car_plate} />
+          <Info icon={Car} label="وصف السيارة" value={trip.car_description} />
           {trip.car_type === "rental" && <Info icon={Hash} label="كود الهاند هيلد" value={trip.handheld_code} />}
           <Info icon={MapPin} label="بداية خط السير" value={trip.route_start} full />
           <Info icon={User} label="منشئ الطلب" value={trip.created_by_name ?? trip.created_by_email} />

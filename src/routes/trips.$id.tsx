@@ -386,6 +386,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     if (endVal != null && endVal <= startVal) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
     if (endVal != null && endVal - startVal > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     if (form.car_type === "rental" && !form.office_id) return toast.error("المكتب مطلوب لسيارات الإيجار");
+    if (form.route_start.trim().length > 40) return toast.error("يجب ألا يزيد وصف خط السير عن 40 حرف");
 
     setSaving(true);
     try {
@@ -658,6 +659,7 @@ function SegmentsCard({
   async function add(e: FormEvent) {
     e.preventDefault();
     if (!route.trim()) return toast.error("اكتب اسم المسار");
+    if (route.trim().length > 40) return toast.error("يجب ألا يزيد اسم المسار عن 40 حرف");
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();

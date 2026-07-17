@@ -28,7 +28,7 @@ export const listUsersWithRoles = createServerFn({ method: "GET" })
     const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role");
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
-      .select("user_id, username, display_name, must_change_password");
+      .select("user_id, username, display_name, must_change_password, rental_cars_override, trip_create_override");
 
     const rolesByUser = new Map<string, string[]>();
     (roles ?? []).forEach((r: any) => {
@@ -47,11 +47,14 @@ export const listUsersWithRoles = createServerFn({ method: "GET" })
         username: p.username ?? null,
         display_name: p.display_name ?? null,
         must_change_password: !!p.must_change_password,
+        rental_cars_override: p.rental_cars_override ?? null,
+        trip_create_override: p.trip_create_override ?? null,
         created_at: u.created_at,
         roles: rolesByUser.get(u.id) ?? ["user"],
       };
     });
   });
+
 
 const setRoleSchema = z.object({
   user_id: z.string().uuid(),
@@ -319,4 +322,61 @@ export const createUsersForAllDrivers = createServerFn({ method: "POST" })
     }
 
     return { created, skipped, errors };
+  });
+
+// ===== App settings & per-user overrides =====
+
+export const getAppSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("app_settings")
+      .select("rental_cars_visible, trip_creation_enabled")
+      .eq("id", true)
+      .maybeSingle();
+    if (error) throw error;
+    return {
+      rental_cars_visible: data?.rental_cars_visible ?? true,
+      trip_creation_enabled: data?.trip_creation_enabled ?? true,
+    };
+  });
+
+const updateSettingsSchema = z.object({
+  rental_cars_visible: z.boolean().optional(),
+  trip_creation_enabled: z.boolean().optional(),
+});
+
+export const updateAppSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => updateSettingsSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const payload: Record<string, unknown> = { id: true, updated_at: new Date().toISOString() };
+    if (typeof data.rental_cars_visible === "boolean") payload.rental_cars_visible = data.rental_cars_visible;
+    if (typeof data.trip_creation_enabled === "boolean") payload.trip_creation_enabled = data.trip_creation_enabled;
+    const { error } = await supabaseAdmin.from("app_settings").upsert(payload, { onConflict: "id" });
+    if (error) throw error;
+    return { ok: true };
+  });
+
+const overrideSchema = z.object({
+  user_id: z.string().uuid(),
+  key: z.enum(["rental_cars_override", "trip_create_override"]),
+  value: z.union([z.boolean(), z.null()]),
+});
+
+export const setUserOverride = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => overrideSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const patch: any = { [data.key]: data.value };
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update(patch)
+      .eq("user_id", data.user_id);
+    if (error) throw error;
+    return { ok: true };
   });

@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Car, ListChecks, Plus, Settings, LogOut, Loader2, User } from "lucide-react";
@@ -10,6 +11,7 @@ import { useEffect } from "react";
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { canCreateTrips } = usePermissions();
   const navigate = useNavigate();
   const { location } = useRouterState();
 
@@ -27,7 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const nav = [
     { to: "/", label: "الرحلات", icon: ListChecks },
-    { to: "/trips/new", label: "رحلة جديدة", icon: Plus },
+    ...(canCreateTrips ? [{ to: "/trips/new", label: "رحلة جديدة", icon: Plus }] : []),
     { to: "/profile", label: "حسابي", icon: User },
     ...(isAdmin ? [{ to: "/manage", label: "الإدارة", icon: Settings }] : []),
   ];
@@ -64,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="max-w-5xl mx-auto px-4 py-5 pb-24">{children}</main>
 
       <nav className="fixed bottom-0 inset-x-0 bg-card border-t z-30">
-        <div className={`max-w-5xl mx-auto grid ${nav.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
+        <div className={`max-w-5xl mx-auto grid`} style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}>
           {nav.map((n) => {
             const active = location.pathname === n.to;
             const Icon = n.icon;

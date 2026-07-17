@@ -17,6 +17,7 @@ import { uploadOdometerPhoto } from "@/lib/storage";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";
 import { CameraCapture } from "@/components/camera-capture";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export const Route = createFileRoute("/trips/new")({
   head: () => ({ meta: [{ title: "رحلة جديدة" }] }),
@@ -36,19 +37,30 @@ function useLookup(table: string) {
 
 function NewTrip() {
   const navigate = useNavigate();
+  const { canCreateTrips, canSeeRentals, loading: permLoading } = usePermissions();
+
+  useEffect(() => {
+    if (!permLoading && !canCreateTrips) {
+      toast.error("تم تعطيل تسجيل الرحلات لحسابك");
+      navigate({ to: "/" });
+    }
+  }, [permLoading, canCreateTrips, navigate]);
+
   const offices = useLookup("offices");
   const managers = useLookup("managers");
   const technicians = useLookup("technicians");
   const drivers = useLookup("drivers");
   const services = useLookup("service_types");
   const cars = useQuery({
-    queryKey: ["cars"],
+    queryKey: ["cars", canSeeRentals],
     queryFn: async () => {
       const { data, error } = await supabase.from("cars" as any).select("*").order("code");
       if (error) throw error;
-      return data as any[];
+      const rows = (data as any[]) ?? [];
+      return canSeeRentals ? rows : rows.filter((c) => c.type !== "rental");
     },
   });
+
 
   const [form, setForm] = useState({
     car_type: "company",

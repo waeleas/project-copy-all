@@ -456,6 +456,7 @@ function CarsManager() {
     if (!editing) return;
     const payload: any = {
       plate: (editing.plate ?? "").trim() || null,
+      description: (editing.description ?? "").trim() || null,
     };
     if (editing.type === "company") {
       payload.code = (editing.code ?? "").trim() || null;

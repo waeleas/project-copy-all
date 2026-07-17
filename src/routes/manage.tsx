@@ -428,7 +428,7 @@ function CarsManager() {
     if (!plate.trim()) return toast.error("رقم اللوحة مطلوب");
     if (type === "company" && !code.trim()) return toast.error("كود السيارة مطلوب لسيارات الشركة");
     setSaving(true);
-    const payload: any = { plate: plate.trim(), type };
+    const payload: any = { plate: plate.trim(), type, description: description.trim() || null };
     if (type === "company") payload.code = code.trim();
     if (type === "rental") {
       payload.handheld_code = handheldCode.trim() || null;
@@ -439,7 +439,7 @@ function CarsManager() {
     const { error } = await supabase.from("cars" as any).insert(payload);
     setSaving(false);
     if (error) return toast.error(arabicError(error));
-    setCode(""); setPlate(""); setHandheldCode(""); setRouteCode(""); setRouteDescription(""); setFollowOfficeId("");
+    setCode(""); setPlate(""); setHandheldCode(""); setRouteCode(""); setRouteDescription(""); setDescription(""); setFollowOfficeId("");
     qc.invalidateQueries({ queryKey: ["cars"] });
     toast.success("تمت الإضافة");
   }

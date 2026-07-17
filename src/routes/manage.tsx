@@ -358,8 +358,8 @@ function UsersManager() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <StatTile icon={UsersIcon} label="إجمالي المستخدمين" value={stats.total} tone="primary" />
         <StatTile icon={ShieldCheck} label="المشرفون" value={stats.admins} tone="green" />
-        <StatTile icon={Ban} label="ممنوع من الإيجار" value={stats.noRental} tone="amber" />
-        <StatTile icon={Ban} label="ممنوع من التسجيل" value={stats.noTrips} tone="rose" />
+        <StatTile icon={Eye} label="استخدموا الحساب" value={stats.used} tone="green" />
+        <StatTile icon={Ban} label="لم يستخدموا الحساب" value={stats.never} tone="amber" />
       </div>
 
       <Card>

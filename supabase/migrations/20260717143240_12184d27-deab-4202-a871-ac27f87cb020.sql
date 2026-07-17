@@ -1,0 +1,2 @@
+alter table public.trips add constraint trips_route_start_length check (char_length(route_start) <= 40);
+alter table public.trip_segments add constraint trip_segments_route_length check (char_length(route) <= 40);

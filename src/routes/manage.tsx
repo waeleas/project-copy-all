@@ -507,8 +507,9 @@ function CarsManager() {
   const filtered = (data ?? []).filter((c: any) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    return [c.code, c.plate, c.handheld_code, c.route_code, c.route_description, c.follow_office?.name].some((v) => (v ?? "").toString().toLowerCase().includes(q));
+    return [c.code, c.plate, c.handheld_code, c.route_code, c.route_description, c.description, c.follow_office?.name].some((v) => (v ?? "").toString().toLowerCase().includes(q));
   });
+
 
   return (
     <Card className="mt-4">

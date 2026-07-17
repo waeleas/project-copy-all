@@ -367,7 +367,8 @@ function NewTrip() {
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="size-4" /> بداية خط السير</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <Field label="بداية خط السير" invalid={errors.route_start}>
-            <Textarea ref={routeStartRef} value={form.route_start} onChange={(e) => set("route_start", e.target.value)} placeholder="مثال: من مكتب المنصورة إلى العميل..." rows={2} />
+            <Textarea ref={routeStartRef} value={form.route_start} maxLength={40} onChange={(e) => set("route_start", e.target.value.slice(0, 40))} placeholder="مثال: من مكتب المنصورة إلى العميل..." rows={2} />
+            <div className="text-xs text-muted-foreground text-left">{form.route_start.length}/40</div>
           </Field>
           <Field label="قراءة العداد (كم)" invalid={errors.start_odometer}>
             <div className="relative">

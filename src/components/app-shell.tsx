@@ -11,6 +11,7 @@ import { useEffect } from "react";
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { canCreateTrips } = usePermissions();
   const navigate = useNavigate();
   const { location } = useRouterState();
 

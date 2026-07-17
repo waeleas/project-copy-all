@@ -425,12 +425,20 @@ function UsersManager() {
                 <UiSelectItem value="user">مستخدمون عاديون</UiSelectItem>
               </UiSelectContent>
             </UiSelect>
+            <UiSelect value={usageFilter} onValueChange={(v: any) => setUsageFilter(v)}>
+              <UiSelectTrigger className="w-full sm:w-[170px]"><UiSelectValue /></UiSelectTrigger>
+              <UiSelectContent>
+                <UiSelectItem value="all">الكل (استخدم/لم يستخدم)</UiSelectItem>
+                <UiSelectItem value="used">استخدم الحساب</UiSelectItem>
+                <UiSelectItem value="never">لم يستخدم بعد</UiSelectItem>
+              </UiSelectContent>
+            </UiSelect>
           </div>
 
-          {isLoading && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
+          {(isLoading || isFetching) && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
 
           <div className="text-xs text-muted-foreground">
-            عرض {filteredUsers.length} من {allUsers.length}
+            عرض {pagedUsers.length} من {filteredUsers.length} (الإجمالي {allUsers.length})
           </div>
 
           {/* Desktop table */}

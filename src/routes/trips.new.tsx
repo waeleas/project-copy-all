@@ -106,6 +106,10 @@ function NewTrip() {
     if (form.car_type === "company" && !form.car_code) errs.car_code = true;
     if (form.car_type === "rental" && !form.car_plate) errs.car_plate = true;
     if (!form.route_start.trim()) errs.route_start = true;
+    if (form.route_start.trim().length > 40) {
+      errs.route_start = true;
+      return toast.error("يجب ألا تزيد بداية خط السير عن 40 حرف");
+    }
     if (!form.start_odometer) errs.start_odometer = true;
     if (!photo) errs.photo = true;
 

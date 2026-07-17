@@ -347,7 +347,12 @@ function DriversManager() {
           <div className="flex gap-2 items-center">
             <Button type="button" variant={type === "company" ? "default" : "outline"} onClick={() => setType("company")}>شركة</Button>
             <Button type="button" variant={type === "rental" ? "default" : "outline"} onClick={() => setType("rental")}>إيجار</Button>
-          </div>
+        </div>
+
+        <Button type="button" variant="outline" onClick={generateUsers} disabled={creatingUsers} className="w-full">
+          {creatingUsers ? <Loader2 className="size-4 animate-spin ml-2" /> : <UserPlus className="size-4 ml-2" />}
+          إنشاء حسابات مستخدمين للسائقين (كلمة السر 123456)
+        </Button>
           <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
             <Input placeholder="اسم السائق" value={name} onChange={(e) => setName(e.target.value)} />
             <Input placeholder={type === "company" ? "رقم الساب" : "بدون ساب (إيجار)"} value={sap} onChange={(e) => setSap(e.target.value)} disabled={type === "rental"} dir="ltr" />

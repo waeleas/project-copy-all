@@ -65,6 +65,7 @@ function NewTrip() {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const handheldRef = useRef<HTMLInputElement | null>(null);
+  const routeStartRef = useRef<HTMLTextAreaElement | null>(null);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));

@@ -481,9 +481,10 @@ function CarsManager() {
       const t = pick(r, "type", "النوع").toLowerCase();
       const rowType = t === "rental" || t.includes("إيجار") || t.includes("ايجار") ? "rental" : (t === "company" || t.includes("شركة")) ? "company" : type;
       if (!plate) return null;
+      const description = pick(r, "description", "الوصف", "وصف السيارة") || null;
       if (rowType === "company") {
         const code = pick(r, "code", "كود السيارة", "الكود");
-        return { plate, type: "company", code: code || null };
+        return { plate, type: "company", code: code || null, description };
       }
       const officeName = pick(r, "office", "المكتب", "تابع", "follow_office");
       return {
@@ -493,6 +494,7 @@ function CarsManager() {
         route_code: pick(r, "route_code", "كود خط السير") || null,
         route_description: pick(r, "route_description", "وصف خط السير") || null,
         follow_office_id: officeName ? (officeByName.get(officeName.toLowerCase()) ?? null) : null,
+        description,
       };
     }).filter(Boolean) as any[];
     if (!payload.length) return toast.error("لا توجد صفوف صالحة");

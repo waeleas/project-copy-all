@@ -402,8 +402,8 @@ function LookupSelect({ items, value, onChange, placeholder }: { items?: any[]; 
   );
 }
 
-function SapSelect({ items, value, onChange, placeholder }: { items?: any[]; value: string; onChange: (v: string) => void; placeholder: string }) {
-  return <SapCombobox items={items} value={value} onChange={onChange} placeholder={placeholder} />;
+function SapSelect({ items, value, onChange, placeholder, allowNone, noneLabel }: { items?: any[]; value: string; onChange: (v: string) => void; placeholder: string; allowNone?: boolean; noneLabel?: string }) {
+  return <SapCombobox items={items} value={value} onChange={onChange} placeholder={placeholder} allowNone={allowNone} noneLabel={noneLabel} />;
 }
 
 export function CarCodeCombobox({ items, value, onChange, placeholder }: { items?: any[]; value: string; onChange: (code: string, car?: any) => void; placeholder: string }) {

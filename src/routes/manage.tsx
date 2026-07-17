@@ -447,6 +447,7 @@ function UsersManager() {
               <thead className="bg-muted/50 text-xs">
                 <tr className="[&>th]:p-2 [&>th]:text-right">
                   <th>المستخدم</th>
+                  <th className="w-[140px]">آخر دخول</th>
                   <th className="w-[110px]">الدور</th>
                   <th className="w-[150px]">سيارات الإيجار</th>
                   <th className="w-[150px]">تسجيل الرحلات</th>
@@ -454,9 +455,10 @@ function UsersManager() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((u: any) => {
+                {pagedUsers.map((u: any) => {
                   const isAdmin = u.roles.includes("admin");
                   const isViewer = u.roles.includes("viewer");
+                  const used = !!u.last_sign_in_at;
                   return (
                     <tr key={u.id} className="border-t align-middle [&>td]:p-2">
                       <td>
@@ -468,6 +470,16 @@ function UsersManager() {
                           {!isAdmin && !isViewer && <Badge variant="secondary" className="text-xs">مستخدم</Badge>}
                           {u.must_change_password && <Badge variant="outline" className="text-xs">بدون كلمة مرور</Badge>}
                         </div>
+                      </td>
+                      <td>
+                        {used ? (
+                          <div>
+                            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">استخدم</Badge>
+                            <div className="text-xs text-muted-foreground mt-1">{formatLastSignIn(u.last_sign_in_at)}</div>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">لم يستخدم</Badge>
+                        )}
                       </td>
                       <td>
                         <div className="flex flex-col gap-1">
@@ -510,9 +522,10 @@ function UsersManager() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
-            {filteredUsers.map((u: any) => {
+            {pagedUsers.map((u: any) => {
               const isAdmin = u.roles.includes("admin");
               const isViewer = u.roles.includes("viewer");
+              const used = !!u.last_sign_in_at;
               return (
                 <div key={u.id} className="rounded-md border p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -523,6 +536,11 @@ function UsersManager() {
                         {isAdmin && <Badge className="bg-primary text-xs"><Shield className="size-3 ml-1" /> أدمن</Badge>}
                         {isViewer && <Badge className="bg-blue-600 hover:bg-blue-600 text-xs">مطّلع</Badge>}
                         {!isAdmin && !isViewer && <Badge variant="secondary" className="text-xs">مستخدم</Badge>}
+                        {used ? (
+                          <Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">استخدم — {formatLastSignIn(u.last_sign_in_at)}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">لم يستخدم</Badge>
+                        )}
                       </div>
                     </div>
                     <Button size="sm" variant="ghost" onClick={() => del(u)}>
@@ -560,6 +578,14 @@ function UsersManager() {
               );
             })}
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-2 pt-2">
+              <Button size="sm" variant="outline" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>السابق</Button>
+              <div className="text-xs text-muted-foreground">صفحة {currentPage} من {totalPages}</div>
+              <Button size="sm" variant="outline" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>التالي</Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

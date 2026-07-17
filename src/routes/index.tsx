@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { Wrench } from "lucide-react";
 
@@ -22,14 +22,32 @@ export const Route = createFileRoute("/")({
   component: LoginPage,
 });
 
+// Demo admin credentials (client-side prototype only)
+const ADMIN_USERNAME = "waeleas";
+const ADMIN_PASSWORD = "123456";
+
 function LoginPage() {
-  const [email, setEmail] = useState("");
+  const navigate = useNavigate();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Placeholder: wire up authentication later
-    console.log("login attempt", { email });
+    setError(null);
+
+    if (username.trim() === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          "stp_session",
+          JSON.stringify({ username, role: "admin" }),
+        );
+      }
+      navigate({ to: "/dashboard" });
+      return;
+    }
+
+    setError("اسم المستخدم أو كلمة المرور غير صحيحة");
   };
 
   return (
@@ -45,9 +63,7 @@ function LoginPage() {
         </div>
 
         <div className="mt-5 text-center">
-          <h1 className="text-xl font-bold text-slate-900">
-            تسجيل الدخول إلى حسابك
-          </h1>
+          <h1 className="text-xl font-bold text-slate-900">تسجيل الدخول إلى حسابك</h1>
           <p className="mt-1 text-sm text-slate-500">
             أدخل بيانات الاعتماد للوصول إلى لوحة التحكم
           </p>
@@ -55,29 +71,23 @@ function LoginPage() {
 
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
           <div className="space-y-1.5">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-700"
-            >
-              البريد الإلكتروني
+            <label htmlFor="username" className="block text-sm font-medium text-slate-700">
+              اسم المستخدم
             </label>
             <input
-              id="email"
-              type="email"
+              id="username"
+              type="text"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="waeleas"
               className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               dir="ltr"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-700"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-slate-700">
               كلمة المرور
             </label>
             <input
@@ -92,6 +102,8 @@ function LoginPage() {
             />
           </div>
 
+          {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+
           <button
             type="submit"
             className="mt-2 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 active:bg-blue-800"
@@ -101,10 +113,7 @@ function LoginPage() {
         </form>
 
         <div className="mt-5 flex items-center justify-center">
-          <a
-            href="#"
-            className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-          >
+          <a href="#" className="text-sm text-blue-600 hover:text-blue-700 hover:underline">
             نسيت كلمة المرور؟
           </a>
         </div>
@@ -112,10 +121,7 @@ function LoginPage() {
         <div className="mt-6 border-t border-slate-100 pt-5 text-center">
           <p className="text-sm text-slate-500">
             ليس لديك حساب؟{" "}
-            <a
-              href="#"
-              className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
-            >
+            <a href="#" className="font-medium text-blue-600 hover:text-blue-700 hover:underline">
               إنشاء حساب جديد
             </a>
           </p>

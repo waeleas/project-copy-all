@@ -306,7 +306,7 @@ function NewTrip() {
                       handheld_code: car?.handheld_code ?? v,
                       car_plate: car?.plate ?? f.car_plate,
                       office_id: car?.follow_office_id ?? f.office_id,
-                      route_start: car?.route_description ?? f.route_start,
+                      route_start: (car?.route_description ?? f.route_start).slice(0, 40),
                       service_type_id: f.service_type_id || (workerService ? workerService.id : ""),
                     }));
                     toast.success(car ? `تم التعرف على السيارة: ${car.plate ?? ""}` : "تم قراءة الكود");
@@ -325,7 +325,7 @@ function NewTrip() {
                       handheld_code: car?.handheld_code ?? v,
                       car_plate: car?.plate ?? f.car_plate,
                       office_id: car?.follow_office_id ?? f.office_id,
-                      route_start: car?.route_description ?? f.route_start,
+                      route_start: (car?.route_description ?? f.route_start).slice(0, 40),
                       service_type_id: f.service_type_id || (workerService ? workerService.id : ""),
                     }));
                     toast.success(car ? `تم التعرف على السيارة: ${car.plate ?? ""}` : "تم قراءة البطاقة");
@@ -346,7 +346,7 @@ function NewTrip() {
                       car_code: "",
                       car_plate: v,
                       handheld_code: car?.handheld_code ?? f.handheld_code,
-                      route_start: car?.route_description ?? f.route_start,
+                      route_start: (car?.route_description ?? f.route_start).slice(0, 40),
                       service_type_id: f.service_type_id || (workerService ? workerService.id : ""),
                     }));
                   }}

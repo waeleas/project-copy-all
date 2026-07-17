@@ -198,7 +198,8 @@ function NewTrip() {
           )}
           {services.data?.find((s) => s.id === form.service_type_id)?.name !== "نقل عاملين" && (
             <Field label="متلقي الخدمة أو فنى (رقم الساب)" invalid={errors.technician_id}>
-              <SapSelect items={technicians.data} value={form.technician_id} onChange={(v) => set("technician_id", v)} placeholder="اختر رقم الساب" />
+              <SapSelect items={technicians.data} value={form.technician_id} onChange={(v) => set("technician_id", v)} placeholder="اختر رقم الساب أو اكتب: لا يوجد" allowNone noneLabel="لا يوجد متلقى خدمة أو فنى" />
+
               {selectedTech && (
                 <div className="mt-2 p-2 rounded-md bg-primary/10 border border-primary/30">
                   <div className="text-xs text-muted-foreground">الاسم</div>

@@ -50,6 +50,7 @@ export const listUsersWithRoles = createServerFn({ method: "GET" })
         rental_cars_override: p.rental_cars_override ?? null,
         trip_create_override: p.trip_create_override ?? null,
         created_at: u.created_at,
+        last_sign_in_at: (u as any).last_sign_in_at ?? null,
         roles: rolesByUser.get(u.id) ?? ["user"],
       };
     });

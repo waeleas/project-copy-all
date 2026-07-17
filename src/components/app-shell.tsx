@@ -29,7 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const nav = [
     { to: "/", label: "الرحلات", icon: ListChecks },
-    { to: "/trips/new", label: "رحلة جديدة", icon: Plus },
+    ...(canCreateTrips ? [{ to: "/trips/new", label: "رحلة جديدة", icon: Plus }] : []),
     { to: "/profile", label: "حسابي", icon: User },
     ...(isAdmin ? [{ to: "/manage", label: "الإدارة", icon: Settings }] : []),
   ];

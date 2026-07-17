@@ -66,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="max-w-5xl mx-auto px-4 py-5 pb-24">{children}</main>
 
       <nav className="fixed bottom-0 inset-x-0 bg-card border-t z-30">
-        <div className={`max-w-5xl mx-auto grid ${nav.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
+        <div className={`max-w-5xl mx-auto grid`} style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}>
           {nav.map((n) => {
             const active = location.pathname === n.to;
             const Icon = n.icon;

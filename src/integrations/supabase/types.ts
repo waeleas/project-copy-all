@@ -48,7 +48,15 @@ export type Database = {
           route_description?: string | null
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cars_follow_office_id_fkey"
+            columns: ["follow_office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       drivers: {
         Row: {

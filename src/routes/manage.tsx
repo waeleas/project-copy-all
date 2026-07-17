@@ -652,11 +652,41 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
       if (withCostCenter) p.cost_center = pick(r, "cost_center", "مركز التكلفة") || null;
       return p;
     }).filter(Boolean) as any[];
-    if (!payload.length) return toast.error("لا توجد صفوف صالحة");
-    const { error } = await supabase.from(table as any).insert(payload);
-    if (error) return toast.error(arabicError(error));
+    if (!payload.length) return toast.error("لا توجد صفوف صالحة في الملف");
+
+    // إزالة التكرار داخل الملف بناءً على رقم الساب
+    let deduped = payload;
+    let dupInFile = 0;
+    if (withSap) {
+      const seen = new Set<string>();
+      deduped = [];
+      for (const p of payload) {
+        const key = (p.sap_number ?? "").toString().trim();
+        if (!key) { deduped.push(p); continue; }
+        if (seen.has(key)) { dupInFile++; continue; }
+        seen.add(key);
+        deduped.push(p);
+      }
+    }
+
+    const chunkSize = 200;
+    let ok = 0;
+    let firstError: any = null;
+    for (let i = 0; i < deduped.length; i += chunkSize) {
+      const chunk = deduped.slice(i, i + chunkSize);
+      const q = withSap
+        ? supabase.from(table as any).upsert(chunk, { onConflict: "sap_number", ignoreDuplicates: true })
+        : supabase.from(table as any).insert(chunk);
+      const { error } = await q;
+      if (error) { firstError = error; break; }
+      ok += chunk.length;
+    }
     qc.invalidateQueries({ queryKey: [table] });
-    toast.success(`تم استيراد ${payload.length}`);
+    if (firstError) {
+      return toast.error(`فشل الاستيراد بعد ${ok} صف: ${arabicError(firstError)}`);
+    }
+    const extra = dupInFile ? ` — تم تجاهل ${dupInFile} صف مكرر بنفس رقم الساب` : "";
+    toast.success(`تم استيراد ${ok} صف${extra}`);
   }
 
   const filtered = (data ?? []).filter((i: any) => {

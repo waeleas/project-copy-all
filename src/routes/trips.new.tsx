@@ -467,6 +467,7 @@ export function CarCodeCombobox({ items, value, onChange, onComplete, placeholde
                 setText(c.code ?? "");
                 onChange(c.code ?? "", c);
                 setOpen(false);
+                onComplete?.();
               }}
             >
               <span className="text-muted-foreground text-xs">{c.plate}</span>

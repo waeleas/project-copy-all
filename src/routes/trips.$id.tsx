@@ -539,6 +539,10 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
               <Input value={form.car_plate} onChange={(e) => set("car_plate", e.target.value)} dir="ltr" />
             </Field>
 
+            <Field label="وصف السيارة">
+              <Input value={form.car_description} onChange={(e) => set("car_description", e.target.value)} />
+            </Field>
+
             {form.car_type === "rental" && (
               <Field label="كود الهاند هيلد">
                 <div className="flex gap-2">

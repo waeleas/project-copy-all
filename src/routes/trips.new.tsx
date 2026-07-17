@@ -65,6 +65,7 @@ function NewTrip() {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const handheldRef = useRef<HTMLInputElement | null>(null);
+  const routeStartRef = useRef<HTMLTextAreaElement | null>(null);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -245,6 +246,13 @@ function NewTrip() {
                         setForm((f) => ({ ...f, car_code: code, car_plate: car?.plate ?? "" }));
                         setErrors((e) => (e.car_code ? { ...e, car_code: false } : e));
                       }}
+                      onComplete={() => {
+                        setTimeout(() => {
+                          routeStartRef.current?.focus();
+                          routeStartRef.current?.setSelectionRange(0, 0);
+                          routeStartRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }, 0);
+                      }}
                       placeholder="اكتب أو اختر كود السيارة"
                     />
                   </div>
@@ -359,7 +367,7 @@ function NewTrip() {
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="size-4" /> بداية خط السير</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <Field label="بداية خط السير" invalid={errors.route_start}>
-            <Textarea value={form.route_start} onChange={(e) => set("route_start", e.target.value)} placeholder="مثال: من مكتب المنصورة إلى العميل..." rows={2} />
+            <Textarea ref={routeStartRef} value={form.route_start} onChange={(e) => set("route_start", e.target.value)} placeholder="مثال: من مكتب المنصورة إلى العميل..." rows={2} />
           </Field>
           <Field label="قراءة العداد (كم)" invalid={errors.start_odometer}>
             <div className="relative">
@@ -406,7 +414,7 @@ function SapSelect({ items, value, onChange, placeholder, allowNone, noneLabel }
   return <SapCombobox items={items} value={value} onChange={onChange} placeholder={placeholder} allowNone={allowNone} noneLabel={noneLabel} />;
 }
 
-export function CarCodeCombobox({ items, value, onChange, placeholder }: { items?: any[]; value: string; onChange: (code: string, car?: any) => void; placeholder: string }) {
+export function CarCodeCombobox({ items, value, onChange, onComplete, placeholder }: { items?: any[]; value: string; onChange: (code: string, car?: any) => void; onComplete?: () => void; placeholder: string }) {
   const [text, setText] = useState<string>(value ?? "");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -431,15 +439,21 @@ export function CarCodeCombobox({ items, value, onChange, placeholder }: { items
     <div ref={wrapRef} className="relative">
       <Input
         dir="ltr"
+        inputMode="numeric"
+        maxLength={4}
         value={text}
         placeholder={placeholder}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
-          const v = e.target.value;
+          const v = e.target.value.replace(/\D/g, "").slice(0, 4);
           setText(v);
           setOpen(true);
           const match = items?.find((c) => c.code === v);
           onChange(v, match);
+          if (v.length === 4) {
+            setOpen(false);
+            onComplete?.();
+          }
         }}
       />
       {open && filtered.length > 0 && (

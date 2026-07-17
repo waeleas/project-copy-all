@@ -269,6 +269,23 @@ function DriversManager() {
   const [type, setType] = usePersistedState<"company" | "rental">("drivers.type", "company");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [creatingUsers, setCreatingUsers] = useState(false);
+  const createDriverUsers = useServerFn(createUsersForAllDrivers);
+
+  async function generateUsers() {
+    if (!confirm("سيتم إنشاء حساب مستخدم لكل سائق ليس لديه حساب (كلمة السر 123456). متابعة؟")) return;
+    setCreatingUsers(true);
+    try {
+      const res: any = await createDriverUsers({});
+      const msg = `تم إنشاء ${res.created} حساب، تم تخطي ${res.skipped}` + (res.errors?.length ? ` — أخطاء: ${res.errors.length}` : "");
+      if (res.errors?.length) toast.warning(msg); else toast.success(msg);
+      qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+    } catch (e: any) {
+      toast.error(arabicError(e));
+    } finally {
+      setCreatingUsers(false);
+    }
+  }
 
 
   const { data, isLoading } = useQuery({

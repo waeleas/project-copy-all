@@ -16,6 +16,8 @@ import { Plus, Trash2, Loader2, Shield, UserPlus } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { listUsersWithRoles, setUserAdmin, setUserViewer, createUser, deleteUser, updateUserPassword } from "@/lib/users.functions";
 import { DataToolbar, exportToXlsx, pick } from "@/components/data-toolbar";
+import { usePersistedState } from "@/hooks/use-persisted-state";
+
 
 export const Route = createFileRoute("/manage")({
   head: () => ({ meta: [{ title: "البيانات الأساسية" }] }),
@@ -82,12 +84,13 @@ function UsersManager() {
     queryFn: () => list(),
   });
 
-  const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
-  const [makeAdmin, setMakeAdmin] = useState(false);
+  const [username, setUsername] = usePersistedState("users.username", "");
+  const [displayName, setDisplayName] = usePersistedState("users.display_name", "");
+  const [email, setEmail] = usePersistedState<string>("users.email", "");
+  const [makeAdmin, setMakeAdmin] = usePersistedState<boolean>("users.make_admin", false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+
 
   const filteredUsers = (users ?? []).filter((u: any) => {
     if (!search.trim()) return true;
@@ -257,11 +260,12 @@ function UsersManager() {
 
 function DriversManager() {
   const qc = useQueryClient();
-  const [name, setName] = useState("");
-  const [sap, setSap] = useState("");
-  const [type, setType] = useState<"company" | "rental">("company");
+  const [name, setName] = usePersistedState("drivers.name", "");
+  const [sap, setSap] = usePersistedState("drivers.sap", "");
+  const [type, setType] = usePersistedState<"company" | "rental">("drivers.type", "company");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["drivers", type],
@@ -362,17 +366,18 @@ function DriversManager() {
 
 function CarsManager() {
   const qc = useQueryClient();
-  const [code, setCode] = useState("");
-  const [handheldCode, setHandheldCode] = useState("");
-  const [plate, setPlate] = useState("");
-  const [type, setType] = useState<"company" | "rental">("company");
-  const [routeCode, setRouteCode] = useState("");
-  const [routeDescription, setRouteDescription] = useState("");
-  const [followOfficeId, setFollowOfficeId] = useState("");
+  const [code, setCode] = usePersistedState("cars.code", "");
+  const [handheldCode, setHandheldCode] = usePersistedState("cars.handheld_code", "");
+  const [plate, setPlate] = usePersistedState("cars.plate", "");
+  const [type, setType] = usePersistedState<"company" | "rental">("cars.type", "company");
+  const [routeCode, setRouteCode] = usePersistedState("cars.route_code", "");
+  const [routeDescription, setRouteDescription] = usePersistedState("cars.route_description", "");
+  const [followOfficeId, setFollowOfficeId] = usePersistedState("cars.follow_office_id", "");
   const filter = type;
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [search, setSearch] = useState("");
+
 
   const offices = useQuery({
     queryKey: ["offices"],
@@ -587,13 +592,14 @@ function CarsManager() {
 
 function LookupManager({ table, title, withSap, withCode, withCostCenter }: { table: string; title: string; withSap?: boolean; withCode?: boolean; withCostCenter?: boolean }) {
   const qc = useQueryClient();
-  const [name, setName] = useState("");
-  const [sap, setSap] = useState("");
-  const [code, setCode] = useState("");
-  const [costCenter, setCostCenter] = useState("");
+  const [name, setName] = usePersistedState(`lookup.${table}.name`, "");
+  const [sap, setSap] = usePersistedState(`lookup.${table}.sap`, "");
+  const [code, setCode] = usePersistedState(`lookup.${table}.code`, "");
+  const [costCenter, setCostCenter] = usePersistedState(`lookup.${table}.cost_center`, "");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [search, setSearch] = useState("");
+
 
   const { data, isLoading } = useQuery({
     queryKey: [table],

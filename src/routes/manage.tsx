@@ -532,6 +532,7 @@ function CarsManager() {
               {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
             </Button>
           </div>
+          <Input placeholder="وصف السيارة (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} />
           {type === "rental" && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Input placeholder="كود خط السير" value={routeCode} onChange={(e) => setRouteCode(e.target.value)} dir="ltr" />
@@ -543,6 +544,7 @@ function CarsManager() {
             </div>
           )}
         </div>
+
 
         <DataToolbar
           search={search}

@@ -383,7 +383,8 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     const startVal = parseInt(form.start_odometer, 10);
     if (!Number.isFinite(startVal)) return toast.error("قراءة العداد غير صحيحة");
     const endVal = form.end_odometer ? parseInt(form.end_odometer, 10) : null;
-    if (endVal != null && endVal < startVal) return toast.error("قراءة النهاية أقل من البداية");
+    if (endVal != null && endVal <= startVal) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
+    if (endVal != null && endVal - startVal > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     if (form.car_type === "rental" && !form.office_id) return toast.error("المكتب مطلوب لسيارات الإيجار");
 
     setSaving(true);

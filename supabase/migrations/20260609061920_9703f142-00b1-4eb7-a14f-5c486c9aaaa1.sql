@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_segments ALTER COLUMN odometer DROP NOT NULL;

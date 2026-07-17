@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "auth read trips" ON public.trips;
+CREATE POLICY "read own or admin trips" ON public.trips FOR SELECT TO authenticated USING (auth.uid() = created_by OR public.has_role(auth.uid(), 'admin'));

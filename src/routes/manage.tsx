@@ -1,0 +1,753 @@
+import { arabicError } from "@/lib/errors";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { AppShell } from "@/components/app-shell";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { Plus, Trash2, Loader2, Shield, UserPlus } from "lucide-react";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+import { listUsersWithRoles, setUserAdmin, setUserViewer, createUser, deleteUser, updateUserPassword } from "@/lib/users.functions";
+import { DataToolbar, exportToXlsx, pick } from "@/components/data-toolbar";
+
+export const Route = createFileRoute("/manage")({
+  head: () => ({ meta: [{ title: "البيانات الأساسية" }] }),
+  component: () => <AppShell><Manage /></AppShell>,
+});
+
+function Manage() {
+  const { isAdmin, loading } = useIsAdmin();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !isAdmin) {
+      toast.error("هذه الصفحة للأدمن فقط");
+      navigate({ to: "/" });
+    }
+  }, [loading, isAdmin, navigate]);
+
+  if (loading || !isAdmin) {
+    return <div className="text-center py-12"><Loader2 className="size-8 mx-auto animate-spin text-primary" /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold">البيانات الأساسية</h1>
+        <p className="text-sm text-muted-foreground">إدارة المكاتب ومتلقي الخدمة أو فنى والسائقين والمستخدمين</p>
+      </div>
+
+      <Tabs defaultValue="users">
+        <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full h-auto">
+          <TabsTrigger value="users">المستخدمون</TabsTrigger>
+          <TabsTrigger value="offices">المكاتب</TabsTrigger>
+          <TabsTrigger value="managers">المديرون</TabsTrigger>
+          <TabsTrigger value="technicians">متلقي الخدمة أو فنى</TabsTrigger>
+          <TabsTrigger value="drivers">السائقون</TabsTrigger>
+          <TabsTrigger value="cars">السيارات</TabsTrigger>
+          <TabsTrigger value="services">الخدمات</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users"><UsersManager /></TabsContent>
+        <TabsContent value="offices"><LookupManager table="offices" title="المكاتب" withCode /></TabsContent>
+        <TabsContent value="managers"><LookupManager table="managers" title="المديرون" withSap withCostCenter /></TabsContent>
+        <TabsContent value="technicians"><LookupManager table="technicians" title="متلقي الخدمة أو فنى" withSap /></TabsContent>
+        <TabsContent value="drivers"><DriversManager /></TabsContent>
+        <TabsContent value="cars"><CarsManager /></TabsContent>
+        <TabsContent value="services"><LookupManager table="service_types" title="أنواع الخدمة" /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+
+function UsersManager() {
+  const qc = useQueryClient();
+  const list = useServerFn(listUsersWithRoles);
+  const setAdmin = useServerFn(setUserAdmin);
+  const setViewer = useServerFn(setUserViewer);
+  const create = useServerFn(createUser);
+  const remove = useServerFn(deleteUser);
+  const changePassword = useServerFn(updateUserPassword);
+
+  const { data: users, isLoading } = useQuery({
+    queryKey: ["users-with-roles"],
+    queryFn: () => list(),
+  });
+
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [makeAdmin, setMakeAdmin] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredUsers = (users ?? []).filter((u: any) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return [u.username, u.display_name, u.email].some((v) => (v ?? "").toString().toLowerCase().includes(q));
+  });
+
+  async function importUsers(rows: any[]) {
+    let ok = 0, fail = 0;
+    for (const r of rows) {
+      const u = pick(r, "username", "اليوزر", "اسم المستخدم");
+      const d = pick(r, "display_name", "الاسم", "الاسم الكامل");
+      if (!u || !d) { fail++; continue; }
+      try {
+        await create({ data: { username: u, display_name: d, email: pick(r, "email", "البريد") || undefined, is_admin: /^(1|true|yes|نعم)$/i.test(pick(r, "is_admin", "أدمن")) } });
+        ok++;
+      } catch { fail++; }
+    }
+    qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+    toast.success(`تم إضافة ${ok} مستخدم${fail ? ` — فشل ${fail}` : ""}`);
+  }
+
+  async function add() {
+    if (!username.trim() || !displayName.trim()) return toast.error("اسم المستخدم والاسم مطلوبان");
+    if (!/^[a-zA-Z0-9._-]{3,40}$/.test(username.trim())) return toast.error("اسم المستخدم: أحرف إنجليزية وأرقام فقط (3-40)");
+    setSaving(true);
+    try {
+      await create({
+        data: {
+          username: username.trim(),
+          display_name: displayName.trim(),
+          email: email.trim() || undefined,
+          is_admin: makeAdmin,
+        },
+      });
+      setUsername(""); setDisplayName(""); setEmail(""); setMakeAdmin(false);
+      qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+      toast.success("تم إنشاء المستخدم — سيتم طلب كلمة المرور عند أول دخول");
+    } catch (e: any) {
+      toast.error(e.message ?? "فشل");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggle(u: any) {
+    const isAdmin = u.roles.includes("admin");
+    try {
+      await setAdmin({ data: { user_id: u.id, is_admin: !isAdmin } });
+      qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+      toast.success(isAdmin ? "تم إزالة صلاحية الأدمن" : "تم منح صلاحية الأدمن");
+    } catch (e: any) {
+      toast.error(e.message ?? "فشل");
+    }
+  }
+
+  async function toggleViewer(u: any) {
+    const isViewer = u.roles.includes("viewer");
+    try {
+      await setViewer({ data: { user_id: u.id, is_viewer: !isViewer } });
+      qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+      toast.success(isViewer ? "تم إزالة صلاحية الاطلاع" : "تم منح صلاحية الاطلاع على جميع الرحلات");
+    } catch (e: any) {
+      toast.error(e.message ?? "فشل");
+    }
+  }
+
+  async function del(u: any) {
+    if (!confirm(`حذف ${u.username ?? u.email}؟`)) return;
+    try {
+      await remove({ data: { user_id: u.id } });
+      qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+      toast.success("تم الحذف");
+    } catch (e: any) {
+      toast.error(e.message ?? "فشل");
+    }
+  }
+
+  async function changePwd(u: any) {
+    const pwd = prompt(`كلمة المرور الجديدة للمستخدم ${u.username ?? u.email} (6 أحرف على الأقل):`);
+    if (!pwd) return;
+    if (pwd.length < 6) return toast.error("كلمة المرور قصيرة جداً");
+    try {
+      await changePassword({ data: { user_id: u.id, password: pwd } });
+      toast.success("تم تغيير كلمة المرور");
+    } catch (e: any) {
+      toast.error(e.message ?? "فشل");
+    }
+  }
+
+  return (
+    <Card className="mt-4">
+      <CardHeader><CardTitle className="text-base flex items-center gap-2"><UserPlus className="size-4" /> إدارة المستخدمين</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="space-y-1"><Label className="text-xs">اسم المستخدم (يوزر)</Label>
+            <Input dir="ltr" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ahmed.ali" />
+          </div>
+          <div className="space-y-1"><Label className="text-xs">الاسم الكامل</Label>
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="أحمد علي" />
+          </div>
+          <div className="space-y-1 sm:col-span-2"><Label className="text-xs">البريد الإلكتروني (اختياري)</Label>
+            <Input type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="اتركه فارغًا لتوليده تلقائيًا" />
+          </div>
+          <div className="flex items-center justify-between gap-2 sm:col-span-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={makeAdmin} onChange={(e) => setMakeAdmin(e.target.checked)} />
+              صلاحية أدمن
+            </label>
+            <Button onClick={add} disabled={saving} className="gap-1">
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+              إضافة مستخدم
+            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          المستخدم الجديد يعين كلمة المرور بنفسه عند أول دخول من تبويب «أول دخول» في صفحة تسجيل الدخول.
+        </p>
+
+        <DataToolbar
+          search={search}
+          onSearch={setSearch}
+          onExport={() => exportToXlsx("users.xlsx", (users ?? []).map((u: any) => ({ username: u.username, display_name: u.display_name, email: u.email, is_admin: u.roles.includes("admin") ? 1 : 0, is_viewer: u.roles.includes("viewer") ? 1 : 0 })))}
+          onImportRows={importUsers}
+          placeholder="بحث بالاسم أو اليوزر..."
+        />
+
+        <div className="space-y-1.5">
+          {isLoading && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
+          {filteredUsers.map((u: any) => {
+            const admin = u.roles.includes("admin");
+            const viewer = u.roles.includes("viewer");
+            return (
+              <div key={u.id} className="bg-muted/50 rounded-md p-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="text-sm min-w-0">
+                  <div className="font-medium truncate">{u.display_name ?? u.username ?? u.email}</div>
+                  <div className="text-xs text-muted-foreground truncate" dir="ltr">@{u.username ?? "—"}</div>
+                  <div className="text-xs mt-1 flex flex-wrap items-center gap-1">
+                    {admin ? <Badge className="bg-primary"><Shield className="size-3 ml-1" /> أدمن</Badge> : <Badge variant="secondary">مستخدم</Badge>}
+                    {viewer && <Badge className="bg-blue-600 hover:bg-blue-600">مُطّلع على الكل</Badge>}
+                    {u.must_change_password && <Badge variant="outline">لم يعيّن كلمة مرور بعد</Badge>}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:justify-end">
+                  <Button size="sm" variant="outline" onClick={() => toggle(u)}>
+                    {admin ? "إزالة أدمن" : "ترقية لأدمن"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => toggleViewer(u)}>
+                    {viewer ? "إزالة الاطلاع" : "السماح بالاطلاع على الكل"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => changePwd(u)}>
+                    تغيير كلمة المرور
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => del(u)}>
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+function DriversManager() {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [sap, setSap] = useState("");
+  const [type, setType] = useState<"company" | "rental">("company");
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["drivers", type],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("drivers" as any).select("*").eq("type", type).order("name");
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  async function importDrivers(rows: any[]) {
+    const payload = rows.map((r) => {
+      const name = pick(r, "name", "اسم السائق", "الاسم");
+      const sap_number = pick(r, "sap_number", "sap", "رقم الساب", "ساب");
+      const t = pick(r, "type", "النوع").toLowerCase();
+      const rowType = t === "rental" || t.includes("إيجار") || t.includes("ايجار") ? "rental" : (t === "company" || t.includes("شركة")) ? "company" : type;
+      return name ? { name, type: rowType, sap_number: rowType === "company" ? (sap_number || null) : null } : null;
+    }).filter(Boolean) as any[];
+    if (!payload.length) return toast.error("لا توجد صفوف صالحة");
+    const { error } = await supabase.from("drivers" as any).insert(payload);
+    if (error) return toast.error(arabicError(error));
+    qc.invalidateQueries({ queryKey: ["drivers"] });
+    toast.success(`تم استيراد ${payload.length}`);
+  }
+
+  const filtered = (data ?? []).filter((d: any) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return [d.name, d.sap_number].some((v) => (v ?? "").toString().toLowerCase().includes(q));
+  });
+
+  async function add() {
+    if (!name.trim()) return toast.error("اسم السائق مطلوب");
+    if (type === "company" && !sap.trim()) return toast.error("رقم الساب مطلوب لسائقي الشركة");
+    setSaving(true);
+    const payload: any = { name: name.trim(), type, sap_number: type === "company" ? sap.trim() : null };
+    const { error } = await supabase.from("drivers" as any).insert(payload);
+    setSaving(false);
+    if (error) return toast.error(arabicError(error));
+    setName(""); setSap("");
+    qc.invalidateQueries({ queryKey: ["drivers"] });
+    toast.success("تمت الإضافة");
+  }
+
+  async function remove(id: string) {
+    if (!confirm("هل أنت متأكد من الحذف؟")) return;
+    const { error } = await supabase.from("drivers" as any).delete().eq("id", id);
+    if (error) return toast.error(arabicError(error));
+    qc.invalidateQueries({ queryKey: ["drivers"] });
+    toast.success("تم الحذف");
+  }
+
+  return (
+    <Card className="mt-4">
+      <CardHeader><CardTitle className="text-base">السائقون</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex gap-2 items-center">
+            <Button type="button" variant={type === "company" ? "default" : "outline"} onClick={() => setType("company")}>شركة</Button>
+            <Button type="button" variant={type === "rental" ? "default" : "outline"} onClick={() => setType("rental")}>إيجار</Button>
+          </div>
+          <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+            <Input placeholder="اسم السائق" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input placeholder={type === "company" ? "رقم الساب" : "بدون ساب (إيجار)"} value={sap} onChange={(e) => setSap(e.target.value)} disabled={type === "rental"} dir="ltr" />
+            <Button onClick={add} disabled={saving}>
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            </Button>
+          </div>
+        </div>
+
+        <DataToolbar
+          search={search}
+          onSearch={setSearch}
+          onExport={() => exportToXlsx(`drivers-${type}.xlsx`, (data ?? []).map((d: any) => ({ name: d.name, sap_number: d.sap_number, type: d.type })))}
+          onImportRows={importDrivers}
+          placeholder="بحث بالاسم أو الساب..."
+        />
+
+        <div className="space-y-1.5">
+          {isLoading && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
+          {filtered.length === 0 && !isLoading && <p className="text-sm text-muted-foreground text-center py-4">لا يوجد سائقون</p>}
+          {filtered.map((d: any) => (
+            <div key={d.id} className="flex items-center justify-between bg-muted/50 rounded-md p-2.5">
+              <div className="text-sm">
+                <div className="font-medium">{d.name}</div>
+                {d.sap_number && <div className="text-xs text-muted-foreground" dir="ltr">ساب: {d.sap_number}</div>}
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => remove(d.id)}>
+                <Trash2 className="size-4 text-destructive" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CarsManager() {
+  const qc = useQueryClient();
+  const [code, setCode] = useState("");
+  const [handheldCode, setHandheldCode] = useState("");
+  const [plate, setPlate] = useState("");
+  const [type, setType] = useState<"company" | "rental">("company");
+  const [routeCode, setRouteCode] = useState("");
+  const [routeDescription, setRouteDescription] = useState("");
+  const [followOfficeId, setFollowOfficeId] = useState("");
+  const filter = type;
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [search, setSearch] = useState("");
+
+  const offices = useQuery({
+    queryKey: ["offices"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("offices" as any).select("*").order("name");
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["cars", filter],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cars" as any).select("*, follow_office:offices!cars_follow_office_id_fkey(name)").eq("type", filter).order("code", { nullsFirst: false }).order("plate");
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  async function add() {
+    if (!plate.trim()) return toast.error("رقم اللوحة مطلوب");
+    if (type === "company" && !code.trim()) return toast.error("كود السيارة مطلوب لسيارات الشركة");
+    setSaving(true);
+    const payload: any = { plate: plate.trim(), type };
+    if (type === "company") payload.code = code.trim();
+    if (type === "rental") {
+      payload.handheld_code = handheldCode.trim() || null;
+      payload.route_code = routeCode.trim() || null;
+      payload.route_description = routeDescription.trim() || null;
+      payload.follow_office_id = followOfficeId || null;
+    }
+    const { error } = await supabase.from("cars" as any).insert(payload);
+    setSaving(false);
+    if (error) return toast.error(arabicError(error));
+    setCode(""); setPlate(""); setHandheldCode(""); setRouteCode(""); setRouteDescription(""); setFollowOfficeId("");
+    qc.invalidateQueries({ queryKey: ["cars"] });
+    toast.success("تمت الإضافة");
+  }
+
+  async function remove(id: string) {
+    if (!confirm("هل أنت متأكد من الحذف؟")) return;
+    const { error } = await supabase.from("cars" as any).delete().eq("id", id);
+    if (error) return toast.error(arabicError(error));
+    qc.invalidateQueries({ queryKey: ["cars"] });
+    toast.success("تم الحذف");
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    const payload: any = {
+      plate: (editing.plate ?? "").trim() || null,
+    };
+    if (editing.type === "company") {
+      payload.code = (editing.code ?? "").trim() || null;
+    } else {
+      payload.handheld_code = (editing.handheld_code ?? "").trim() || null;
+      payload.route_code = (editing.route_code ?? "").trim() || null;
+      payload.route_description = (editing.route_description ?? "").trim() || null;
+      payload.follow_office_id = editing.follow_office_id || null;
+    }
+    const { error } = await supabase.from("cars" as any).update(payload).eq("id", editing.id);
+    if (error) return toast.error(arabicError(error));
+    setEditing(null);
+    qc.invalidateQueries({ queryKey: ["cars"] });
+    toast.success("تم الحفظ");
+  }
+
+  async function importCars(rows: any[]) {
+    const officeByName = new Map<string, string>();
+    (offices.data ?? []).forEach((o: any) => officeByName.set((o.name ?? "").toString().trim().toLowerCase(), o.id));
+    const payload = rows.map((r) => {
+      const plate = pick(r, "plate", "رقم اللوحة", "اللوحة");
+      const t = pick(r, "type", "النوع").toLowerCase();
+      const rowType = t === "rental" || t.includes("إيجار") || t.includes("ايجار") ? "rental" : (t === "company" || t.includes("شركة")) ? "company" : type;
+      if (!plate) return null;
+      if (rowType === "company") {
+        const code = pick(r, "code", "كود السيارة", "الكود");
+        return { plate, type: "company", code: code || null };
+      }
+      const officeName = pick(r, "office", "المكتب", "تابع", "follow_office");
+      return {
+        plate,
+        type: "rental",
+        handheld_code: pick(r, "handheld_code", "كود الهاند هيلد") || null,
+        route_code: pick(r, "route_code", "كود خط السير") || null,
+        route_description: pick(r, "route_description", "وصف خط السير") || null,
+        follow_office_id: officeName ? (officeByName.get(officeName.toLowerCase()) ?? null) : null,
+      };
+    }).filter(Boolean) as any[];
+    if (!payload.length) return toast.error("لا توجد صفوف صالحة");
+    const { error } = await supabase.from("cars" as any).insert(payload);
+    if (error) return toast.error(arabicError(error));
+    qc.invalidateQueries({ queryKey: ["cars"] });
+    toast.success(`تم استيراد ${payload.length}`);
+  }
+
+  const filtered = (data ?? []).filter((c: any) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return [c.code, c.plate, c.handheld_code, c.route_code, c.route_description, c.follow_office?.name].some((v) => (v ?? "").toString().toLowerCase().includes(q));
+  });
+
+  return (
+    <Card className="mt-4">
+      <CardHeader><CardTitle className="text-base">السيارات</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+
+        <div className="space-y-2">
+          <div className="flex gap-2 items-center">
+            <Button type="button" variant={type === "company" ? "default" : "outline"} onClick={() => setType("company")}>شركة</Button>
+            <Button type="button" variant={type === "rental" ? "default" : "outline"} onClick={() => setType("rental")}>إيجار</Button>
+          </div>
+          <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+            {type === "company" ? (
+              <Input placeholder="كود السيارة" value={code} onChange={(e) => setCode(e.target.value)} />
+            ) : (
+              <Input placeholder="كود الهاند هيلد إيجار" value={handheldCode} onChange={(e) => setHandheldCode(e.target.value)} dir="ltr" />
+            )}
+            <Input placeholder="رقم اللوحة" value={plate} onChange={(e) => setPlate(e.target.value)} />
+            <Button onClick={add} disabled={saving}>
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            </Button>
+          </div>
+          {type === "rental" && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <Input placeholder="كود خط السير" value={routeCode} onChange={(e) => setRouteCode(e.target.value)} dir="ltr" />
+              <Input placeholder="وصف خط السير" value={routeDescription} onChange={(e) => setRouteDescription(e.target.value)} />
+              <select className="border rounded-md px-2 text-sm bg-background" value={followOfficeId} onChange={(e) => setFollowOfficeId(e.target.value)}>
+                <option value="">تابع إلى مكتب...</option>
+                {offices.data?.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+
+        <DataToolbar
+          search={search}
+          onSearch={setSearch}
+          onExport={() => exportToXlsx(`cars-${type}.xlsx`, (data ?? []).map((c: any) => ({
+            code: c.code, plate: c.plate, type: c.type,
+            handheld_code: c.handheld_code, route_code: c.route_code, route_description: c.route_description,
+            office: c.follow_office?.name ?? "",
+          })))}
+          onImportRows={importCars}
+          placeholder="بحث بالكود أو اللوحة أو الخط..."
+        />
+
+        <div className="space-y-1.5">
+          {isLoading && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
+          {filtered.length === 0 && !isLoading && <p className="text-sm text-muted-foreground text-center py-4">لا توجد سيارات</p>}
+          {filtered.map((c: any) => (
+            <div key={c.id}>
+              <div className="flex items-center justify-between bg-muted/50 rounded-md p-2.5 gap-2">
+                <div className="text-sm min-w-0">
+                  <div className="font-medium">{c.code || "—"} {c.plate && <span className="text-muted-foreground">· لوحة: {c.plate}</span>}</div>
+                  {type === "rental" && (
+                    <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                      {c.handheld_code && <div>كود الهاند هيلد: <span dir="ltr">{c.handheld_code}</span></div>}
+                      {c.route_code && <div>كود الخط: <span dir="ltr">{c.route_code}</span></div>}
+                      {c.route_description && <div>الوصف: {c.route_description}</div>}
+                      {c.follow_office?.name && <div>تابع: {c.follow_office.name}</div>}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button size="sm" variant="outline" onClick={() => setEditing({ ...c })}>تعديل</Button>
+                  <Button size="sm" variant="ghost" onClick={() => remove(c.id)}>
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+              {editing?.id === c.id && (
+                <div className="border rounded-md p-3 space-y-2 bg-background mt-1">
+                  <div className="font-medium text-sm">
+                    تعديل سيارة {editing.type === "rental" ? "إيجار" : "شركة"} — {editing.plate || editing.code}
+                  </div>
+                  <Label className="text-xs">رقم اللوحة</Label>
+                  <Input placeholder="رقم اللوحة" value={editing.plate ?? ""} onChange={(e) => setEditing({ ...editing, plate: e.target.value })} />
+                  {editing.type === "company" ? (
+                    <>
+                      <Label className="text-xs">كود السيارة</Label>
+                      <Input placeholder="كود السيارة" value={editing.code ?? ""} onChange={(e) => setEditing({ ...editing, code: e.target.value })} dir="ltr" />
+                    </>
+                  ) : (
+                    <>
+                      <Label className="text-xs">كود الهاند هيلد إيجار</Label>
+                      <Input placeholder="كود الهاند هيلد إيجار" value={editing.handheld_code ?? ""} onChange={(e) => setEditing({ ...editing, handheld_code: e.target.value })} dir="ltr" />
+                      <Label className="text-xs">كود خط السير</Label>
+                      <Input placeholder="كود خط السير" value={editing.route_code ?? ""} onChange={(e) => setEditing({ ...editing, route_code: e.target.value })} dir="ltr" />
+                      <Label className="text-xs">وصف خط السير</Label>
+                      <Input placeholder="وصف خط السير" value={editing.route_description ?? ""} onChange={(e) => setEditing({ ...editing, route_description: e.target.value })} />
+                      <Label className="text-xs">تابع إلى مكتب</Label>
+                      <select className="border rounded-md px-2 py-2 text-sm bg-background w-full" value={editing.follow_office_id ?? ""} onChange={(e) => setEditing({ ...editing, follow_office_id: e.target.value })}>
+                        <option value="">تابع إلى مكتب...</option>
+                        {offices.data?.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                      </select>
+                    </>
+                  )}
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={saveEdit}>حفظ</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditing(null)}>إلغاء</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LookupManager({ table, title, withSap, withCode, withCostCenter }: { table: string; title: string; withSap?: boolean; withCode?: boolean; withCostCenter?: boolean }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+  const [sap, setSap] = useState("");
+  const [code, setCode] = useState("");
+  const [costCenter, setCostCenter] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [search, setSearch] = useState("");
+
+  const { data, isLoading } = useQuery({
+    queryKey: [table],
+    queryFn: async () => {
+      const { data, error } = await supabase.from(table as any).select("*").order("name");
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  async function add() {
+    if (!name.trim()) return;
+    if (withSap && !sap.trim()) return toast.error("رقم الساب مطلوب");
+    setSaving(true);
+    const payload: any = { name: name.trim() };
+    if (withSap) payload.sap_number = sap.trim();
+    if (withCode) payload.code = code.trim() || null;
+    if (withCostCenter) payload.cost_center = costCenter.trim() || null;
+    const { error } = await supabase.from(table as any).insert(payload);
+    setSaving(false);
+    if (error) return toast.error(arabicError(error));
+    setName(""); setSap(""); setCode(""); setCostCenter("");
+    qc.invalidateQueries({ queryKey: [table] });
+    toast.success("تمت الإضافة");
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    if (!(editing.name ?? "").trim()) return toast.error("الاسم مطلوب");
+    const payload: any = { name: editing.name.trim() };
+    if (withSap) payload.sap_number = (editing.sap_number ?? "").trim() || null;
+    if (withCode) payload.code = (editing.code ?? "").trim() || null;
+    if (withCostCenter) payload.cost_center = (editing.cost_center ?? "").trim() || null;
+    const { error } = await supabase.from(table as any).update(payload).eq("id", editing.id);
+    if (error) return toast.error(arabicError(error));
+    setEditing(null);
+    qc.invalidateQueries({ queryKey: [table] });
+    toast.success("تم الحفظ");
+  }
+
+  async function remove(id: string) {
+    if (!confirm("هل أنت متأكد من الحذف؟")) return;
+    const { error } = await supabase.from(table as any).delete().eq("id", id);
+    if (error) return toast.error(arabicError(error));
+    qc.invalidateQueries({ queryKey: [table] });
+    toast.success("تم الحذف");
+  }
+
+  async function importRows(rows: any[]) {
+    const payload = rows.map((r) => {
+      const name = pick(r, "name", "الاسم");
+      if (!name) return null;
+      const p: any = { name };
+      if (withSap) p.sap_number = pick(r, "sap_number", "sap", "رقم الساب", "ساب") || null;
+      if (withCode) p.code = pick(r, "code", "الكود", "كود المكتب") || null;
+      if (withCostCenter) p.cost_center = pick(r, "cost_center", "مركز التكلفة") || null;
+      return p;
+    }).filter(Boolean) as any[];
+    if (!payload.length) return toast.error("لا توجد صفوف صالحة");
+    const { error } = await supabase.from(table as any).insert(payload);
+    if (error) return toast.error(arabicError(error));
+    qc.invalidateQueries({ queryKey: [table] });
+    toast.success(`تم استيراد ${payload.length}`);
+  }
+
+  const filtered = (data ?? []).filter((i: any) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return [i.name, i.sap_number, i.code, i.cost_center].some((v) => (v ?? "").toString().toLowerCase().includes(q));
+  });
+
+  const extraCol = withSap || withCode || withCostCenter;
+  return (
+    <Card className="mt-4">
+      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className={`grid gap-2 ${extraCol ? "grid-cols-1 sm:grid-cols-[1fr_140px_140px_auto]" : "grid-cols-[1fr_auto]"}`}>
+            <Input placeholder="الاسم" value={name} onChange={(e) => setName(e.target.value)} />
+            {withSap && <Input placeholder="رقم الساب" value={sap} onChange={(e) => setSap(e.target.value)} dir="ltr" />}
+            {withCostCenter && <Input placeholder="مركز التكلفة" value={costCenter} onChange={(e) => setCostCenter(e.target.value)} dir="ltr" />}
+            {withCode && <Input placeholder="كود المكتب" value={code} onChange={(e) => setCode(e.target.value)} dir="ltr" />}
+            <Button onClick={add} disabled={saving} className="w-full sm:w-auto">
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            </Button>
+          </div>
+        </div>
+
+        <DataToolbar
+          search={search}
+          onSearch={setSearch}
+          onExport={() => exportToXlsx(`${table}.xlsx`, (data ?? []).map((i: any) => ({
+            name: i.name,
+            ...(withSap ? { sap_number: i.sap_number } : {}),
+            ...(withCostCenter ? { cost_center: i.cost_center } : {}),
+            ...(withCode ? { code: i.code } : {}),
+          })))}
+          onImportRows={importRows}
+          placeholder="بحث..."
+        />
+
+        <div className="space-y-1.5">
+          {isLoading && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
+          {filtered.length === 0 && !isLoading && <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات</p>}
+          {filtered.map((i: any) => (
+            <div key={i.id}>
+              <div className="flex items-center justify-between bg-muted/50 rounded-md p-2.5 gap-2">
+                <div className="text-sm min-w-0">
+                  <div className="font-medium">{i.name}</div>
+                  {i.sap_number && <div className="text-xs text-muted-foreground" dir="ltr">SAP: {i.sap_number}</div>}
+                  {i.cost_center && <div className="text-xs text-muted-foreground" dir="ltr">مركز التكلفة: {i.cost_center}</div>}
+                  {i.code && <div className="text-xs text-muted-foreground" dir="ltr">كود: {i.code}</div>}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button size="sm" variant="outline" onClick={() => setEditing({ ...i })}>تعديل</Button>
+                  <Button size="sm" variant="ghost" onClick={() => remove(i.id)}>
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+              {editing?.id === i.id && (
+                <div className="border rounded-md p-3 space-y-2 bg-background mt-1">
+                  <div className="font-medium text-sm">تعديل — {editing.name}</div>
+                  <Label className="text-xs">الاسم</Label>
+                  <Input value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+                  {withSap && (
+                    <>
+                      <Label className="text-xs">رقم الساب</Label>
+                      <Input value={editing.sap_number ?? ""} onChange={(e) => setEditing({ ...editing, sap_number: e.target.value })} dir="ltr" />
+                    </>
+                  )}
+                  {withCostCenter && (
+                    <>
+                      <Label className="text-xs">مركز التكلفة</Label>
+                      <Input value={editing.cost_center ?? ""} onChange={(e) => setEditing({ ...editing, cost_center: e.target.value })} dir="ltr" />
+                    </>
+                  )}
+                  {withCode && (
+                    <>
+                      <Label className="text-xs">كود المكتب</Label>
+                      <Input value={editing.code ?? ""} onChange={(e) => setEditing({ ...editing, code: e.target.value })} dir="ltr" />
+                    </>
+                  )}
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={saveEdit}>حفظ</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditing(null)}>إلغاء</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+      </CardContent>
+    </Card>
+  );
+}

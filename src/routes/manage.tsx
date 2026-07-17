@@ -215,9 +215,12 @@ function UsersManager() {
   const remove = useServerFn(deleteUser);
   const changePassword = useServerFn(updateUserPassword);
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, isFetching } = useQuery({
     queryKey: ["users-with-roles"],
     queryFn: () => list(),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const [username, setUsername] = usePersistedState("users.username", "");
@@ -227,23 +230,45 @@ function UsersManager() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = usePersistedState<"all" | "admin" | "viewer" | "user">("users.filter", "all");
+  const [usageFilter, setUsageFilter] = usePersistedState<"all" | "used" | "never">("users.usage", "all");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
 
   const allUsers = users ?? [];
   const stats = {
     total: allUsers.length,
     admins: allUsers.filter((u: any) => u.roles.includes("admin")).length,
-    noRental: allUsers.filter((u: any) => u.rental_cars_override === false).length,
-    noTrips: allUsers.filter((u: any) => u.trip_create_override === false).length,
+    used: allUsers.filter((u: any) => !!u.last_sign_in_at).length,
+    never: allUsers.filter((u: any) => !u.last_sign_in_at).length,
   };
 
   const filteredUsers = allUsers.filter((u: any) => {
     if (roleFilter === "admin" && !u.roles.includes("admin")) return false;
     if (roleFilter === "viewer" && !u.roles.includes("viewer")) return false;
     if (roleFilter === "user" && (u.roles.includes("admin") || u.roles.includes("viewer"))) return false;
+    if (usageFilter === "used" && !u.last_sign_in_at) return false;
+    if (usageFilter === "never" && u.last_sign_in_at) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     return [u.username, u.display_name, u.email].some((v) => (v ?? "").toString().toLowerCase().includes(q));
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedUsers = filteredUsers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [search, roleFilter, usageFilter]);
+
+  function formatLastSignIn(iso: string | null): string {
+    if (!iso) return "لم يستخدم";
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    const day = 86400000;
+    if (diffMs < day) return "اليوم";
+    if (diffMs < 2 * day) return "أمس";
+    if (diffMs < 30 * day) return `منذ ${Math.floor(diffMs / day)} يوم`;
+    return d.toLocaleDateString("ar-EG");
+  }
 
   async function importUsers(rows: any[]) {
     let ok = 0, fail = 0;
@@ -333,8 +358,8 @@ function UsersManager() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <StatTile icon={UsersIcon} label="إجمالي المستخدمين" value={stats.total} tone="primary" />
         <StatTile icon={ShieldCheck} label="المشرفون" value={stats.admins} tone="green" />
-        <StatTile icon={Ban} label="ممنوع من الإيجار" value={stats.noRental} tone="amber" />
-        <StatTile icon={Ban} label="ممنوع من التسجيل" value={stats.noTrips} tone="rose" />
+        <StatTile icon={Eye} label="استخدموا الحساب" value={stats.used} tone="green" />
+        <StatTile icon={Ban} label="لم يستخدموا الحساب" value={stats.never} tone="amber" />
       </div>
 
       <Card>
@@ -400,12 +425,20 @@ function UsersManager() {
                 <UiSelectItem value="user">مستخدمون عاديون</UiSelectItem>
               </UiSelectContent>
             </UiSelect>
+            <UiSelect value={usageFilter} onValueChange={(v: any) => setUsageFilter(v)}>
+              <UiSelectTrigger className="w-full sm:w-[170px]"><UiSelectValue /></UiSelectTrigger>
+              <UiSelectContent>
+                <UiSelectItem value="all">الكل (استخدم/لم يستخدم)</UiSelectItem>
+                <UiSelectItem value="used">استخدم الحساب</UiSelectItem>
+                <UiSelectItem value="never">لم يستخدم بعد</UiSelectItem>
+              </UiSelectContent>
+            </UiSelect>
           </div>
 
-          {isLoading && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
+          {(isLoading || isFetching) && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
 
           <div className="text-xs text-muted-foreground">
-            عرض {filteredUsers.length} من {allUsers.length}
+            عرض {pagedUsers.length} من {filteredUsers.length} (الإجمالي {allUsers.length})
           </div>
 
           {/* Desktop table */}
@@ -414,6 +447,7 @@ function UsersManager() {
               <thead className="bg-muted/50 text-xs">
                 <tr className="[&>th]:p-2 [&>th]:text-right">
                   <th>المستخدم</th>
+                  <th className="w-[140px]">آخر دخول</th>
                   <th className="w-[110px]">الدور</th>
                   <th className="w-[150px]">سيارات الإيجار</th>
                   <th className="w-[150px]">تسجيل الرحلات</th>
@@ -421,9 +455,10 @@ function UsersManager() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((u: any) => {
+                {pagedUsers.map((u: any) => {
                   const isAdmin = u.roles.includes("admin");
                   const isViewer = u.roles.includes("viewer");
+                  const used = !!u.last_sign_in_at;
                   return (
                     <tr key={u.id} className="border-t align-middle [&>td]:p-2">
                       <td>
@@ -435,6 +470,16 @@ function UsersManager() {
                           {!isAdmin && !isViewer && <Badge variant="secondary" className="text-xs">مستخدم</Badge>}
                           {u.must_change_password && <Badge variant="outline" className="text-xs">بدون كلمة مرور</Badge>}
                         </div>
+                      </td>
+                      <td>
+                        {used ? (
+                          <div>
+                            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">استخدم</Badge>
+                            <div className="text-xs text-muted-foreground mt-1">{formatLastSignIn(u.last_sign_in_at)}</div>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">لم يستخدم</Badge>
+                        )}
                       </td>
                       <td>
                         <div className="flex flex-col gap-1">
@@ -477,9 +522,10 @@ function UsersManager() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
-            {filteredUsers.map((u: any) => {
+            {pagedUsers.map((u: any) => {
               const isAdmin = u.roles.includes("admin");
               const isViewer = u.roles.includes("viewer");
+              const used = !!u.last_sign_in_at;
               return (
                 <div key={u.id} className="rounded-md border p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -490,6 +536,11 @@ function UsersManager() {
                         {isAdmin && <Badge className="bg-primary text-xs"><Shield className="size-3 ml-1" /> أدمن</Badge>}
                         {isViewer && <Badge className="bg-blue-600 hover:bg-blue-600 text-xs">مطّلع</Badge>}
                         {!isAdmin && !isViewer && <Badge variant="secondary" className="text-xs">مستخدم</Badge>}
+                        {used ? (
+                          <Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">استخدم — {formatLastSignIn(u.last_sign_in_at)}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">لم يستخدم</Badge>
+                        )}
                       </div>
                     </div>
                     <Button size="sm" variant="ghost" onClick={() => del(u)}>
@@ -527,6 +578,14 @@ function UsersManager() {
               );
             })}
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-2 pt-2">
+              <Button size="sm" variant="outline" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>السابق</Button>
+              <div className="text-xs text-muted-foreground">صفحة {currentPage} من {totalPages}</div>
+              <Button size="sm" variant="outline" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>التالي</Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

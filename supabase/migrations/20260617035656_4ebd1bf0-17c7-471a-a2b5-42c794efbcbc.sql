@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_segments ALTER COLUMN created_by DROP NOT NULL;

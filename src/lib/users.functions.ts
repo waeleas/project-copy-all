@@ -260,3 +260,63 @@ export const firstTimeSetPassword = createServerFn({ method: "POST" })
 
     return { email: u.user.email ?? "", error: null, message: null };
   });
+
+// ===== Create user accounts for drivers =====
+
+function driverUsername(d: { id: string; sap_number: string | null; name: string }) {
+  const sap = (d.sap_number ?? "").trim();
+  if (sap && /^[a-zA-Z0-9._-]{3,40}$/.test(sap)) return sap.toLowerCase();
+  return `driver_${d.id.slice(0, 8)}`.toLowerCase();
+}
+
+export const createUsersForAllDrivers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: drivers, error } = await supabaseAdmin
+      .from("drivers")
+      .select("id, name, sap_number");
+    if (error) throw error;
+
+    let created = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (const d of drivers ?? []) {
+      const username = driverUsername(d as any);
+      const email = usernameToEmail(username);
+
+      const { data: exists } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id")
+        .ilike("username", username)
+        .maybeSingle();
+      if (exists) { skipped++; continue; }
+
+      const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: DEFAULT_PASSWORD,
+        email_confirm: true,
+        user_metadata: { username, display_name: d.name },
+      });
+      if (createErr || !newUser?.user) {
+        errors.push(`${d.name}: ${createErr?.message ?? "فشل"}`);
+        continue;
+      }
+      await supabaseAdmin.from("user_roles").insert({ user_id: newUser.user.id, role: "user" });
+      await supabaseAdmin.from("profiles").upsert(
+        {
+          user_id: newUser.user.id,
+          username,
+          display_name: d.name,
+          must_change_password: false,
+        },
+        { onConflict: "user_id" }
+      );
+      created++;
+    }
+
+    return { created, skipped, errors };
+  });

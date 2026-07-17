@@ -149,6 +149,12 @@ function NewTrip() {
         start_photo_url: path,
         car_code: form.car_code || null,
         car_plate: form.car_plate || null,
+        car_description: (() => {
+          const car = form.car_type === "rental"
+            ? cars.data?.find((c) => c.type === "rental" && (c.handheld_code === form.handheld_code || c.plate === form.car_plate))
+            : cars.data?.find((c) => c.code === form.car_code);
+          return car?.description ?? null;
+        })(),
         handheld_code: form.car_type === "rental" ? (form.handheld_code || null) : null,
       } as any).select().single();
       if (error) throw error;

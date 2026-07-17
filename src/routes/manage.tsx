@@ -30,6 +30,9 @@ function Manage() {
   const [activeTab, setActiveTab] = usePersistedState("manage.tab", "users");
 
 
+  const [activeTab, setActiveTab] = usePersistedState("manage.tab", "users");
+
+
   useEffect(() => {
     if (!loading && !isAdmin) {
       toast.error("هذه الصفحة للأدمن فقط");
@@ -48,7 +51,7 @@ function Manage() {
         <p className="text-sm text-muted-foreground">إدارة المكاتب ومتلقي الخدمة أو فنى والسائقين والمستخدمين</p>
       </div>
 
-      <PersistedTabs />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full h-auto">
           <TabsTrigger value="users">المستخدمون</TabsTrigger>
           <TabsTrigger value="offices">المكاتب</TabsTrigger>

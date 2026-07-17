@@ -372,9 +372,10 @@ export const setUserOverride = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const patch: any = { [data.key]: data.value };
     const { error } = await supabaseAdmin
       .from("profiles")
-      .update({ [data.key]: data.value })
+      .update(patch)
       .eq("user_id", data.user_id);
     if (error) throw error;
     return { ok: true };

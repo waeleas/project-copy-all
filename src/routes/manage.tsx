@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Trash2, Loader2, Shield, UserPlus } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-is-admin";
-import { listUsersWithRoles, setUserAdmin, setUserViewer, createUser, deleteUser, updateUserPassword } from "@/lib/users.functions";
+import { listUsersWithRoles, setUserAdmin, setUserViewer, createUser, deleteUser, updateUserPassword, createUsersForAllDrivers } from "@/lib/users.functions";
 import { DataToolbar, exportToXlsx, pick } from "@/components/data-toolbar";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 
@@ -269,6 +269,23 @@ function DriversManager() {
   const [type, setType] = usePersistedState<"company" | "rental">("drivers.type", "company");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [creatingUsers, setCreatingUsers] = useState(false);
+  const createDriverUsers = useServerFn(createUsersForAllDrivers);
+
+  async function generateUsers() {
+    if (!confirm("سيتم إنشاء حساب مستخدم لكل سائق ليس لديه حساب (كلمة السر 123456). متابعة؟")) return;
+    setCreatingUsers(true);
+    try {
+      const res: any = await createDriverUsers({});
+      const msg = `تم إنشاء ${res.created} حساب، تم تخطي ${res.skipped}` + (res.errors?.length ? ` — أخطاء: ${res.errors.length}` : "");
+      if (res.errors?.length) toast.warning(msg); else toast.success(msg);
+      qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+    } catch (e: any) {
+      toast.error(arabicError(e));
+    } finally {
+      setCreatingUsers(false);
+    }
+  }
 
 
   const { data, isLoading } = useQuery({
@@ -330,7 +347,12 @@ function DriversManager() {
           <div className="flex gap-2 items-center">
             <Button type="button" variant={type === "company" ? "default" : "outline"} onClick={() => setType("company")}>شركة</Button>
             <Button type="button" variant={type === "rental" ? "default" : "outline"} onClick={() => setType("rental")}>إيجار</Button>
-          </div>
+        </div>
+
+        <Button type="button" variant="outline" onClick={generateUsers} disabled={creatingUsers} className="w-full">
+          {creatingUsers ? <Loader2 className="size-4 animate-spin ml-2" /> : <UserPlus className="size-4 ml-2" />}
+          إنشاء حسابات مستخدمين للسائقين (كلمة السر 123456)
+        </Button>
           <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
             <Input placeholder="اسم السائق" value={name} onChange={(e) => setName(e.target.value)} />
             <Input placeholder={type === "company" ? "رقم الساب" : "بدون ساب (إيجار)"} value={sap} onChange={(e) => setSap(e.target.value)} disabled={type === "rental"} dir="ltr" />

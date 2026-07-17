@@ -550,7 +550,7 @@ function CarsManager() {
           search={search}
           onSearch={setSearch}
           onExport={() => exportToXlsx(`cars-${type}.xlsx`, (data ?? []).map((c: any) => ({
-            code: c.code, plate: c.plate, type: c.type,
+            code: c.code, plate: c.plate, type: c.type, description: c.description ?? "",
             handheld_code: c.handheld_code, route_code: c.route_code, route_description: c.route_description,
             office: c.follow_office?.name ?? "",
           })))}

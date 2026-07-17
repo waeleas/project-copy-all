@@ -77,11 +77,105 @@ function Manage() {
 }
 
 
+function AppSettingsCard() {
+  const qc = useQueryClient();
+  const getSettings = useServerFn(getAppSettings);
+  const updateSettings = useServerFn(updateAppSettings);
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: () => getSettings(),
+  });
+
+  async function toggle(key: "rental_cars_visible" | "trip_creation_enabled", value: boolean) {
+    try {
+      await updateSettings({ data: { [key]: value } as any });
+      qc.invalidateQueries({ queryKey: ["app-settings"] });
+      qc.invalidateQueries({ queryKey: ["cars"] });
+      toast.success("تم حفظ الإعداد");
+    } catch (e: any) {
+      toast.error(e.message ?? "فشل");
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <ShieldCheck className="size-4" /> الإعدادات العامة
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <CarIcon className="size-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">إظهار سيارات الإيجار للجميع</div>
+                  <div className="text-xs text-muted-foreground">يمكن استثناء مستخدمين محددين من القائمة أدناه.</div>
+                </div>
+              </div>
+              <Switch
+                checked={!!settings?.rental_cars_visible}
+                onCheckedChange={(v) => toggle("rental_cars_visible", v)}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <ListChecks className="size-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">السماح بتسجيل الرحلات للجميع</div>
+                  <div className="text-xs text-muted-foreground">إغلاق هذا المفتاح يمنع كل المستخدمين إلا الاستثناءات والمشرفين.</div>
+                </div>
+              </div>
+              <Switch
+                checked={!!settings?.trip_creation_enabled}
+                onCheckedChange={(v) => toggle("trip_creation_enabled", v)}
+              />
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function OverrideSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: boolean | null;
+  onChange: (v: boolean | null) => void;
+  disabled?: boolean;
+}) {
+  const str = value === null ? "default" : value ? "allow" : "deny";
+  return (
+    <UiSelect
+      value={str}
+      onValueChange={(v) => onChange(v === "default" ? null : v === "allow")}
+      disabled={disabled}
+    >
+      <UiSelectTrigger className="h-8 w-[130px] text-xs">
+        <UiSelectValue />
+      </UiSelectTrigger>
+      <UiSelectContent>
+        <UiSelectItem value="default">حسب الإعداد العام</UiSelectItem>
+        <UiSelectItem value="allow">مسموح</UiSelectItem>
+        <UiSelectItem value="deny">ممنوع</UiSelectItem>
+      </UiSelectContent>
+    </UiSelect>
+  );
+}
+
 function UsersManager() {
   const qc = useQueryClient();
   const list = useServerFn(listUsersWithRoles);
   const setAdmin = useServerFn(setUserAdmin);
   const setViewer = useServerFn(setUserViewer);
+  const setOverride = useServerFn(setUserOverride);
   const create = useServerFn(createUser);
   const remove = useServerFn(deleteUser);
   const changePassword = useServerFn(updateUserPassword);
@@ -97,9 +191,20 @@ function UsersManager() {
   const [makeAdmin, setMakeAdmin] = usePersistedState<boolean>("users.make_admin", false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = usePersistedState<"all" | "admin" | "viewer" | "user">("users.filter", "all");
 
+  const allUsers = users ?? [];
+  const stats = {
+    total: allUsers.length,
+    admins: allUsers.filter((u: any) => u.roles.includes("admin")).length,
+    noRental: allUsers.filter((u: any) => u.rental_cars_override === false).length,
+    noTrips: allUsers.filter((u: any) => u.trip_create_override === false).length,
+  };
 
-  const filteredUsers = (users ?? []).filter((u: any) => {
+  const filteredUsers = allUsers.filter((u: any) => {
+    if (roleFilter === "admin" && !u.roles.includes("admin")) return false;
+    if (roleFilter === "viewer" && !u.roles.includes("viewer")) return false;
+    if (roleFilter === "user" && (u.roles.includes("admin") || u.roles.includes("viewer"))) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     return [u.username, u.display_name, u.email].some((v) => (v ?? "").toString().toLowerCase().includes(q));
@@ -135,7 +240,7 @@ function UsersManager() {
       });
       setUsername(""); setDisplayName(""); setEmail(""); setMakeAdmin(false);
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
-      toast.success("تم إنشاء المستخدم — سيتم طلب كلمة المرور عند أول دخول");
+      toast.success("تم إنشاء المستخدم");
     } catch (e: any) {
       toast.error(e.message ?? "فشل");
     } finally {
@@ -148,10 +253,7 @@ function UsersManager() {
     try {
       await setAdmin({ data: { user_id: u.id, is_admin: !isAdmin } });
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
-      toast.success(isAdmin ? "تم إزالة صلاحية الأدمن" : "تم منح صلاحية الأدمن");
-    } catch (e: any) {
-      toast.error(e.message ?? "فشل");
-    }
+    } catch (e: any) { toast.error(e.message ?? "فشل"); }
   }
 
   async function toggleViewer(u: any) {
@@ -159,10 +261,15 @@ function UsersManager() {
     try {
       await setViewer({ data: { user_id: u.id, is_viewer: !isViewer } });
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
-      toast.success(isViewer ? "تم إزالة صلاحية الاطلاع" : "تم منح صلاحية الاطلاع على جميع الرحلات");
-    } catch (e: any) {
-      toast.error(e.message ?? "فشل");
-    }
+    } catch (e: any) { toast.error(e.message ?? "فشل"); }
+  }
+
+  async function changeOverride(u: any, key: "rental_cars_override" | "trip_create_override", value: boolean | null) {
+    try {
+      await setOverride({ data: { user_id: u.id, key, value } });
+      qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+      toast.success("تم الحفظ");
+    } catch (e: any) { toast.error(e.message ?? "فشل"); }
   }
 
   async function del(u: any) {
@@ -171,9 +278,7 @@ function UsersManager() {
       await remove({ data: { user_id: u.id } });
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
       toast.success("تم الحذف");
-    } catch (e: any) {
-      toast.error(e.message ?? "فشل");
-    }
+    } catch (e: any) { toast.error(e.message ?? "فشل"); }
   }
 
   async function changePwd(u: any) {
@@ -183,86 +288,235 @@ function UsersManager() {
     try {
       await changePassword({ data: { user_id: u.id, password: pwd } });
       toast.success("تم تغيير كلمة المرور");
-    } catch (e: any) {
-      toast.error(e.message ?? "فشل");
-    }
+    } catch (e: any) { toast.error(e.message ?? "فشل"); }
   }
 
   return (
-    <Card className="mt-4">
-      <CardHeader><CardTitle className="text-base flex items-center gap-2"><UserPlus className="size-4" /> إدارة المستخدمين</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div className="space-y-1"><Label className="text-xs">اسم المستخدم (يوزر)</Label>
-            <Input dir="ltr" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ahmed.ali" />
-          </div>
-          <div className="space-y-1"><Label className="text-xs">الاسم الكامل</Label>
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="أحمد علي" />
-          </div>
-          <div className="space-y-1 sm:col-span-2"><Label className="text-xs">البريد الإلكتروني (اختياري)</Label>
-            <Input type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="اتركه فارغًا لتوليده تلقائيًا" />
-          </div>
-          <div className="flex items-center justify-between gap-2 sm:col-span-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={makeAdmin} onChange={(e) => setMakeAdmin(e.target.checked)} />
-              صلاحية أدمن
-            </label>
-            <Button onClick={add} disabled={saving} className="gap-1">
-              {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-              إضافة مستخدم
-            </Button>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          المستخدم الجديد يعين كلمة المرور بنفسه عند أول دخول من تبويب «أول دخول» في صفحة تسجيل الدخول.
-        </p>
+    <div className="mt-4 space-y-4">
+      <AppSettingsCard />
 
-        <DataToolbar
-          search={search}
-          onSearch={setSearch}
-          onExport={() => exportToXlsx("users.xlsx", (users ?? []).map((u: any) => ({ username: u.username, display_name: u.display_name, email: u.email, is_admin: u.roles.includes("admin") ? 1 : 0, is_viewer: u.roles.includes("viewer") ? 1 : 0 })))}
-          onImportRows={importUsers}
-          placeholder="بحث بالاسم أو اليوزر..."
-        />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <StatTile icon={UsersIcon} label="إجمالي المستخدمين" value={stats.total} tone="primary" />
+        <StatTile icon={ShieldCheck} label="المشرفون" value={stats.admins} tone="green" />
+        <StatTile icon={Ban} label="ممنوع من الإيجار" value={stats.noRental} tone="amber" />
+        <StatTile icon={Ban} label="ممنوع من التسجيل" value={stats.noTrips} tone="rose" />
+      </div>
 
-        <div className="space-y-1.5">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <UserPlus className="size-4" /> إضافة مستخدم جديد
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-1"><Label className="text-xs">اسم المستخدم (يوزر)</Label>
+              <Input dir="ltr" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ahmed.ali" />
+            </div>
+            <div className="space-y-1"><Label className="text-xs">الاسم الكامل</Label>
+              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="أحمد علي" />
+            </div>
+            <div className="space-y-1 sm:col-span-2"><Label className="text-xs">البريد الإلكتروني (اختياري)</Label>
+              <Input type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="اتركه فارغًا لتوليده تلقائيًا" />
+            </div>
+            <div className="flex items-center justify-between gap-2 sm:col-span-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={makeAdmin} onChange={(e) => setMakeAdmin(e.target.checked)} />
+                صلاحية أدمن
+              </label>
+              <Button onClick={add} disabled={saving} className="gap-1">
+                {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                إضافة مستخدم
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <UsersIcon className="size-4" /> قائمة المستخدمين
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex-1">
+              <DataToolbar
+                search={search}
+                onSearch={setSearch}
+                onExport={() => exportToXlsx("users.xlsx", allUsers.map((u: any) => ({
+                  username: u.username, display_name: u.display_name, email: u.email,
+                  is_admin: u.roles.includes("admin") ? 1 : 0,
+                  is_viewer: u.roles.includes("viewer") ? 1 : 0,
+                  rental_cars: u.rental_cars_override === null ? "افتراضي" : u.rental_cars_override ? "مسموح" : "ممنوع",
+                  trip_create: u.trip_create_override === null ? "افتراضي" : u.trip_create_override ? "مسموح" : "ممنوع",
+                })))}
+                onImportRows={importUsers}
+                placeholder="بحث بالاسم أو اليوزر..."
+              />
+            </div>
+            <UiSelect value={roleFilter} onValueChange={(v: any) => setRoleFilter(v)}>
+              <UiSelectTrigger className="w-full sm:w-[160px]"><UiSelectValue /></UiSelectTrigger>
+              <UiSelectContent>
+                <UiSelectItem value="all">كل الأدوار</UiSelectItem>
+                <UiSelectItem value="admin">المشرفون فقط</UiSelectItem>
+                <UiSelectItem value="viewer">المطّلعون فقط</UiSelectItem>
+                <UiSelectItem value="user">مستخدمون عاديون</UiSelectItem>
+              </UiSelectContent>
+            </UiSelect>
+          </div>
+
           {isLoading && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
-          {filteredUsers.map((u: any) => {
-            const admin = u.roles.includes("admin");
-            const viewer = u.roles.includes("viewer");
-            return (
-              <div key={u.id} className="bg-muted/50 rounded-md p-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="text-sm min-w-0">
-                  <div className="font-medium truncate">{u.display_name ?? u.username ?? u.email}</div>
-                  <div className="text-xs text-muted-foreground truncate" dir="ltr">@{u.username ?? "—"}</div>
-                  <div className="text-xs mt-1 flex flex-wrap items-center gap-1">
-                    {admin ? <Badge className="bg-primary"><Shield className="size-3 ml-1" /> أدمن</Badge> : <Badge variant="secondary">مستخدم</Badge>}
-                    {viewer && <Badge className="bg-blue-600 hover:bg-blue-600">مُطّلع على الكل</Badge>}
-                    {u.must_change_password && <Badge variant="outline">لم يعيّن كلمة مرور بعد</Badge>}
+
+          <div className="text-xs text-muted-foreground">
+            عرض {filteredUsers.length} من {allUsers.length}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto rounded-md border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs">
+                <tr className="[&>th]:p-2 [&>th]:text-right">
+                  <th>المستخدم</th>
+                  <th className="w-[110px]">الدور</th>
+                  <th className="w-[150px]">سيارات الإيجار</th>
+                  <th className="w-[150px]">تسجيل الرحلات</th>
+                  <th className="w-[240px]">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((u: any) => {
+                  const isAdmin = u.roles.includes("admin");
+                  const isViewer = u.roles.includes("viewer");
+                  return (
+                    <tr key={u.id} className="border-t align-middle [&>td]:p-2">
+                      <td>
+                        <div className="font-medium truncate">{u.display_name ?? u.username ?? u.email}</div>
+                        <div className="text-xs text-muted-foreground truncate" dir="ltr">@{u.username ?? "—"}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {isAdmin && <Badge className="bg-primary text-xs"><Shield className="size-3 ml-1" /> أدمن</Badge>}
+                          {isViewer && <Badge className="bg-blue-600 hover:bg-blue-600 text-xs"><Eye className="size-3 ml-1" /> مطّلع</Badge>}
+                          {!isAdmin && !isViewer && <Badge variant="secondary" className="text-xs">مستخدم</Badge>}
+                          {u.must_change_password && <Badge variant="outline" className="text-xs">بدون كلمة مرور</Badge>}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex flex-col gap-1">
+                          <label className="flex items-center gap-1 text-xs">
+                            <Switch checked={isAdmin} onCheckedChange={() => toggle(u)} /> أدمن
+                          </label>
+                          <label className="flex items-center gap-1 text-xs">
+                            <Switch checked={isViewer} onCheckedChange={() => toggleViewer(u)} /> مطّلع
+                          </label>
+                        </div>
+                      </td>
+                      <td>
+                        <OverrideSelect
+                          value={u.rental_cars_override}
+                          disabled={isAdmin}
+                          onChange={(v) => changeOverride(u, "rental_cars_override", v)}
+                        />
+                      </td>
+                      <td>
+                        <OverrideSelect
+                          value={u.trip_create_override}
+                          disabled={isAdmin}
+                          onChange={(v) => changeOverride(u, "trip_create_override", v)}
+                        />
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap gap-1">
+                          <Button size="sm" variant="outline" onClick={() => changePwd(u)}>كلمة المرور</Button>
+                          <Button size="sm" variant="ghost" onClick={() => del(u)}>
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-2">
+            {filteredUsers.map((u: any) => {
+              const isAdmin = u.roles.includes("admin");
+              const isViewer = u.roles.includes("viewer");
+              return (
+                <div key={u.id} className="rounded-md border p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{u.display_name ?? u.username ?? u.email}</div>
+                      <div className="text-xs text-muted-foreground truncate" dir="ltr">@{u.username ?? "—"}</div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {isAdmin && <Badge className="bg-primary text-xs"><Shield className="size-3 ml-1" /> أدمن</Badge>}
+                        {isViewer && <Badge className="bg-blue-600 hover:bg-blue-600 text-xs">مطّلع</Badge>}
+                        {!isAdmin && !isViewer && <Badge variant="secondary" className="text-xs">مستخدم</Badge>}
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => del(u)}>
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
                   </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:justify-end">
-                  <Button size="sm" variant="outline" onClick={() => toggle(u)}>
-                    {admin ? "إزالة أدمن" : "ترقية لأدمن"}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => toggleViewer(u)}>
-                    {viewer ? "إزالة الاطلاع" : "السماح بالاطلاع على الكل"}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => changePwd(u)}>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <label className="flex items-center justify-between gap-1 rounded border p-2">
+                      أدمن <Switch checked={isAdmin} onCheckedChange={() => toggle(u)} />
+                    </label>
+                    <label className="flex items-center justify-between gap-1 rounded border p-2">
+                      مطّلع <Switch checked={isViewer} onCheckedChange={() => toggleViewer(u)} />
+                    </label>
+                    <div className="rounded border p-2">
+                      <div className="mb-1 text-muted-foreground">سيارات الإيجار</div>
+                      <OverrideSelect
+                        value={u.rental_cars_override}
+                        disabled={isAdmin}
+                        onChange={(v) => changeOverride(u, "rental_cars_override", v)}
+                      />
+                    </div>
+                    <div className="rounded border p-2">
+                      <div className="mb-1 text-muted-foreground">تسجيل الرحلات</div>
+                      <OverrideSelect
+                        value={u.trip_create_override}
+                        disabled={isAdmin}
+                        onChange={(v) => changeOverride(u, "trip_create_override", v)}
+                      />
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" className="w-full" onClick={() => changePwd(u)}>
                     تغيير كلمة المرور
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => del(u)}>
-                    <Trash2 className="size-4 text-destructive" />
-                  </Button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
+
+function StatTile({ icon: Icon, label, value, tone }: { icon: any; label: string; value: number; tone: "primary" | "green" | "amber" | "rose" }) {
+  const bg =
+    tone === "primary" ? "bg-primary/10 text-primary" :
+    tone === "green" ? "bg-emerald-100 text-emerald-700" :
+    tone === "amber" ? "bg-amber-100 text-amber-700" :
+    "bg-rose-100 text-rose-700";
+  return (
+    <div className="rounded-lg border bg-card p-3 flex items-center gap-3">
+      <div className={`size-10 rounded-lg flex items-center justify-center ${bg}`}>
+        <Icon className="size-5" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-lg font-bold leading-tight">{value}</div>
+        <div className="text-xs text-muted-foreground truncate">{label}</div>
+      </div>
+    </div>
+  );
+}
+
 
 
 function DriversManager() {

@@ -135,7 +135,7 @@ function NewTrip() {
 
         office_id: form.car_type === "rental" ? (form.office_id || null) : null,
         manager_id: form.manager_id || null,
-        technician_id: form.technician_id || null,
+        technician_id: form.technician_id && form.technician_id !== "__none__" ? form.technician_id : null,
         driver_id: form.car_type === "rental" ? null : (form.driver_id || null),
         driver_name_rental: form.car_type === "rental" ? (form.driver_name_rental.trim() || null) : null,
         service_type_id: form.service_type_id || null,

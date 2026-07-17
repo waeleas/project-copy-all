@@ -590,6 +590,8 @@ function CarsManager() {
                   </div>
                   <Label className="text-xs">رقم اللوحة</Label>
                   <Input placeholder="رقم اللوحة" value={editing.plate ?? ""} onChange={(e) => setEditing({ ...editing, plate: e.target.value })} />
+                  <Label className="text-xs">وصف السيارة</Label>
+                  <Input placeholder="وصف السيارة" value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
                   {editing.type === "company" ? (
                     <>
                       <Label className="text-xs">كود السيارة</Label>

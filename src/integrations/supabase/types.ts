@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: boolean
+          rental_cars_visible: boolean
+          trip_creation_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          rental_cars_visible?: boolean
+          trip_creation_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          rental_cars_visible?: boolean
+          trip_creation_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cars: {
         Row: {
           code: string | null
@@ -136,6 +157,8 @@ export type Database = {
           display_name: string | null
           id: string
           must_change_password: boolean
+          rental_cars_override: boolean | null
+          trip_create_override: boolean | null
           updated_at: string
           user_id: string
           username: string | null
@@ -145,6 +168,8 @@ export type Database = {
           display_name?: string | null
           id?: string
           must_change_password?: boolean
+          rental_cars_override?: boolean | null
+          trip_create_override?: boolean | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -154,6 +179,8 @@ export type Database = {
           display_name?: string | null
           id?: string
           must_change_password?: boolean
+          rental_cars_override?: boolean | null
+          trip_create_override?: boolean | null
           updated_at?: string
           user_id?: string
           username?: string | null
@@ -411,6 +438,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_create_trips: { Args: { _user_id: string }; Returns: boolean }
+      can_see_rentals: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

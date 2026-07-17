@@ -17,6 +17,7 @@ import { uploadOdometerPhoto } from "@/lib/storage";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";
 import { CameraCapture } from "@/components/camera-capture";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export const Route = createFileRoute("/trips/new")({
   head: () => ({ meta: [{ title: "رحلة جديدة" }] }),

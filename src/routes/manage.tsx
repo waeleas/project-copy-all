@@ -46,7 +46,7 @@ function Manage() {
         <p className="text-sm text-muted-foreground">إدارة المكاتب ومتلقي الخدمة أو فنى والسائقين والمستخدمين</p>
       </div>
 
-      <Tabs defaultValue="users">
+      <PersistedTabs />
         <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full h-auto">
           <TabsTrigger value="users">المستخدمون</TabsTrigger>
           <TabsTrigger value="offices">المكاتب</TabsTrigger>

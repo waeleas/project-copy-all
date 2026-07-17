@@ -1,0 +1,1 @@
+ALTER TABLE public.cars ADD CONSTRAINT cars_follow_office_id_fkey FOREIGN KEY (follow_office_id) REFERENCES public.offices(id) ON DELETE SET NULL;

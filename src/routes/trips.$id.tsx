@@ -386,6 +386,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     if (endVal != null && endVal <= startVal) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
     if (endVal != null && endVal - startVal > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     if (form.car_type === "rental" && !form.office_id) return toast.error("المكتب مطلوب لسيارات الإيجار");
+    if (form.route_start.trim().length > 40) return toast.error("يجب ألا يزيد وصف خط السير عن 40 حرف");
 
     setSaving(true);
     try {
@@ -586,7 +587,8 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
           </div>
 
           <Field label="وصف خط السير">
-            <Textarea value={form.route_start} onChange={(e) => set("route_start", e.target.value)} rows={2} />
+            <Textarea value={form.route_start} maxLength={40} onChange={(e) => set("route_start", e.target.value.slice(0, 40))} rows={2} />
+            <div className="text-xs text-muted-foreground text-left">{form.route_start.length}/40</div>
           </Field>
 
           <Field label="ملاحظات">
@@ -657,6 +659,7 @@ function SegmentsCard({
   async function add(e: FormEvent) {
     e.preventDefault();
     if (!route.trim()) return toast.error("اكتب اسم المسار");
+    if (route.trim().length > 40) return toast.error("يجب ألا يزيد اسم المسار عن 40 حرف");
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -715,7 +718,8 @@ function SegmentsCard({
         {canManage && (
           <form onSubmit={add} className="space-y-2 border-t pt-3">
             <Label>اسم المسار الجديد</Label>
-            <Input value={route} onChange={(e) => setRoute(e.target.value)} placeholder="مثال: من العميل إلى المخزن..." />
+            <Input value={route} maxLength={40} onChange={(e) => setRoute(e.target.value.slice(0, 40))} placeholder="مثال: من العميل إلى المخزن..." />
+            <div className="text-xs text-muted-foreground text-left">{route.length}/40</div>
             <Button type="submit" variant="outline" className="w-full" disabled={saving}>
               {saving && <Loader2 className="ml-2 size-4 animate-spin" />} + إضافة مسار جديد
             </Button>

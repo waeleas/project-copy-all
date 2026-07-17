@@ -566,11 +566,12 @@ function CarsManager() {
               <div className="flex items-center justify-between bg-muted/50 rounded-md p-2.5 gap-2">
                 <div className="text-sm min-w-0">
                   <div className="font-medium">{c.code || "—"} {c.plate && <span className="text-muted-foreground">· لوحة: {c.plate}</span>}</div>
+                  {c.description && <div className="text-xs text-muted-foreground mt-0.5">الوصف: {c.description}</div>}
                   {type === "rental" && (
                     <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
                       {c.handheld_code && <div>كود الهاند هيلد: <span dir="ltr">{c.handheld_code}</span></div>}
                       {c.route_code && <div>كود الخط: <span dir="ltr">{c.route_code}</span></div>}
-                      {c.route_description && <div>الوصف: {c.route_description}</div>}
+                      {c.route_description && <div>وصف الخط: {c.route_description}</div>}
                       {c.follow_office?.name && <div>تابع: {c.follow_office.name}</div>}
                     </div>
                   )}

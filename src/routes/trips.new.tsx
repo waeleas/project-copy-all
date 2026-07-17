@@ -98,7 +98,7 @@ function NewTrip() {
     if (form.car_type === "rental" && !form.office_id) errs.office_id = true;
     if (!form.service_type_id) errs.service_type_id = true;
     if (needsManager && !form.manager_id) errs.manager_id = true;
-    if (!isWorkerTransport && !form.technician_id) errs.technician_id = true;
+    if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") errs.technician_id = true;
     if (form.car_type === "rental" ? !form.driver_name_rental.trim() : !form.driver_id) {
       errs[form.car_type === "rental" ? "driver_name_rental" : "driver_id"] = true;
     }
@@ -135,7 +135,7 @@ function NewTrip() {
 
         office_id: form.car_type === "rental" ? (form.office_id || null) : null,
         manager_id: form.manager_id || null,
-        technician_id: form.technician_id || null,
+        technician_id: form.technician_id && form.technician_id !== "__none__" ? form.technician_id : null,
         driver_id: form.car_type === "rental" ? null : (form.driver_id || null),
         driver_name_rental: form.car_type === "rental" ? (form.driver_name_rental.trim() || null) : null,
         service_type_id: form.service_type_id || null,
@@ -198,7 +198,8 @@ function NewTrip() {
           )}
           {services.data?.find((s) => s.id === form.service_type_id)?.name !== "نقل عاملين" && (
             <Field label="متلقي الخدمة أو فنى (رقم الساب)" invalid={errors.technician_id}>
-              <SapSelect items={technicians.data} value={form.technician_id} onChange={(v) => set("technician_id", v)} placeholder="اختر رقم الساب" />
+              <SapSelect items={technicians.data} value={form.technician_id} onChange={(v) => set("technician_id", v)} placeholder="اختر رقم الساب أو اكتب: لا يوجد" allowNone noneLabel="لا يوجد متلقى خدمة أو فنى" />
+
               {selectedTech && (
                 <div className="mt-2 p-2 rounded-md bg-primary/10 border border-primary/30">
                   <div className="text-xs text-muted-foreground">الاسم</div>
@@ -401,8 +402,8 @@ function LookupSelect({ items, value, onChange, placeholder }: { items?: any[]; 
   );
 }
 
-function SapSelect({ items, value, onChange, placeholder }: { items?: any[]; value: string; onChange: (v: string) => void; placeholder: string }) {
-  return <SapCombobox items={items} value={value} onChange={onChange} placeholder={placeholder} />;
+function SapSelect({ items, value, onChange, placeholder, allowNone, noneLabel }: { items?: any[]; value: string; onChange: (v: string) => void; placeholder: string; allowNone?: boolean; noneLabel?: string }) {
+  return <SapCombobox items={items} value={value} onChange={onChange} placeholder={placeholder} allowNone={allowNone} noneLabel={noneLabel} />;
 }
 
 export function CarCodeCombobox({ items, value, onChange, placeholder }: { items?: any[]; value: string; onChange: (code: string, car?: any) => void; placeholder: string }) {
@@ -464,17 +465,19 @@ export function CarCodeCombobox({ items, value, onChange, placeholder }: { items
   );
 }
 
-export function SapCombobox({ items, value, onChange, placeholder }: { items?: any[]; value: string; onChange: (v: string) => void; placeholder: string }) {
+export function SapCombobox({ items, value, onChange, placeholder, allowNone, noneLabel }: { items?: any[]; value: string; onChange: (v: string) => void; placeholder: string; allowNone?: boolean; noneLabel?: string }) {
+  const NONE = "__none__";
+  const noneText = noneLabel ?? "لا يوجد";
   const selected = items?.find((i) => i.id === value);
-  const [text, setText] = useState<string>(selected?.sap_number ?? "");
+  const initialText = value === NONE ? noneText : (selected?.sap_number ?? "");
+  const [text, setText] = useState<string>(initialText);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (value === NONE) { if (text !== noneText) setText(noneText); return; }
     if (selected && selected.sap_number !== text) setText(selected.sap_number ?? "");
-    if (!value && text && !items?.some((i) => i.sap_number === text)) {
-      // keep manual text
-    }
+    if (!value && text === noneText) setText("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
@@ -491,6 +494,7 @@ export function SapCombobox({ items, value, onChange, placeholder }: { items?: a
     if (!q) return true;
     return (i.sap_number ?? "").toLowerCase().includes(q) || (i.name ?? "").toLowerCase().includes(q);
   }).slice(0, 50);
+  const showNone = allowNone && (q === "" || "لا يوجد".includes(q) || q.includes("لا"));
 
   return (
     <div ref={wrapRef} className="relative">
@@ -503,12 +507,22 @@ export function SapCombobox({ items, value, onChange, placeholder }: { items?: a
           const v = e.target.value;
           setText(v);
           setOpen(true);
+          if (allowNone && v.trim() === noneText) { onChange(NONE); return; }
           const match = items?.find((i) => i.sap_number === v);
           onChange(match ? match.id : "");
         }}
       />
-      {open && filtered.length > 0 && (
+      {open && (filtered.length > 0 || showNone) && (
         <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-md border bg-popover shadow-lg">
+          {showNone && (
+            <button
+              type="button"
+              className="w-full text-right px-3 py-2 text-sm hover:bg-accent border-b bg-muted/40"
+              onClick={() => { setText(noneText); onChange(NONE); setOpen(false); }}
+            >
+              {noneText}
+            </button>
+          )}
           {filtered.map((i) => (
             <button
               key={i.id}
@@ -527,6 +541,7 @@ export function SapCombobox({ items, value, onChange, placeholder }: { items?: a
         </div>
       )}
       {selected && <div className="mt-1 text-xs text-muted-foreground">{selected.name}</div>}
+      {value === NONE && <div className="mt-1 text-xs text-muted-foreground">{noneText}</div>}
     </div>
   );
 }

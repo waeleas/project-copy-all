@@ -28,7 +28,7 @@ export const listUsersWithRoles = createServerFn({ method: "GET" })
     const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role");
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
-      .select("user_id, username, display_name, must_change_password");
+      .select("user_id, username, display_name, must_change_password, rental_cars_override, trip_create_override");
 
     const rolesByUser = new Map<string, string[]>();
     (roles ?? []).forEach((r: any) => {

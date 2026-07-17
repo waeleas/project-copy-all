@@ -186,21 +186,24 @@ function NewTrip() {
         <p className="text-sm text-muted-foreground">سجّل بداية خط السير وصورة العداد</p>
       </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">نوع السيارة</CardTitle></CardHeader>
-        <CardContent>
-          <RadioGroup value={form.car_type} onValueChange={(v) => set("car_type", v)} className="grid grid-cols-2 gap-3">
-            <label className={`border-2 rounded-lg p-3 cursor-pointer flex items-center gap-2 ${form.car_type === "company" ? "border-primary bg-primary/5" : "border-border"}`}>
-              <RadioGroupItem value="company" />
-              <span className="font-medium">سيارة شركة</span>
-            </label>
-            <label className={`border-2 rounded-lg p-3 cursor-pointer flex items-center gap-2 ${form.car_type === "rental" ? "border-primary bg-primary/5" : "border-border"}`}>
-              <RadioGroupItem value="rental" />
-              <span className="font-medium">سيارات إيجار</span>
-            </label>
-          </RadioGroup>
-        </CardContent>
-      </Card>
+      {canSeeRentals && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">نوع السيارة</CardTitle></CardHeader>
+          <CardContent>
+            <RadioGroup value={form.car_type} onValueChange={(v) => set("car_type", v)} className="grid grid-cols-2 gap-3">
+              <label className={`border-2 rounded-lg p-3 cursor-pointer flex items-center gap-2 ${form.car_type === "company" ? "border-primary bg-primary/5" : "border-border"}`}>
+                <RadioGroupItem value="company" />
+                <span className="font-medium">سيارة شركة</span>
+              </label>
+              <label className={`border-2 rounded-lg p-3 cursor-pointer flex items-center gap-2 ${form.car_type === "rental" ? "border-primary bg-primary/5" : "border-border"}`}>
+                <RadioGroupItem value="rental" />
+                <span className="font-medium">سيارات إيجار</span>
+              </label>
+            </RadioGroup>
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader><CardTitle className="text-base">بيانات الرحلة</CardTitle></CardHeader>

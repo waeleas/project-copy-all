@@ -465,17 +465,19 @@ export function CarCodeCombobox({ items, value, onChange, placeholder }: { items
   );
 }
 
-export function SapCombobox({ items, value, onChange, placeholder }: { items?: any[]; value: string; onChange: (v: string) => void; placeholder: string }) {
+export function SapCombobox({ items, value, onChange, placeholder, allowNone, noneLabel }: { items?: any[]; value: string; onChange: (v: string) => void; placeholder: string; allowNone?: boolean; noneLabel?: string }) {
+  const NONE = "__none__";
+  const noneText = noneLabel ?? "لا يوجد";
   const selected = items?.find((i) => i.id === value);
-  const [text, setText] = useState<string>(selected?.sap_number ?? "");
+  const initialText = value === NONE ? noneText : (selected?.sap_number ?? "");
+  const [text, setText] = useState<string>(initialText);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (value === NONE) { if (text !== noneText) setText(noneText); return; }
     if (selected && selected.sap_number !== text) setText(selected.sap_number ?? "");
-    if (!value && text && !items?.some((i) => i.sap_number === text)) {
-      // keep manual text
-    }
+    if (!value && text === noneText) setText("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
@@ -492,6 +494,7 @@ export function SapCombobox({ items, value, onChange, placeholder }: { items?: a
     if (!q) return true;
     return (i.sap_number ?? "").toLowerCase().includes(q) || (i.name ?? "").toLowerCase().includes(q);
   }).slice(0, 50);
+  const showNone = allowNone && (q === "" || "لا يوجد".includes(q) || q.includes("لا"));
 
   return (
     <div ref={wrapRef} className="relative">
@@ -504,12 +507,22 @@ export function SapCombobox({ items, value, onChange, placeholder }: { items?: a
           const v = e.target.value;
           setText(v);
           setOpen(true);
+          if (allowNone && v.trim() === noneText) { onChange(NONE); return; }
           const match = items?.find((i) => i.sap_number === v);
           onChange(match ? match.id : "");
         }}
       />
-      {open && filtered.length > 0 && (
+      {open && (filtered.length > 0 || showNone) && (
         <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-md border bg-popover shadow-lg">
+          {showNone && (
+            <button
+              type="button"
+              className="w-full text-right px-3 py-2 text-sm hover:bg-accent border-b bg-muted/40"
+              onClick={() => { setText(noneText); onChange(NONE); setOpen(false); }}
+            >
+              {noneText}
+            </button>
+          )}
           {filtered.map((i) => (
             <button
               key={i.id}
@@ -528,6 +541,7 @@ export function SapCombobox({ items, value, onChange, placeholder }: { items?: a
         </div>
       )}
       {selected && <div className="mt-1 text-xs text-muted-foreground">{selected.name}</div>}
+      {value === NONE && <div className="mt-1 text-xs text-muted-foreground">{noneText}</div>}
     </div>
   );
 }

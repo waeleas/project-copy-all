@@ -48,16 +48,14 @@ export function usePermissions() {
     authLoading || adminLoading || settings.isLoading || (!!user?.id && profile.isLoading);
 
   const canSeeRentals =
-    isAdmin ||
-    (profile.data?.rental_cars_override ??
-      settings.data?.rental_cars_visible ??
-      true);
+    profile.data?.rental_cars_override ??
+    settings.data?.rental_cars_visible ??
+    true;
 
   const canCreateTrips =
-    isAdmin ||
-    (profile.data?.trip_create_override ??
-      settings.data?.trip_creation_enabled ??
-      true);
+    profile.data?.trip_create_override ??
+    settings.data?.trip_creation_enabled ??
+    true;
 
   return { loading, canSeeRentals, canCreateTrips, isAdmin };
 }

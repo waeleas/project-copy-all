@@ -98,7 +98,7 @@ function NewTrip() {
     if (form.car_type === "rental" && !form.office_id) errs.office_id = true;
     if (!form.service_type_id) errs.service_type_id = true;
     if (needsManager && !form.manager_id) errs.manager_id = true;
-    if (!isWorkerTransport && !form.technician_id) errs.technician_id = true;
+    if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") errs.technician_id = true;
     if (form.car_type === "rental" ? !form.driver_name_rental.trim() : !form.driver_id) {
       errs[form.car_type === "rental" ? "driver_name_rental" : "driver_id"] = true;
     }

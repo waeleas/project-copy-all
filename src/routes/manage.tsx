@@ -14,7 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Trash2, Loader2, Shield, UserPlus } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-is-admin";
-import { listUsersWithRoles, setUserAdmin, setUserViewer, createUser, deleteUser, updateUserPassword, createUsersForAllDrivers } from "@/lib/users.functions";
+import { listUsersWithRoles, setUserAdmin, setUserViewer, createUser, deleteUser, updateUserPassword, createUsersForAllDrivers, getAppSettings, updateAppSettings, setUserOverride } from "@/lib/users.functions";
+import { Switch } from "@/components/ui/switch";
+import { Select as UiSelect, SelectContent as UiSelectContent, SelectItem as UiSelectItem, SelectTrigger as UiSelectTrigger, SelectValue as UiSelectValue } from "@/components/ui/select";
+import { Car as CarIcon, ListChecks, Users as UsersIcon, ShieldCheck, Eye, Ban } from "lucide-react";
 import { DataToolbar, exportToXlsx, pick } from "@/components/data-toolbar";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 

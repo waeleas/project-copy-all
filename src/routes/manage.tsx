@@ -27,6 +27,8 @@ export const Route = createFileRoute("/manage")({
 function Manage() {
   const { isAdmin, loading } = useIsAdmin();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = usePersistedState("manage.tab", "users");
+
 
   useEffect(() => {
     if (!loading && !isAdmin) {

@@ -359,6 +359,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     service_type_id: trip.service_type_id ?? "",
     car_code: trip.car_code ?? "",
     car_plate: trip.car_plate ?? "",
+    car_description: trip.car_description ?? "",
     handheld_code: trip.handheld_code ?? "",
     route_start: trip.route_start ?? "",
     start_odometer: String(trip.start_odometer ?? ""),

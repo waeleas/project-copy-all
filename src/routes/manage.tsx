@@ -30,7 +30,6 @@ function Manage() {
   const [activeTab, setActiveTab] = usePersistedState("manage.tab", "users");
 
 
-  const [activeTab, setActiveTab] = usePersistedState("manage.tab", "users");
 
 
   useEffect(() => {

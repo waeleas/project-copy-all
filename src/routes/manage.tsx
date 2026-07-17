@@ -27,6 +27,10 @@ export const Route = createFileRoute("/manage")({
 function Manage() {
   const { isAdmin, loading } = useIsAdmin();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = usePersistedState("manage.tab", "users");
+
+
+
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -46,7 +50,7 @@ function Manage() {
         <p className="text-sm text-muted-foreground">إدارة المكاتب ومتلقي الخدمة أو فنى والسائقين والمستخدمين</p>
       </div>
 
-      <Tabs defaultValue="users">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full h-auto">
           <TabsTrigger value="users">المستخدمون</TabsTrigger>
           <TabsTrigger value="offices">المكاتب</TabsTrigger>

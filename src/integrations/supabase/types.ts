@@ -14,16 +14,399 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cars: {
+        Row: {
+          code: string | null
+          created_at: string
+          follow_office_id: string | null
+          handheld_code: string | null
+          id: string
+          plate: string
+          route_code: string | null
+          route_description: string | null
+          type: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          follow_office_id?: string | null
+          handheld_code?: string | null
+          id?: string
+          plate: string
+          route_code?: string | null
+          route_description?: string | null
+          type?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          follow_office_id?: string | null
+          handheld_code?: string | null
+          id?: string
+          plate?: string
+          route_code?: string | null
+          route_description?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      drivers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sap_number: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sap_number?: string | null
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sap_number?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      managers: {
+        Row: {
+          cost_center: string | null
+          created_at: string
+          id: string
+          name: string
+          sap_number: string | null
+        }
+        Insert: {
+          cost_center?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          sap_number?: string | null
+        }
+        Update: {
+          cost_center?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          sap_number?: string | null
+        }
+        Relationships: []
+      }
+      offices: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          must_change_password: boolean
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          must_change_password?: boolean
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          must_change_password?: boolean
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      service_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      technicians: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sap_number: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sap_number: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sap_number?: string
+        }
+        Relationships: []
+      }
+      trip_segments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          odometer: number | null
+          photo_url: string | null
+          route: string
+          sequence: number
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          odometer?: number | null
+          photo_url?: string | null
+          route: string
+          sequence?: number
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          odometer?: number | null
+          photo_url?: string | null
+          route?: string
+          sequence?: number
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_segments_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          car_code: string | null
+          car_plate: string | null
+          car_type: string
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          created_by_name: string | null
+          driver_id: string | null
+          driver_name_rental: string | null
+          end_at: string | null
+          end_odometer: number | null
+          end_photo_url: string | null
+          follow_office_id: string | null
+          handheld_code: string | null
+          id: string
+          manager_id: string | null
+          notes: string | null
+          office_id: string | null
+          route_code: string | null
+          route_start: string
+          service_type_id: string | null
+          start_at: string
+          start_odometer: number
+          start_photo_url: string
+          status: string
+          technician_id: string | null
+          trip_no: number
+          updated_at: string
+        }
+        Insert: {
+          car_code?: string | null
+          car_plate?: string | null
+          car_type?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          created_by_name?: string | null
+          driver_id?: string | null
+          driver_name_rental?: string | null
+          end_at?: string | null
+          end_odometer?: number | null
+          end_photo_url?: string | null
+          follow_office_id?: string | null
+          handheld_code?: string | null
+          id?: string
+          manager_id?: string | null
+          notes?: string | null
+          office_id?: string | null
+          route_code?: string | null
+          route_start: string
+          service_type_id?: string | null
+          start_at?: string
+          start_odometer: number
+          start_photo_url: string
+          status?: string
+          technician_id?: string | null
+          trip_no?: number
+          updated_at?: string
+        }
+        Update: {
+          car_code?: string | null
+          car_plate?: string | null
+          car_type?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          created_by_name?: string | null
+          driver_id?: string | null
+          driver_name_rental?: string | null
+          end_at?: string | null
+          end_odometer?: number | null
+          end_photo_url?: string | null
+          follow_office_id?: string | null
+          handheld_code?: string | null
+          id?: string
+          manager_id?: string | null
+          notes?: string | null
+          office_id?: string | null
+          route_code?: string | null
+          route_start?: string
+          service_type_id?: string | null
+          start_at?: string
+          start_odometer?: number
+          start_photo_url?: string
+          status?: string
+          technician_id?: string | null
+          trip_no?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_follow_office_id_fkey"
+            columns: ["follow_office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +533,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user", "viewer"],
+    },
   },
 } as const

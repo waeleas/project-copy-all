@@ -119,6 +119,7 @@ function TripsList() {
         "كود ساب السائق": t.driver?.sap_number ?? "",
         "كود السيارة": t.car_code ?? "",
         "رقم لوحة السيارة": t.car_plate ?? "",
+        "وصف السيارة": t.car_description ?? "",
         "خط السير": t.route_start ?? "",
         "قراءة العداد (كم)": t.start_odometer,
         "وقت التسجيل": new Date(t.start_at).toLocaleString("ar-EG"),

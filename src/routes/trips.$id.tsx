@@ -185,6 +185,7 @@ function TripDetail() {
           <Info icon={User} label="السائق" value={trip.driver ? `${trip.driver.name} — ${trip.driver.sap_number}` : (trip.driver_name_rental ?? null)} />
           <Info icon={Car} label="كود السيارة" value={trip.car_code} />
           <Info icon={Hash} label="رقم لوحة السيارة" value={trip.car_plate} />
+          <Info icon={Car} label="وصف السيارة" value={trip.car_description} />
           {trip.car_type === "rental" && <Info icon={Hash} label="كود الهاند هيلد" value={trip.handheld_code} />}
           <Info icon={MapPin} label="بداية خط السير" value={trip.route_start} full />
           <Info icon={User} label="منشئ الطلب" value={trip.created_by_name ?? trip.created_by_email} />
@@ -358,6 +359,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     service_type_id: trip.service_type_id ?? "",
     car_code: trip.car_code ?? "",
     car_plate: trip.car_plate ?? "",
+    car_description: trip.car_description ?? "",
     handheld_code: trip.handheld_code ?? "",
     route_start: trip.route_start ?? "",
     start_odometer: String(trip.start_odometer ?? ""),
@@ -375,7 +377,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
   function onCarCodeChange(code: string) {
     const match = cars.data?.find((c) => c.code === code);
-    setForm((p) => ({ ...p, car_code: code, car_plate: match?.plate ?? p.car_plate }));
+    setForm((p) => ({ ...p, car_code: code, car_plate: match?.plate ?? p.car_plate, car_description: match?.description ?? p.car_description }));
   }
 
   async function save(e: FormEvent) {
@@ -400,6 +402,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
         service_type_id: form.service_type_id || null,
         car_code: form.car_code || null,
         car_plate: form.car_plate || null,
+        car_description: form.car_description.trim() || null,
         handheld_code: form.car_type === "rental" ? (form.handheld_code || null) : null,
         route_start: form.route_start,
         start_odometer: startVal,
@@ -534,6 +537,10 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
             <Field label="رقم لوحة السيارة">
               <Input value={form.car_plate} onChange={(e) => set("car_plate", e.target.value)} dir="ltr" />
+            </Field>
+
+            <Field label="وصف السيارة">
+              <Input value={form.car_description} onChange={(e) => set("car_description", e.target.value)} />
             </Field>
 
             {form.car_type === "rental" && (

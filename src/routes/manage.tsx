@@ -398,6 +398,7 @@ function CarsManager() {
   const [type, setType] = usePersistedState<"company" | "rental">("cars.type", "company");
   const [routeCode, setRouteCode] = usePersistedState("cars.route_code", "");
   const [routeDescription, setRouteDescription] = usePersistedState("cars.route_description", "");
+  const [description, setDescription] = usePersistedState("cars.description", "");
   const [followOfficeId, setFollowOfficeId] = usePersistedState("cars.follow_office_id", "");
   const filter = type;
   const [saving, setSaving] = useState(false);
@@ -427,7 +428,7 @@ function CarsManager() {
     if (!plate.trim()) return toast.error("رقم اللوحة مطلوب");
     if (type === "company" && !code.trim()) return toast.error("كود السيارة مطلوب لسيارات الشركة");
     setSaving(true);
-    const payload: any = { plate: plate.trim(), type };
+    const payload: any = { plate: plate.trim(), type, description: description.trim() || null };
     if (type === "company") payload.code = code.trim();
     if (type === "rental") {
       payload.handheld_code = handheldCode.trim() || null;
@@ -438,7 +439,7 @@ function CarsManager() {
     const { error } = await supabase.from("cars" as any).insert(payload);
     setSaving(false);
     if (error) return toast.error(arabicError(error));
-    setCode(""); setPlate(""); setHandheldCode(""); setRouteCode(""); setRouteDescription(""); setFollowOfficeId("");
+    setCode(""); setPlate(""); setHandheldCode(""); setRouteCode(""); setRouteDescription(""); setDescription(""); setFollowOfficeId("");
     qc.invalidateQueries({ queryKey: ["cars"] });
     toast.success("تمت الإضافة");
   }
@@ -455,6 +456,7 @@ function CarsManager() {
     if (!editing) return;
     const payload: any = {
       plate: (editing.plate ?? "").trim() || null,
+      description: (editing.description ?? "").trim() || null,
     };
     if (editing.type === "company") {
       payload.code = (editing.code ?? "").trim() || null;
@@ -479,9 +481,10 @@ function CarsManager() {
       const t = pick(r, "type", "النوع").toLowerCase();
       const rowType = t === "rental" || t.includes("إيجار") || t.includes("ايجار") ? "rental" : (t === "company" || t.includes("شركة")) ? "company" : type;
       if (!plate) return null;
+      const description = pick(r, "description", "الوصف", "وصف السيارة") || null;
       if (rowType === "company") {
         const code = pick(r, "code", "كود السيارة", "الكود");
-        return { plate, type: "company", code: code || null };
+        return { plate, type: "company", code: code || null, description };
       }
       const officeName = pick(r, "office", "المكتب", "تابع", "follow_office");
       return {
@@ -491,6 +494,7 @@ function CarsManager() {
         route_code: pick(r, "route_code", "كود خط السير") || null,
         route_description: pick(r, "route_description", "وصف خط السير") || null,
         follow_office_id: officeName ? (officeByName.get(officeName.toLowerCase()) ?? null) : null,
+        description,
       };
     }).filter(Boolean) as any[];
     if (!payload.length) return toast.error("لا توجد صفوف صالحة");
@@ -503,8 +507,9 @@ function CarsManager() {
   const filtered = (data ?? []).filter((c: any) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    return [c.code, c.plate, c.handheld_code, c.route_code, c.route_description, c.follow_office?.name].some((v) => (v ?? "").toString().toLowerCase().includes(q));
+    return [c.code, c.plate, c.handheld_code, c.route_code, c.route_description, c.description, c.follow_office?.name].some((v) => (v ?? "").toString().toLowerCase().includes(q));
   });
+
 
   return (
     <Card className="mt-4">
@@ -527,6 +532,7 @@ function CarsManager() {
               {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
             </Button>
           </div>
+          <Input placeholder="وصف السيارة (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} />
           {type === "rental" && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Input placeholder="كود خط السير" value={routeCode} onChange={(e) => setRouteCode(e.target.value)} dir="ltr" />
@@ -539,11 +545,12 @@ function CarsManager() {
           )}
         </div>
 
+
         <DataToolbar
           search={search}
           onSearch={setSearch}
           onExport={() => exportToXlsx(`cars-${type}.xlsx`, (data ?? []).map((c: any) => ({
-            code: c.code, plate: c.plate, type: c.type,
+            code: c.code, plate: c.plate, type: c.type, description: c.description ?? "",
             handheld_code: c.handheld_code, route_code: c.route_code, route_description: c.route_description,
             office: c.follow_office?.name ?? "",
           })))}
@@ -559,11 +566,12 @@ function CarsManager() {
               <div className="flex items-center justify-between bg-muted/50 rounded-md p-2.5 gap-2">
                 <div className="text-sm min-w-0">
                   <div className="font-medium">{c.code || "—"} {c.plate && <span className="text-muted-foreground">· لوحة: {c.plate}</span>}</div>
+                  {c.description && <div className="text-xs text-muted-foreground mt-0.5">الوصف: {c.description}</div>}
                   {type === "rental" && (
                     <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
                       {c.handheld_code && <div>كود الهاند هيلد: <span dir="ltr">{c.handheld_code}</span></div>}
                       {c.route_code && <div>كود الخط: <span dir="ltr">{c.route_code}</span></div>}
-                      {c.route_description && <div>الوصف: {c.route_description}</div>}
+                      {c.route_description && <div>وصف الخط: {c.route_description}</div>}
                       {c.follow_office?.name && <div>تابع: {c.follow_office.name}</div>}
                     </div>
                   )}
@@ -582,6 +590,8 @@ function CarsManager() {
                   </div>
                   <Label className="text-xs">رقم اللوحة</Label>
                   <Input placeholder="رقم اللوحة" value={editing.plate ?? ""} onChange={(e) => setEditing({ ...editing, plate: e.target.value })} />
+                  <Label className="text-xs">وصف السيارة</Label>
+                  <Input placeholder="وصف السيارة" value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
                   {editing.type === "company" ? (
                     <>
                       <Label className="text-xs">كود السيارة</Label>

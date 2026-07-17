@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string
+          description: string | null
           follow_office_id: string | null
           handheld_code: string | null
           id: string
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string
+          description?: string | null
           follow_office_id?: string | null
           handheld_code?: string | null
           id?: string
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string
+          description?: string | null
           follow_office_id?: string | null
           handheld_code?: string | null
           id?: string
@@ -246,6 +249,7 @@ export type Database = {
       trips: {
         Row: {
           car_code: string | null
+          car_description: string | null
           car_plate: string | null
           car_type: string
           created_at: string
@@ -276,6 +280,7 @@ export type Database = {
         }
         Insert: {
           car_code?: string | null
+          car_description?: string | null
           car_plate?: string | null
           car_type?: string
           created_at?: string
@@ -306,6 +311,7 @@ export type Database = {
         }
         Update: {
           car_code?: string | null
+          car_description?: string | null
           car_plate?: string | null
           car_type?: string
           created_at?: string

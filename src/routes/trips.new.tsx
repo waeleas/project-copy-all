@@ -414,7 +414,7 @@ function SapSelect({ items, value, onChange, placeholder, allowNone, noneLabel }
   return <SapCombobox items={items} value={value} onChange={onChange} placeholder={placeholder} allowNone={allowNone} noneLabel={noneLabel} />;
 }
 
-export function CarCodeCombobox({ items, value, onChange, placeholder }: { items?: any[]; value: string; onChange: (code: string, car?: any) => void; placeholder: string }) {
+export function CarCodeCombobox({ items, value, onChange, onComplete, placeholder }: { items?: any[]; value: string; onChange: (code: string, car?: any) => void; onComplete?: () => void; placeholder: string }) {
   const [text, setText] = useState<string>(value ?? "");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -439,15 +439,21 @@ export function CarCodeCombobox({ items, value, onChange, placeholder }: { items
     <div ref={wrapRef} className="relative">
       <Input
         dir="ltr"
+        inputMode="numeric"
+        maxLength={4}
         value={text}
         placeholder={placeholder}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
-          const v = e.target.value;
+          const v = e.target.value.replace(/\D/g, "").slice(0, 4);
           setText(v);
           setOpen(true);
           const match = items?.find((c) => c.code === v);
           onChange(v, match);
+          if (v.length === 4) {
+            setOpen(false);
+            onComplete?.();
+          }
         }}
       />
       {open && filtered.length > 0 && (

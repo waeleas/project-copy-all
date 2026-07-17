@@ -377,7 +377,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
   function onCarCodeChange(code: string) {
     const match = cars.data?.find((c) => c.code === code);
-    setForm((p) => ({ ...p, car_code: code, car_plate: match?.plate ?? p.car_plate }));
+    setForm((p) => ({ ...p, car_code: code, car_plate: match?.plate ?? p.car_plate, car_description: match?.description ?? p.car_description }));
   }
 
   async function save(e: FormEvent) {

@@ -654,19 +654,16 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
     }).filter(Boolean) as any[];
     if (!payload.length) return toast.error("لا توجد صفوف صالحة في الملف");
 
-    // إزالة التكرار داخل الملف بناءً على رقم الساب
-    let deduped = payload;
+    // إزالة التكرار داخل الملف بناءً على الاسم (فهو الحقل الفريد في كل الجداول)
+    const seen = new Set<string>();
+    const deduped: any[] = [];
     let dupInFile = 0;
-    if (withSap) {
-      const seen = new Set<string>();
-      deduped = [];
-      for (const p of payload) {
-        const key = (p.sap_number ?? "").toString().trim();
-        if (!key) { deduped.push(p); continue; }
-        if (seen.has(key)) { dupInFile++; continue; }
-        seen.add(key);
-        deduped.push(p);
-      }
+    for (const p of payload) {
+      const key = (p.name ?? "").toString().trim().toLowerCase();
+      if (!key) continue;
+      if (seen.has(key)) { dupInFile++; continue; }
+      seen.add(key);
+      deduped.push(p);
     }
 
     const chunkSize = 200;
@@ -674,20 +671,21 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
     let firstError: any = null;
     for (let i = 0; i < deduped.length; i += chunkSize) {
       const chunk = deduped.slice(i, i + chunkSize);
-      const q = withSap
-        ? supabase.from(table as any).upsert(chunk, { onConflict: "sap_number", ignoreDuplicates: true })
-        : supabase.from(table as any).insert(chunk);
-      const { error } = await q;
+      const { error } = await supabase
+        .from(table as any)
+        .upsert(chunk, { onConflict: "name", ignoreDuplicates: true });
       if (error) { firstError = error; break; }
       ok += chunk.length;
     }
     qc.invalidateQueries({ queryKey: [table] });
     if (firstError) {
-      return toast.error(`فشل الاستيراد بعد ${ok} صف: ${arabicError(firstError)}`);
+      const raw = firstError?.message || firstError?.details || firstError?.hint || JSON.stringify(firstError);
+      return toast.error(`فشل الاستيراد بعد ${ok} صف: ${arabicError(firstError, raw || "حدث خطأ غير متوقع")}`);
     }
-    const extra = dupInFile ? ` — تم تجاهل ${dupInFile} صف مكرر بنفس رقم الساب` : "";
+    const extra = dupInFile ? ` — تم تجاهل ${dupInFile} صف مكرر` : "";
     toast.success(`تم استيراد ${ok} صف${extra}`);
   }
+
 
   const filtered = (data ?? []).filter((i: any) => {
     if (!search.trim()) return true;

@@ -79,10 +79,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "تتبع رحلات خدمة ما بعد البيع" },
+      { title: "خطوط السير للسيارات" },
       { name: "description", content: "نظام تتبع رحلات خدمة ما بعد البيع مع تسجيل العداد والصور" },
-      { property: "og:title", content: "تتبع رحلات خدمة ما بعد البيع" },
-      { name: "twitter:title", content: "تتبع رحلات خدمة ما بعد البيع" },
+      { property: "og:title", content: "خطوط السير للسيارات" },
+      { name: "twitter:title", content: "خطوط السير للسيارات" },
       { property: "og:description", content: "نظام تتبع رحلات خدمة ما بعد البيع مع تسجيل العداد والصور" },
       { name: "twitter:description", content: "نظام تتبع رحلات خدمة ما بعد البيع مع تسجيل العداد والصور" },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/41d6aaa1-9552-47f1-a020-c0da5987b293/id-preview-035cf55d--d5cac4ec-df30-45a1-987d-259cc630e21a.lovable.app-1780621833864.png" },

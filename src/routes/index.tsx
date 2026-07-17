@@ -14,7 +14,7 @@ import * as XLSX from "xlsx";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "الرحلات — تتبع خدمة ما بعد البيع" }] }),
+  head: () => ({ meta: [{ title: "خطوط السير للسيارات" }] }),
   component: () => <AppShell><TripsList /></AppShell>,
 });
 

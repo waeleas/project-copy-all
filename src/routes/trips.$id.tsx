@@ -402,6 +402,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
         service_type_id: form.service_type_id || null,
         car_code: form.car_code || null,
         car_plate: form.car_plate || null,
+        car_description: form.car_description.trim() || null,
         handheld_code: form.car_type === "rental" ? (form.handheld_code || null) : null,
         route_start: form.route_start,
         start_odometer: startVal,

@@ -100,7 +100,9 @@ function TripDetail() {
     e.preventDefault();
     if (!endPhoto) return toast.error("يجب تصوير العداد عند نهاية الرحلة");
     const endVal = parseInt(endKm, 10);
-    if (endVal < lastOdometer) return toast.error("قراءة النهاية أقل من آخر قراءة مسجلة");
+    if (isNaN(endVal)) return toast.error("أدخل قراءة العداد");
+    if (endVal <= lastOdometer) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
+    if (endVal - lastOdometer > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     setSaving(true);
     try {
       const path = await uploadOdometerPhoto(endPhoto, "end");
@@ -381,7 +383,8 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     const startVal = parseInt(form.start_odometer, 10);
     if (!Number.isFinite(startVal)) return toast.error("قراءة العداد غير صحيحة");
     const endVal = form.end_odometer ? parseInt(form.end_odometer, 10) : null;
-    if (endVal != null && endVal < startVal) return toast.error("قراءة النهاية أقل من البداية");
+    if (endVal != null && endVal <= startVal) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
+    if (endVal != null && endVal - startVal > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     if (form.car_type === "rental" && !form.office_id) return toast.error("المكتب مطلوب لسيارات الإيجار");
 
     setSaving(true);

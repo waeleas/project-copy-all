@@ -47,11 +47,14 @@ export const listUsersWithRoles = createServerFn({ method: "GET" })
         username: p.username ?? null,
         display_name: p.display_name ?? null,
         must_change_password: !!p.must_change_password,
+        rental_cars_override: p.rental_cars_override ?? null,
+        trip_create_override: p.trip_create_override ?? null,
         created_at: u.created_at,
         roles: rolesByUser.get(u.id) ?? ["user"],
       };
     });
   });
+
 
 const setRoleSchema = z.object({
   user_id: z.string().uuid(),

@@ -215,9 +215,12 @@ function UsersManager() {
   const remove = useServerFn(deleteUser);
   const changePassword = useServerFn(updateUserPassword);
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, isFetching } = useQuery({
     queryKey: ["users-with-roles"],
     queryFn: () => list(),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const [username, setUsername] = usePersistedState("users.username", "");
@@ -227,23 +230,45 @@ function UsersManager() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = usePersistedState<"all" | "admin" | "viewer" | "user">("users.filter", "all");
+  const [usageFilter, setUsageFilter] = usePersistedState<"all" | "used" | "never">("users.usage", "all");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
 
   const allUsers = users ?? [];
   const stats = {
     total: allUsers.length,
     admins: allUsers.filter((u: any) => u.roles.includes("admin")).length,
-    noRental: allUsers.filter((u: any) => u.rental_cars_override === false).length,
-    noTrips: allUsers.filter((u: any) => u.trip_create_override === false).length,
+    used: allUsers.filter((u: any) => !!u.last_sign_in_at).length,
+    never: allUsers.filter((u: any) => !u.last_sign_in_at).length,
   };
 
   const filteredUsers = allUsers.filter((u: any) => {
     if (roleFilter === "admin" && !u.roles.includes("admin")) return false;
     if (roleFilter === "viewer" && !u.roles.includes("viewer")) return false;
     if (roleFilter === "user" && (u.roles.includes("admin") || u.roles.includes("viewer"))) return false;
+    if (usageFilter === "used" && !u.last_sign_in_at) return false;
+    if (usageFilter === "never" && u.last_sign_in_at) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     return [u.username, u.display_name, u.email].some((v) => (v ?? "").toString().toLowerCase().includes(q));
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedUsers = filteredUsers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [search, roleFilter, usageFilter]);
+
+  function formatLastSignIn(iso: string | null): string {
+    if (!iso) return "لم يستخدم";
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    const day = 86400000;
+    if (diffMs < day) return "اليوم";
+    if (diffMs < 2 * day) return "أمس";
+    if (diffMs < 30 * day) return `منذ ${Math.floor(diffMs / day)} يوم`;
+    return d.toLocaleDateString("ar-EG");
+  }
 
   async function importUsers(rows: any[]) {
     let ok = 0, fail = 0;

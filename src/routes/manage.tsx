@@ -135,6 +135,41 @@ function AppSettingsCard() {
                 onCheckedChange={(v) => toggle("trip_creation_enabled", v)}
               />
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={!settings?.trip_creation_enabled}
+                onClick={() => toggle("trip_creation_enabled", false)}
+              >
+                <Ban className="size-4 ml-1" /> منع الكل من تسجيل الرحلات
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={!settings?.rental_cars_visible}
+                onClick={() => toggle("rental_cars_visible", false)}
+              >
+                <Ban className="size-4 ml-1" /> إخفاء سيارات الإيجار عن الكل
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!!settings?.trip_creation_enabled}
+                onClick={() => toggle("trip_creation_enabled", true)}
+              >
+                <ListChecks className="size-4 ml-1" /> السماح للكل بتسجيل الرحلات
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!!settings?.rental_cars_visible}
+                onClick={() => toggle("rental_cars_visible", true)}
+              >
+                <CarIcon className="size-4 ml-1" /> إظهار سيارات الإيجار للكل
+              </Button>
+            </div>
           </>
         )}
       </CardContent>

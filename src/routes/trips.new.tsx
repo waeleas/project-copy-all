@@ -246,6 +246,13 @@ function NewTrip() {
                         setForm((f) => ({ ...f, car_code: code, car_plate: car?.plate ?? "" }));
                         setErrors((e) => (e.car_code ? { ...e, car_code: false } : e));
                       }}
+                      onComplete={() => {
+                        setTimeout(() => {
+                          routeStartRef.current?.focus();
+                          routeStartRef.current?.setSelectionRange(0, 0);
+                          routeStartRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }, 0);
+                      }}
                       placeholder="اكتب أو اختر كود السيارة"
                     />
                   </div>

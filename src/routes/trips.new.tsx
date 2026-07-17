@@ -46,6 +46,13 @@ function NewTrip() {
     }
   }, [permLoading, canCreateTrips, navigate]);
 
+  useEffect(() => {
+    if (!permLoading && !canSeeRentals) {
+      setForm((f) => (f.car_type === "rental" ? { ...f, car_type: "company" } : f));
+    }
+  }, [permLoading, canSeeRentals]);
+
+
   const offices = useLookup("offices");
   const managers = useLookup("managers");
   const technicians = useLookup("technicians");

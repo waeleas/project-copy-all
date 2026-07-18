@@ -143,8 +143,20 @@ function NewTrip() {
     setErrors({});
     setLoading(true);
     try {
-      const path = await uploadOdometerPhoto(photo!, "start");
       const { data: { user } } = await supabase.auth.getUser();
+      const { data: openTrips } = await supabase
+        .from("trips")
+        .select("id")
+        .eq("created_by", user!.id)
+        .eq("status", "open")
+        .limit(1);
+      if (openTrips && openTrips.length > 0) {
+        toast.error("لديك رحلة مفتوحة — يجب إغلاقها أو إكمالها قبل بدء رحلة جديدة");
+        setLoading(false);
+        navigate({ to: "/trips/$id", params: { id: openTrips[0].id } });
+        return;
+      }
+      const path = await uploadOdometerPhoto(photo!, "start");
       const { data: prof } = await supabase
         .from("profiles")
         .select("display_name, username")

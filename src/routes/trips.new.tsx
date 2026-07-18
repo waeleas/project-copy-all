@@ -39,11 +39,33 @@ function NewTrip() {
   const navigate = useNavigate();
   const { canCreateTrips, canSeeRentals, loading: permLoading } = usePermissions();
 
+  const [openTrip, setOpenTrip] = useState<{ id: string; trip_no: number | string } | null>(null);
+  const [checkingOpenTrip, setCheckingOpenTrip] = useState(true);
+
   useEffect(() => {
-    if (!permLoading && !canCreateTrips) {
+    if (permLoading) return;
+    if (!canCreateTrips) {
       toast.error("تم تعطيل تسجيل الرحلات لحسابك");
       navigate({ to: "/" });
+      return;
     }
+    async function checkOpen() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setCheckingOpenTrip(false);
+        return;
+      }
+      const { data } = await supabase
+        .from("trips")
+        .select("id, trip_no")
+        .eq("created_by", user.id)
+        .eq("status", "open")
+        .limit(1);
+      const trip = (data ?? [])[0] as { id: string; trip_no: number | string } | undefined;
+      if (trip) setOpenTrip(trip);
+      setCheckingOpenTrip(false);
+    }
+    checkOpen();
   }, [permLoading, canCreateTrips, navigate]);
 
   useEffect(() => {
@@ -215,6 +237,55 @@ function NewTrip() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingOpenTrip || permLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="size-10 animate-spin text-primary" />
+        <p className="text-muted-foreground">جارٍ التحقق من الرحلات المفتوحة...</p>
+      </div>
+    );
+  }
+
+  if (openTrip) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-sm">
+        <Card className="w-full max-w-md shadow-xl border-2 border-destructive/30">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-3 size-16 rounded-full bg-destructive/10 flex items-center justify-center">
+              <Gauge className="size-8 text-destructive" />
+            </div>
+            <CardTitle className="text-xl leading-relaxed">يجب إكمال الرحلة المفتوحة رقم #{openTrip.trip_no} أو حذفها</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground text-center">
+              لا يمكن بدء رحلة جديدة قبل إغلاق أو حذف الرحلة الحالية.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" onClick={() => navigate({ to: "/trips/$id", params: { id: openTrip.id } })}>
+                فتح الرحلة
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  if (!confirm(`هل أنت متأكد من حذف الرحلة #${openTrip.trip_no}؟`)) return;
+                  const { error: delErr } = await supabase.from("trips").delete().eq("id", openTrip.id);
+                  if (delErr) {
+                    toast.error("تعذّر حذف الرحلة: " + arabicError(delErr));
+                  } else {
+                    toast.success(`تم حذف الرحلة #${openTrip.trip_no}`);
+                    setOpenTrip(null);
+                  }
+                }}
+              >
+                حذف الرحلة
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

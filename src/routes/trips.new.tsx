@@ -146,16 +146,35 @@ function NewTrip() {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: openTrips } = await supabase
         .from("trips")
-        .select("id")
+        .select("id, trip_no")
         .eq("created_by", user!.id)
         .eq("status", "open")
         .limit(1);
       if (openTrips && openTrips.length > 0) {
-        toast.error("لديك رحلة مفتوحة — يجب إغلاقها أو إكمالها قبل بدء رحلة جديدة");
+        const openTrip = openTrips[0] as { id: string; trip_no: number | string };
         setLoading(false);
-        navigate({ to: "/trips/$id", params: { id: openTrips[0].id } });
+        toast.error(`يجب إكمال الرحلة المفتوحة رقم #${openTrip.trip_no} أو حذفها`, {
+          duration: 10000,
+          action: {
+            label: "فتح الرحلة",
+            onClick: () => navigate({ to: "/trips/$id", params: { id: openTrip.id } }),
+          },
+          cancel: {
+            label: "حذف الرحلة",
+            onClick: async () => {
+              if (!confirm(`هل أنت متأكد من حذف الرحلة #${openTrip.trip_no}؟`)) return;
+              const { error: delErr } = await supabase.from("trips").delete().eq("id", openTrip.id);
+              if (delErr) {
+                toast.error("تعذّر حذف الرحلة: " + arabicError(delErr));
+              } else {
+                toast.success(`تم حذف الرحلة #${openTrip.trip_no}`);
+              }
+            },
+          },
+        });
         return;
       }
+
       const path = await uploadOdometerPhoto(photo!, "start");
       const { data: prof } = await supabase
         .from("profiles")

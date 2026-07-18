@@ -39,11 +39,33 @@ function NewTrip() {
   const navigate = useNavigate();
   const { canCreateTrips, canSeeRentals, loading: permLoading } = usePermissions();
 
+  const [openTrip, setOpenTrip] = useState<{ id: string; trip_no: number | string } | null>(null);
+  const [checkingOpenTrip, setCheckingOpenTrip] = useState(true);
+
   useEffect(() => {
-    if (!permLoading && !canCreateTrips) {
+    if (permLoading) return;
+    if (!canCreateTrips) {
       toast.error("تم تعطيل تسجيل الرحلات لحسابك");
       navigate({ to: "/" });
+      return;
     }
+    async function checkOpen() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setCheckingOpenTrip(false);
+        return;
+      }
+      const { data } = await supabase
+        .from("trips")
+        .select("id, trip_no")
+        .eq("created_by", user.id)
+        .eq("status", "open")
+        .limit(1);
+      const trip = (data ?? [])[0] as { id: string; trip_no: number | string } | undefined;
+      if (trip) setOpenTrip(trip);
+      setCheckingOpenTrip(false);
+    }
+    checkOpen();
   }, [permLoading, canCreateTrips, navigate]);
 
   useEffect(() => {

@@ -206,7 +206,7 @@ function TripDetail() {
             <span className="font-bold text-lg">{trip.start_odometer} كم</span>
           </div>
           <div className="text-xs text-muted-foreground">{new Date(trip.start_at).toLocaleString("ar-EG")}</div>
-          {startPhotoUrl && <img src={startPhotoUrl} alt="عداد البداية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
+          {startPhotoUrl && !isViewer && <img src={startPhotoUrl} alt="عداد البداية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
           <PhotoAdminControls
             isAdmin={isAdmin}
             signedUrl={startPhotoUrl}

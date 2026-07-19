@@ -206,7 +206,7 @@ function TripDetail() {
             <span className="font-bold text-lg">{trip.start_odometer} كم</span>
           </div>
           <div className="text-xs text-muted-foreground">{new Date(trip.start_at).toLocaleString("ar-EG")}</div>
-          {startPhotoUrl && !isViewer && <img src={startPhotoUrl} alt="عداد البداية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
+          {startPhotoUrl && <img src={startPhotoUrl} alt="عداد البداية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
           <PhotoAdminControls
             isAdmin={isAdmin}
             signedUrl={startPhotoUrl}
@@ -234,7 +234,7 @@ function TripDetail() {
             )}
             <div className="text-xs text-muted-foreground">{trip.end_at && new Date(trip.end_at).toLocaleString("ar-EG")}</div>
             {trip.notes && <p className="text-sm bg-muted p-2 rounded-md">{trip.notes}</p>}
-            {endPhotoUrl && !isViewer && <img src={endPhotoUrl} alt="عداد النهاية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
+            {endPhotoUrl && <img src={endPhotoUrl} alt="عداد النهاية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
             <PhotoAdminControls
               isAdmin={isAdmin}
               signedUrl={endPhotoUrl}

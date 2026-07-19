@@ -92,7 +92,7 @@ function TripDetail() {
   if (!trip) return <div className="text-center py-12 text-muted-foreground">الرحلة غير موجودة</div>;
 
   const canClose = trip.status === "open" && (isAdmin || trip.created_by === user?.id);
-  const canDelete = isAdmin;
+  const canDelete = isAdmin || (trip.status === "open" && trip.created_by === user?.id);
   const canEdit = isAdmin || (trip.status === "open" && trip.created_by === user?.id);
 
 

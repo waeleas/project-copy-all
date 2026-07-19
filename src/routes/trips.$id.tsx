@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { ArrowRight, CheckCircle2, Clock, Gauge, Loader2, Building2, User, Wrench, MapPin, Car, Hash, Trash2, Timer, Mail, Pencil } from "lucide-react";
 import { formatDuration, tripDurationMs } from "@/lib/duration";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useIsViewer } from "@/hooks/use-is-viewer";
 import { useAuth } from "@/hooks/use-auth";
 import { PhotoInput, SapCombobox } from "./trips.new";
 import { BarcodeScanner } from "@/components/barcode-scanner";

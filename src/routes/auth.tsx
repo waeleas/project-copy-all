@@ -114,8 +114,8 @@ function AuthPage() {
           {!setupMode ? (
             <form onSubmit={handleSignIn} className="space-y-3">
               <div className="space-y-1.5">
-                <Label>اسم المستخدم</Label>
-                <Input required value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" autoComplete="username" />
+                <Label>اسم المستخدم أو رقم الساب</Label>
+                <Input required value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" autoComplete="username" placeholder="اسم المستخدم أو رقم الساب" />
               </div>
               <div className="space-y-1.5">
                 <Label>كلمة المرور</Label>

@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { ArrowRight, CheckCircle2, Clock, Gauge, Loader2, Building2, User, Wrench, MapPin, Car, Hash, Trash2, Timer, Mail, Pencil } from "lucide-react";
 import { formatDuration, tripDurationMs } from "@/lib/duration";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useIsViewer } from "@/hooks/use-is-viewer";
 import { useAuth } from "@/hooks/use-auth";
 import { PhotoInput, SapCombobox } from "./trips.new";
 import { BarcodeScanner } from "@/components/barcode-scanner";
@@ -34,6 +35,7 @@ function TripDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { isAdmin } = useIsAdmin();
+  const { isViewer } = useIsViewer();
   const { user } = useAuth();
 
   const { data: trip, isLoading } = useQuery({
@@ -90,7 +92,7 @@ function TripDetail() {
   if (!trip) return <div className="text-center py-12 text-muted-foreground">الرحلة غير موجودة</div>;
 
   const canClose = trip.status === "open" && (isAdmin || trip.created_by === user?.id);
-  const canDelete = isAdmin;
+  const canDelete = isAdmin || (trip.status === "open" && trip.created_by === user?.id);
   const canEdit = isAdmin || (trip.status === "open" && trip.created_by === user?.id);
 
 
@@ -204,7 +206,7 @@ function TripDetail() {
             <span className="font-bold text-lg">{trip.start_odometer} كم</span>
           </div>
           <div className="text-xs text-muted-foreground">{new Date(trip.start_at).toLocaleString("ar-EG")}</div>
-          {startPhotoUrl && <img src={startPhotoUrl} alt="عداد البداية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
+          {startPhotoUrl && !isViewer && <img src={startPhotoUrl} alt="عداد البداية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
           <PhotoAdminControls
             isAdmin={isAdmin}
             signedUrl={startPhotoUrl}
@@ -232,7 +234,7 @@ function TripDetail() {
             )}
             <div className="text-xs text-muted-foreground">{trip.end_at && new Date(trip.end_at).toLocaleString("ar-EG")}</div>
             {trip.notes && <p className="text-sm bg-muted p-2 rounded-md">{trip.notes}</p>}
-            {endPhotoUrl && <img src={endPhotoUrl} alt="عداد النهاية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
+            {endPhotoUrl && !isViewer && <img src={endPhotoUrl} alt="عداد النهاية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
             <PhotoAdminControls
               isAdmin={isAdmin}
               signedUrl={endPhotoUrl}

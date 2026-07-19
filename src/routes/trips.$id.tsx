@@ -35,6 +35,7 @@ function TripDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { isAdmin } = useIsAdmin();
+  const { isViewer } = useIsViewer();
   const { user } = useAuth();
 
   const { data: trip, isLoading } = useQuery({

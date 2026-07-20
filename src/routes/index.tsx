@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Clock, CheckCircle2, Car, Gauge, Timer, Download, Search, X } from "lucide-react";
 import { formatDuration, tripDurationMs } from "@/lib/duration";
-import * as XLSX from "xlsx";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({

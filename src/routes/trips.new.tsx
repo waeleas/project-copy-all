@@ -127,6 +127,28 @@ function NewTrip() {
     }
   }, [form.car_type, form.handheld_code, services.data, form.service_type_id]);
 
+  // تعبئة السائق تلقائياً من رقم الساب لليوزر المسجل دخوله (فقط إذا كان اليوزر أرقام)
+  useEffect(() => {
+    if (form.car_type !== "company") return;
+    if (form.driver_id) return;
+    if (!drivers.data) return;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const uname = (prof?.username ?? "").trim();
+      if (!uname || !/^\d+$/.test(uname)) return;
+      const match = drivers.data.find(
+        (d: any) => (d.sap_number ?? "").trim() === uname && d.type !== "rental",
+      );
+      if (match) setForm((f) => (f.driver_id ? f : { ...f, driver_id: match.id }));
+    })();
+  }, [form.car_type, form.driver_id, drivers.data]);
+
   function handlePhoto(file: File | null) {
     setPhoto(file);
     if (file) setPhotoPreview(URL.createObjectURL(file));

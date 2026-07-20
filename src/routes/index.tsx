@@ -244,9 +244,10 @@ function TripsList() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs flex items-center gap-1"><Search className="size-3" /> رقم الطلب</Label>
-              <Input value={tripNoQ} onChange={(e) => setTripNoQ(e.target.value)} placeholder="مثلاً 25" dir="ltr" />
+              <Label className="text-xs flex items-center gap-1"><Search className="size-3" /> بحث</Label>
+              <Input value={tripNoQ} onChange={(e) => setTripNoQ(e.target.value)} placeholder="ابحث برقم الطلب، اسم، كود، لوحة، مسار..." />
             </div>
+
             <div className="space-y-1">
               <Label className="text-xs">من تاريخ</Label>
               <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} dir="ltr" />

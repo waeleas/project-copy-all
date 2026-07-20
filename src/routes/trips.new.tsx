@@ -74,6 +74,27 @@ function NewTrip() {
     }
   }, [permLoading, canSeeRentals]);
 
+  // Auto-fill driver from logged-in user's SAP number (numeric username only)
+  useEffect(() => {
+    if (form.car_type !== "company") return;
+    if (form.driver_id) return;
+    if (!drivers.data) return;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const uname = (prof?.username ?? "").trim();
+      if (!uname || !/^\d+$/.test(uname)) return;
+      const match = drivers.data.find((d: any) => (d.sap_number ?? "").trim() === uname && d.type !== "rental");
+      if (match) setForm((f) => (f.driver_id ? f : { ...f, driver_id: match.id }));
+    })();
+  }, [form.car_type, form.driver_id, drivers.data]);
+
+
 
   const offices = useLookup("offices");
   const managers = useLookup("managers");

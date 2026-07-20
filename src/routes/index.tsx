@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Clock, CheckCircle2, Car, Gauge, Timer, Download, Search, X } from "lucide-react";
 import { formatDuration, tripDurationMs } from "@/lib/duration";
-import * as XLSX from "xlsx";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -113,14 +113,15 @@ function TripsList() {
       (segsByTrip[s.trip_id] ||= []).push(s);
     });
 
-    const rows: any[] = [];
+    type Row = Record<string, any> & { __kind: "start" | "seg" | "end" };
+    const rows: Row[] = [];
     filtered.forEach((t: any) => {
       const durMs = tripDurationMs(t, Date.now());
       const totalMin = Math.floor(durMs / 60000);
       const distance = t.end_odometer != null ? t.end_odometer - t.start_odometer : null;
       const tSegs = segsByTrip[t.id] ?? [];
 
-      const baseRow = {
+      const baseRow: any = {
         "رقم الطلب": t.trip_no ?? "",
         "نوع المسار": "بداية الرحلة",
         "ترتيب المسار": 0,
@@ -148,7 +149,7 @@ function TripsList() {
         "ملاحظات": "",
         "تم الإنشاء": new Date(t.created_at).toLocaleString("ar-EG"),
       };
-      rows.push(baseRow);
+      rows.push({ ...baseRow, __kind: "start" });
 
       tSegs.forEach((s, i) => {
         rows.push({
@@ -159,6 +160,7 @@ function TripsList() {
           "قراءة العداد (كم)": "",
           "وقت التسجيل": new Date(s.created_at).toLocaleString("ar-EG"),
           "تم الإنشاء": "",
+          __kind: "seg",
         });
       });
 
@@ -176,21 +178,152 @@ function TripsList() {
           "المدة": formatDuration(durMs),
           "ملاحظات": t.notes ?? "",
           "تم الإنشاء": "",
+          __kind: "end",
         });
       }
     });
 
     if (rows.length === 0) return toast.error("لا توجد بيانات للتصدير");
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = Object.keys(rows[0]).map(() => ({ wch: 20 }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "الرحلات");
 
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "خطوط السير";
+    wb.created = new Date();
+    const ws = wb.addWorksheet("الرحلات", {
+      views: [{ rightToLeft: true, state: "frozen", ySplit: 3 }],
+      properties: { defaultRowHeight: 20 },
+    });
 
+    const headers = Object.keys(rows[0]).filter((k) => k !== "__kind");
+
+    // Title row
+    ws.mergeCells(1, 1, 1, headers.length);
+    const titleCell = ws.getCell(1, 1);
+    titleCell.value = `تقرير الرحلات — ${new Date().toLocaleString("ar-EG")}`;
+    titleCell.font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFFFF" } };
+    titleCell.alignment = { horizontal: "center", vertical: "middle" };
+    titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E3A8A" } };
+    ws.getRow(1).height = 32;
+
+    // Summary row
+    ws.mergeCells(2, 1, 2, headers.length);
+    const openCount = filtered.filter((t: any) => t.status === "open").length;
+    const doneCount = filtered.length - openCount;
+    const summary = ws.getCell(2, 1);
+    summary.value = `إجمالي الرحلات: ${filtered.length}   |   المفتوحة: ${openCount}   |   المكتملة: ${doneCount}`;
+    summary.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FF1E3A8A" } };
+    summary.alignment = { horizontal: "center", vertical: "middle" };
+    summary.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDBEAFE" } };
+    ws.getRow(2).height = 22;
+
+    // Header row
+    const headerRow = ws.getRow(3);
+    headers.forEach((h, i) => {
+      const c = headerRow.getCell(i + 1);
+      c.value = h;
+      c.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+      c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      c.border = {
+        top: { style: "thin", color: { argb: "FF1E3A8A" } },
+        bottom: { style: "medium", color: { argb: "FF1E3A8A" } },
+        left: { style: "thin", color: { argb: "FF1E3A8A" } },
+        right: { style: "thin", color: { argb: "FF1E3A8A" } },
+      };
+    });
+    headerRow.height = 34;
+
+    // Data rows
+    rows.forEach((r, idx) => {
+      const excelRow = ws.getRow(idx + 4);
+      const isEnd = r.__kind === "end";
+      const isSeg = r.__kind === "seg";
+      const status = r["الحالة"];
+      const zebra = idx % 2 === 0 ? "FFF8FAFC" : "FFFFFFFF";
+      const kindFill = isEnd ? "FFDCFCE7" : isSeg ? "FFFEF3C7" : zebra;
+
+      headers.forEach((h, i) => {
+        const cell = excelRow.getCell(i + 1);
+        cell.value = r[h] === "" || r[h] == null ? null : r[h];
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.font = { name: "Calibri", size: 10, color: { argb: "FF0F172A" } };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: kindFill } };
+        cell.border = {
+          top: { style: "hair", color: { argb: "FFCBD5E1" } },
+          bottom: { style: "hair", color: { argb: "FFCBD5E1" } },
+          left: { style: "hair", color: { argb: "FFCBD5E1" } },
+          right: { style: "hair", color: { argb: "FFCBD5E1" } },
+        };
+
+        if (h === "الحالة") {
+          const isOpen = status === "مفتوحة";
+          cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: isOpen ? "FF92400E" : "FF166534" } };
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: isOpen ? "FFFEF3C7" : "FFDCFCE7" } };
+        }
+        if (h === "رقم الطلب") {
+          cell.font = { name: "Consolas", size: 10, bold: true, color: { argb: "FF1E3A8A" } };
+        }
+        if (h === "نوع المسار") {
+          cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: isEnd ? "FF166534" : isSeg ? "FF92400E" : "FF1E3A8A" } };
+        }
+        if (typeof r[h] === "number") {
+          cell.numFmt = "#,##0";
+        }
+      });
+      excelRow.height = 22;
+    });
+
+    // Column widths
+    const widths: Record<string, number> = {
+      "رقم الطلب": 12,
+      "نوع المسار": 16,
+      "ترتيب المسار": 10,
+      "نوع السيارة": 12,
+      "الحالة": 12,
+      "المكتب": 18,
+      "نوع الخدمة": 18,
+      "المدير المسؤول": 20,
+      "اسم متلقي الخدمة أو فنى": 24,
+      "كود ساب متلقي الخدمة أو فنى": 16,
+      "اسم السائق": 22,
+      "كود ساب السائق": 14,
+      "كود السيارة": 12,
+      "رقم لوحة السيارة": 16,
+      "وصف السيارة": 22,
+      "خط السير": 30,
+      "قراءة العداد (كم)": 14,
+      "وقت التسجيل": 22,
+      "عداد النهاية (كم)": 14,
+      "المسافة الكلية (كم)": 14,
+      "وقت النهاية": 22,
+      "المدة (دقائق)": 12,
+      "المدة": 14,
+      "منشئ الطلب": 22,
+      "ملاحظات": 28,
+      "تم الإنشاء": 22,
+    };
+    headers.forEach((h, i) => {
+      ws.getColumn(i + 1).width = widths[h] ?? 18;
+    });
+
+    // AutoFilter on header row
+    ws.autoFilter = {
+      from: { row: 3, column: 1 },
+      to: { row: 3, column: headers.length },
+    };
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    XLSX.writeFile(wb, `trips-${stamp}.xlsx`);
+    a.href = url;
+    a.download = `trips-${stamp}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
     toast.success("تم تصدير الملف");
   }
+
 
 
   const hasFilters = !!(tripNoQ || dateFrom || dateTo || statusFilter !== "all" || serviceFilter !== "all");

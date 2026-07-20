@@ -56,11 +56,22 @@ function TripsList() {
     return trips.filter((t: any) => {
       if (statusFilter === "open" && t.status !== "open") return false;
       if (statusFilter === "completed" && t.status === "open") return false;
-      if (serviceFilter === "worker" && t.service_type?.name !== "نقل عاملين") return false;
-      if (serviceFilter === "aftersales" && t.service_type?.name !== "خدمة ما بعد البيع") return false;
+      const svc = t.service_type?.name ?? "";
+      const isWorker = svc.includes("نقل") && svc.includes("عامل");
+      if (serviceFilter === "worker" && !isWorker) return false;
+      if (serviceFilter === "aftersales" && isWorker) return false;
       if (tripNoQ.trim()) {
-        const q = tripNoQ.trim();
-        if (!String(t.trip_no ?? "").includes(q)) return false;
+        const q = tripNoQ.trim().toLowerCase();
+        const hay = [
+          t.trip_no, t.car_code, t.car_plate, t.car_description,
+          t.route_start, t.notes,
+          t.office?.name, t.follow_office?.name, t.manager?.name,
+          t.service_type?.name,
+          t.technician?.name, t.technician?.sap_number,
+          t.driver?.name, t.driver?.sap_number, t.driver_name_rental,
+          t.created_by_name, t.created_by_email,
+        ].map((v) => String(v ?? "").toLowerCase()).join(" | ");
+        if (!hay.includes(q)) return false;
       }
       if (dateFrom) {
         if (new Date(t.start_at) < new Date(dateFrom)) return false;
@@ -71,8 +82,13 @@ function TripsList() {
         if (new Date(t.start_at) > end) return false;
       }
       return true;
+    }).sort((a: any, b: any) => {
+      const da = new Date(a.start_at ?? a.created_at).getTime();
+      const db = new Date(b.start_at ?? b.created_at).getTime();
+      return db - da;
     });
   }, [trips, tripNoQ, dateFrom, dateTo, statusFilter, serviceFilter]);
+
 
   const counts = useMemo(() => {
     const all = trips?.length ?? 0;
@@ -228,9 +244,10 @@ function TripsList() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs flex items-center gap-1"><Search className="size-3" /> رقم الطلب</Label>
-              <Input value={tripNoQ} onChange={(e) => setTripNoQ(e.target.value)} placeholder="مثلاً 25" dir="ltr" />
+              <Label className="text-xs flex items-center gap-1"><Search className="size-3" /> بحث</Label>
+              <Input value={tripNoQ} onChange={(e) => setTripNoQ(e.target.value)} placeholder="ابحث برقم الطلب، اسم، كود، لوحة، مسار..." />
             </div>
+
             <div className="space-y-1">
               <Label className="text-xs">من تاريخ</Label>
               <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} dir="ltr" />

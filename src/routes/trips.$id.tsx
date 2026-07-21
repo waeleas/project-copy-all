@@ -804,3 +804,52 @@ function PhotoAdminControls({
     </div>
   );
 }
+
+function OdometerImage({ path, signedUrl, onRefresh, alt }: {
+  path: string;
+  signedUrl: string;
+  onRefresh: (url: string) => void;
+  alt: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  async function refresh() {
+    if (retrying) return;
+    setRetrying(true);
+    setFailed(false);
+    try {
+      const fresh = await getSignedPhotoUrl(path);
+      onRefresh(`${fresh}${fresh.includes("?") ? "&" : "?"}t=${Date.now()}`);
+    } catch {
+      setFailed(true);
+    } finally {
+      setRetrying(false);
+    }
+  }
+  if (!signedUrl) {
+    return (
+      <div className="w-full h-40 flex items-center justify-center rounded-lg border bg-muted text-xs text-muted-foreground">
+        جاري تحميل الصورة...
+      </div>
+    );
+  }
+  if (failed) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border bg-muted p-4">
+        <span className="text-xs text-muted-foreground">تعذر عرض الصورة</span>
+        <Button type="button" size="sm" variant="outline" onClick={refresh} disabled={retrying}>
+          {retrying ? "جاري المحاولة..." : "إعادة المحاولة"}
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={signedUrl}
+      alt={alt}
+      loading="lazy"
+      onError={() => { if (!retrying) refresh().then(() => {}); setTimeout(() => setFailed((f) => f || true), 8000); }}
+      className="w-full max-h-72 object-contain rounded-lg border bg-muted"
+    />
+  );
+}

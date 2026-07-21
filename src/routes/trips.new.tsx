@@ -275,7 +275,12 @@ function NewTrip() {
       toast.success("تم بدء الرحلة");
       navigate({ to: "/trips/$id", params: { id: trip.id } });
     } catch (err: any) {
-      toast.error(arabicError(err, "فشل الحفظ"));
+      const msg = arabicError(err, "فشل الحفظ");
+      const detail = err?.details || err?.hint || err?.message;
+      toast.error(
+        `تعذّر إنشاء الرحلة: ${msg}${detail && detail !== msg ? `\nالتفاصيل: ${detail}` : ""}\nراجع الحقول وحاول مرة أخرى.`,
+        { duration: 9000, style: { whiteSpace: "pre-line", textAlign: "right" } as any },
+      );
     } finally {
       setLoading(false);
     }

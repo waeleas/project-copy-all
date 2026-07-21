@@ -234,7 +234,7 @@ function TripDetail() {
             )}
             <div className="text-xs text-muted-foreground">{trip.end_at && new Date(trip.end_at).toLocaleString("ar-EG")}</div>
             {trip.notes && <p className="text-sm bg-muted p-2 rounded-md">{trip.notes}</p>}
-            {endPhotoUrl && <img src={endPhotoUrl} alt="عداد النهاية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
+            {trip.end_photo_url && <OdometerImage path={trip.end_photo_url} signedUrl={endPhotoUrl} onRefresh={setEndPhotoUrl} alt="عداد النهاية" />}
             <PhotoAdminControls
               isAdmin={isAdmin}
               signedUrl={endPhotoUrl}

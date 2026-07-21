@@ -101,7 +101,7 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
 export async function getSignedPhotoUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage
     .from("odometer-photos")
-    .createSignedUrl(path, 3600);
+    .createSignedUrl(path, 60 * 60 * 24); // 24h
   if (error) throw error;
   return data.signedUrl;
 }

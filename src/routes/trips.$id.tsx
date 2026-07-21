@@ -812,18 +812,27 @@ function OdometerImage({ path, signedUrl, onRefresh, alt }: {
   alt: string;
 }) {
   const [failed, setFailed] = useState(false);
+  const [attempts, setAttempts] = useState(0);
   const [retrying, setRetrying] = useState(false);
   async function refresh() {
     if (retrying) return;
     setRetrying(true);
-    setFailed(false);
     try {
       const fresh = await getSignedPhotoUrl(path);
       onRefresh(`${fresh}${fresh.includes("?") ? "&" : "?"}t=${Date.now()}`);
+      setFailed(false);
     } catch {
       setFailed(true);
     } finally {
       setRetrying(false);
+    }
+  }
+  function handleError() {
+    if (attempts < 2) {
+      setAttempts((n) => n + 1);
+      refresh();
+    } else {
+      setFailed(true);
     }
   }
   if (!signedUrl) {
@@ -837,7 +846,7 @@ function OdometerImage({ path, signedUrl, onRefresh, alt }: {
     return (
       <div className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border bg-muted p-4">
         <span className="text-xs text-muted-foreground">تعذر عرض الصورة</span>
-        <Button type="button" size="sm" variant="outline" onClick={refresh} disabled={retrying}>
+        <Button type="button" size="sm" variant="outline" onClick={() => { setAttempts(0); refresh(); }} disabled={retrying}>
           {retrying ? "جاري المحاولة..." : "إعادة المحاولة"}
         </Button>
       </div>
@@ -848,7 +857,7 @@ function OdometerImage({ path, signedUrl, onRefresh, alt }: {
       src={signedUrl}
       alt={alt}
       loading="lazy"
-      onError={() => { if (!retrying) refresh().then(() => {}); setTimeout(() => setFailed((f) => f || true), 8000); }}
+      onError={handleError}
       className="w-full max-h-72 object-contain rounded-lg border bg-muted"
     />
   );

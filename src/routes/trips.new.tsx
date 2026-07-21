@@ -162,26 +162,43 @@ function NewTrip() {
       (form.car_type !== "company" && !isWorkerTransport && !!form.service_type_id) ||
       (form.car_type === "company" && isAfterSales);
     const errs: Record<string, boolean> = {};
-    if (form.car_type === "rental" && !form.office_id) errs.office_id = true;
-    if (!form.service_type_id) errs.service_type_id = true;
-    if (needsManager && !form.manager_id) errs.manager_id = true;
-    if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") errs.technician_id = true;
-    if (form.car_type === "rental" ? !form.driver_name_rental.trim() : !form.driver_id) {
-      errs[form.car_type === "rental" ? "driver_name_rental" : "driver_id"] = true;
-    }
-    if (form.car_type === "company" && !form.car_code) errs.car_code = true;
-    if (form.car_type === "rental" && !form.car_plate) errs.car_plate = true;
-    if (!form.route_start.trim()) errs.route_start = true;
-    if (form.route_start.trim().length > 40) {
-      errs.route_start = true;
-      return toast.error("يجب ألا تزيد بداية خط السير عن 40 حرف");
-    }
-    if (!form.start_odometer) errs.start_odometer = true;
-    if (!photo) errs.photo = true;
+    const missing: string[] = [];
+    const addMiss = (key: string, label: string) => { errs[key] = true; missing.push(label); };
 
-    if (Object.keys(errs).length > 0) {
+    if (form.car_type === "rental" && !form.office_id) addMiss("office_id", "المكتب");
+    if (!form.service_type_id) addMiss("service_type_id", "نوع الخدمة");
+    if (needsManager && !form.manager_id) addMiss("manager_id", "المدير المسؤول");
+    if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") addMiss("technician_id", "متلقي الخدمة أو الفني");
+    if (form.car_type === "rental" ? !form.driver_name_rental.trim() : !form.driver_id) {
+      addMiss(form.car_type === "rental" ? "driver_name_rental" : "driver_id", "السائق");
+    }
+    if (form.car_type === "company" && !form.car_code) addMiss("car_code", "كود السيارة");
+    if (form.car_type === "rental" && !form.car_plate) addMiss("car_plate", "رقم لوحة السيارة");
+    if (!form.route_start.trim()) addMiss("route_start", "بداية خط السير");
+    if (!form.start_odometer) addMiss("start_odometer", "قراءة العداد");
+    if (!photo) addMiss("photo", "صورة العداد");
+
+    if (form.route_start.trim().length > 40) {
+      setErrors({ ...errs, route_start: true });
+      toast.error("بداية خط السير: يجب ألا تزيد عن 40 حرف", { duration: 6000 });
+      setTimeout(() => {
+        document.querySelector('[data-invalid="true"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
+      return;
+    }
+    if (form.start_odometer && (isNaN(parseInt(form.start_odometer, 10)) || parseInt(form.start_odometer, 10) < 0)) {
+      setErrors({ ...errs, start_odometer: true });
+      toast.error("قراءة العداد: يجب أن تكون رقماً صحيحاً موجباً", { duration: 6000 });
+      return;
+    }
+
+    if (missing.length > 0) {
       setErrors(errs);
-      toast.error("يوجد حقول ناقصة — تم تظليلها باللون الأحمر");
+      const list = missing.map((m) => `• ${m}`).join("\n");
+      toast.error(
+        `تعذّر إنشاء الرحلة — الحقول التالية مطلوبة:\n${list}\n(تم تظليلها باللون الأحمر)`,
+        { duration: 8000, style: { whiteSpace: "pre-line", textAlign: "right" } as any },
+      );
       setTimeout(() => {
         document.querySelector('[data-invalid="true"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 0);

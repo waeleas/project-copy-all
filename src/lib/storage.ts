@@ -24,7 +24,7 @@ async function sniffMime(file: File): Promise<string | null> {
   return null;
 }
 
-async function compressImage(file: File | Blob, maxDim = 1600, quality = 0.8): Promise<Blob | null> {
+async function compressImage(file: File | Blob, maxDim = 1400, quality = 0.72): Promise<Blob | null> {
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
@@ -101,7 +101,7 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
 export async function getSignedPhotoUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage
     .from("odometer-photos")
-    .createSignedUrl(path, 3600);
+    .createSignedUrl(path, 60 * 60 * 24); // 24h
   if (error) throw error;
   return data.signedUrl;
 }

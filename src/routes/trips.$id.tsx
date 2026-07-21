@@ -206,7 +206,7 @@ function TripDetail() {
             <span className="font-bold text-lg">{trip.start_odometer} كم</span>
           </div>
           <div className="text-xs text-muted-foreground">{new Date(trip.start_at).toLocaleString("ar-EG")}</div>
-          {startPhotoUrl && <img src={startPhotoUrl} alt="عداد البداية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
+          {trip.start_photo_url && <OdometerImage path={trip.start_photo_url} signedUrl={startPhotoUrl} onRefresh={setStartPhotoUrl} alt="عداد البداية" />}
           <PhotoAdminControls
             isAdmin={isAdmin}
             signedUrl={startPhotoUrl}
@@ -234,7 +234,7 @@ function TripDetail() {
             )}
             <div className="text-xs text-muted-foreground">{trip.end_at && new Date(trip.end_at).toLocaleString("ar-EG")}</div>
             {trip.notes && <p className="text-sm bg-muted p-2 rounded-md">{trip.notes}</p>}
-            {endPhotoUrl && <img src={endPhotoUrl} alt="عداد النهاية" className="w-full max-h-72 object-contain rounded-lg border bg-muted" />}
+            {trip.end_photo_url && <OdometerImage path={trip.end_photo_url} signedUrl={endPhotoUrl} onRefresh={setEndPhotoUrl} alt="عداد النهاية" />}
             <PhotoAdminControls
               isAdmin={isAdmin}
               signedUrl={endPhotoUrl}
@@ -802,5 +802,63 @@ function PhotoAdminControls({
         </label>
       )}
     </div>
+  );
+}
+
+function OdometerImage({ path, signedUrl, onRefresh, alt }: {
+  path: string;
+  signedUrl: string;
+  onRefresh: (url: string) => void;
+  alt: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [retrying, setRetrying] = useState(false);
+  async function refresh() {
+    if (retrying) return;
+    setRetrying(true);
+    try {
+      const fresh = await getSignedPhotoUrl(path);
+      onRefresh(`${fresh}${fresh.includes("?") ? "&" : "?"}t=${Date.now()}`);
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    } finally {
+      setRetrying(false);
+    }
+  }
+  function handleError() {
+    if (attempts < 2) {
+      setAttempts((n) => n + 1);
+      refresh();
+    } else {
+      setFailed(true);
+    }
+  }
+  if (!signedUrl) {
+    return (
+      <div className="w-full h-40 flex items-center justify-center rounded-lg border bg-muted text-xs text-muted-foreground">
+        جاري تحميل الصورة...
+      </div>
+    );
+  }
+  if (failed) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border bg-muted p-4">
+        <span className="text-xs text-muted-foreground">تعذر عرض الصورة</span>
+        <Button type="button" size="sm" variant="outline" onClick={() => { setAttempts(0); refresh(); }} disabled={retrying}>
+          {retrying ? "جاري المحاولة..." : "إعادة المحاولة"}
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={signedUrl}
+      alt={alt}
+      loading="lazy"
+      onError={handleError}
+      className="w-full max-h-72 object-contain rounded-lg border bg-muted"
+    />
   );
 }

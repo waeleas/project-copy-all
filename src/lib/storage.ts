@@ -24,7 +24,7 @@ async function sniffMime(file: File): Promise<string | null> {
   return null;
 }
 
-async function compressImage(file: File | Blob, maxDim = 1600, quality = 0.8): Promise<Blob | null> {
+async function compressImage(file: File | Blob, maxDim = 1400, quality = 0.72): Promise<Blob | null> {
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));

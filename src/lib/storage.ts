@@ -99,6 +99,9 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
 }
 
 export async function getSignedPhotoUrl(path: string): Promise<string> {
+  // Absolute URLs (e.g. placeholder CDN images from imported historical trips)
+  // are returned as-is; only bucket paths need a signed URL.
+  if (/^https?:\/\//i.test(path) || path.startsWith("/")) return path;
   const { data, error } = await supabase.storage
     .from("odometer-photos")
     .createSignedUrl(path, 60 * 60 * 24); // 24h

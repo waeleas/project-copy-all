@@ -711,13 +711,13 @@ function SegmentsCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {segments.map((s, idx) => (
-          <div key={s.id} className="flex items-center justify-between gap-2 border rounded-md p-3 bg-muted/30">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <Badge variant="secondary">مسار #{idx + 1}</Badge>
-              <span className="font-medium truncate">{s.route || "—"}</span>
+          <div key={s.id} className="flex items-start justify-between gap-2 border rounded-md p-3 bg-muted/30">
+            <div className="flex items-start gap-2 flex-1 min-w-0 flex-wrap">
+              <Badge variant="secondary" className="shrink-0">مسار #{idx + 1}</Badge>
+              <span className="font-medium break-words whitespace-normal min-w-0 flex-1">{s.route || "—"}</span>
             </div>
             {canManage && (
-              <Button type="button" size="sm" variant="ghost" onClick={() => remove(s.id)}>
+              <Button type="button" size="sm" variant="ghost" className="shrink-0" onClick={() => remove(s.id)}>
                 <Trash2 className="size-4 text-destructive" />
               </Button>
             )}

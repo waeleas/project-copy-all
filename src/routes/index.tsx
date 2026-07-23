@@ -425,7 +425,7 @@ function TripsList() {
       )}
 
       <div className="space-y-3">
-        {filtered.map((t: any) => (
+        {pageItems.map((t: any) => (
           <Link key={t.id} to="/trips/$id" params={{ id: t.id }}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="py-4 space-y-3">

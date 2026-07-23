@@ -30,6 +30,8 @@ function TripsList() {
   const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "completed">("all");
   const [serviceFilter, setServiceFilter] = useState<"all" | "worker" | "aftersales">("all");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 100;
 
   const { data: trips, isLoading } = useQuery({
     queryKey: ["trips"],
@@ -88,6 +90,13 @@ function TripsList() {
       return db - da;
     });
   }, [trips, tripNoQ, dateFrom, dateTo, statusFilter, serviceFilter]);
+
+  useEffect(() => { setPage(1); }, [tripNoQ, dateFrom, dateTo, statusFilter, serviceFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageItems = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
 
   const counts = useMemo(() => {
@@ -416,7 +425,7 @@ function TripsList() {
       )}
 
       <div className="space-y-3">
-        {filtered.map((t: any) => (
+        {pageItems.map((t: any) => (
           <Link key={t.id} to="/trips/$id" params={{ id: t.id }}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="py-4 space-y-3">
@@ -464,6 +473,19 @@ function TripsList() {
           </Link>
         ))}
       </div>
+
+      {filtered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <div className="text-xs text-muted-foreground">
+            عرض {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} من {filtered.length}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>السابق</Button>
+            <span className="text-sm">صفحة {currentPage} / {totalPages}</span>
+            <Button size="sm" variant="outline" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>التالي</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

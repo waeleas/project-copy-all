@@ -473,6 +473,19 @@ function TripsList() {
           </Link>
         ))}
       </div>
+
+      {filtered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <div className="text-xs text-muted-foreground">
+            عرض {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} من {filtered.length}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>السابق</Button>
+            <span className="text-sm">صفحة {currentPage} / {totalPages}</span>
+            <Button size="sm" variant="outline" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>التالي</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

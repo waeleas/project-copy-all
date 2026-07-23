@@ -91,6 +91,13 @@ function TripsList() {
     });
   }, [trips, tripNoQ, dateFrom, dateTo, statusFilter, serviceFilter]);
 
+  useEffect(() => { setPage(1); }, [tripNoQ, dateFrom, dateTo, statusFilter, serviceFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageItems = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
 
   const counts = useMemo(() => {
     const all = trips?.length ?? 0;

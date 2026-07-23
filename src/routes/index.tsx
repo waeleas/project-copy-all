@@ -30,6 +30,8 @@ function TripsList() {
   const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "completed">("all");
   const [serviceFilter, setServiceFilter] = useState<"all" | "worker" | "aftersales">("all");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 100;
 
   const { data: trips, isLoading } = useQuery({
     queryKey: ["trips"],

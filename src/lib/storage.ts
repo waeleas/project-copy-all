@@ -24,7 +24,8 @@ async function sniffMime(file: File): Promise<string | null> {
   return null;
 }
 
-async function compressImage(file: File | Blob, maxDim = 1400, quality = 0.72): Promise<Blob | null> {
+// أكثر عدوانية في الضغط لتقليل استهلاك الشبكة للسائقين ذوي الباقات الضعيفة
+async function compressImage(file: File | Blob, maxDim = 1100, quality = 0.6): Promise<Blob | null> {
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
@@ -47,16 +48,19 @@ async function compressImage(file: File | Blob, maxDim = 1400, quality = 0.72): 
   }
 }
 
+function sleep(ms: number) {
+  return new Promise<void>((r) => setTimeout(r, ms));
+}
+
 export async function uploadOdometerPhoto(file: File, prefix: string): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("غير مسجل");
 
-  if (file.size > MAX_BYTES) throw new Error("حجم الملف أكبر من 15 ميجابايت");
+  if (file.size > MAX_BYTES) throw new Error("حجم الملف كبير جداً");
 
   const sniffed = await sniffMime(file);
   const declared = (file.type || "").toLowerCase();
 
-  // Try to decode + compress as image regardless of extension/MIME
   const compressed = await compressImage(file);
 
   let finalBlob: Blob = file;
@@ -71,7 +75,6 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
   };
 
   if (compressed) {
-    // Successfully decoded as an image — always use compressed JPEG
     finalBlob = compressed.size < file.size ? compressed : (sniffed === "image/heic" ? compressed : file);
     if (finalBlob === compressed) {
       finalType = "image/jpeg";
@@ -80,7 +83,6 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
       safeExt = extMap[finalType] || (file.name.split(".").pop() || "jpg").toLowerCase();
     }
   } else {
-    // Could not decode — keep original, derive extension from filename
     const nameExt = (file.name.split(".").pop() || "").toLowerCase();
     safeExt = extMap[finalType] || nameExt || "bin";
     if (!finalType || finalType === "application/octet-stream") {
@@ -89,13 +91,29 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
   }
 
   const path = `${user.id}/${prefix}-${Date.now()}.${safeExt}`;
-  const { error } = await supabase.storage.from("odometer-photos").upload(path, finalBlob, {
-    cacheControl: "3600",
-    upsert: false,
-    contentType: finalType,
-  });
-  if (error) throw error;
-  return path;
+
+  // إعادة المحاولة تلقائياً في حال ضعف الشبكة (3 محاولات مع تأخير متزايد)
+  let lastErr: any = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const { error } = await supabase.storage.from("odometer-photos").upload(path, finalBlob, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: finalType,
+      });
+      if (!error) return path;
+      lastErr = error;
+      const msg = String(error.message || "").toLowerCase();
+      // لا نعيد المحاولة عند الأخطاء غير الشبكية
+      if (!/network|fetch|timeout|abort|load|503|502|504/.test(msg)) throw error;
+    } catch (e: any) {
+      lastErr = e;
+      const msg = String(e?.message || "").toLowerCase();
+      if (!/network|fetch|timeout|abort|load|503|502|504/.test(msg)) throw e;
+    }
+    if (attempt < 3) await sleep(600 * attempt);
+  }
+  throw lastErr ?? new Error("تعذر رفع الصورة، الشبكة ضعيفة");
 }
 
 export async function getSignedPhotoUrl(path: string): Promise<string> {

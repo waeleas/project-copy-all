@@ -275,10 +275,9 @@ function NewTrip() {
       toast.success("تم بدء الرحلة");
       navigate({ to: "/trips/$id", params: { id: trip.id } });
     } catch (err: any) {
-      const msg = arabicError(err, "فشل الحفظ");
-      const detail = err?.details || err?.hint || err?.message;
+      const msg = arabicError(err, "تعذّر إنشاء الرحلة");
       toast.error(
-        `تعذّر إنشاء الرحلة: ${msg}${detail && detail !== msg ? `\nالتفاصيل: ${detail}` : ""}\nراجع الحقول وحاول مرة أخرى.`,
+        `${msg}\nراجع الحقول وحاول مرة أخرى.`,
         { duration: 9000, style: { whiteSpace: "pre-line", textAlign: "right" } as any },
       );
     } finally {
@@ -750,10 +749,17 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       {preview && <img src={preview} alt="معاينة" className="w-full max-h-60 object-contain rounded-lg border bg-muted" />}
       <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
         <CameraCapture onCapture={(f) => onFile(f)} />
-        <label className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center gap-1 cursor-pointer hover:bg-accent/30 text-sm">
+        <label className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center gap-1 cursor-pointer hover:bg-accent/30 text-sm select-none active:bg-accent/50">
           <span className="text-xl">🖼️</span>
           <span>من المعرض</span>
-          <input type="file" accept="image/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            // إعادة تصفير القيمة تضمن استجابة المعرض حتى عند اختيار نفس الملف مجدداً
+            onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
+            onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+          />
         </label>
       </div>
     </div>

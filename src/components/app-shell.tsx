@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Car, ListChecks, Plus, Settings, LogOut, Loader2, User } from "lucide-react";
 import { useEffect } from "react";
+import { NetworkBanner } from "@/components/network-banner";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -41,6 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary/40 to-background">
+      <NetworkBanner />
       <header className="sticky top-0 z-30 bg-card/90 backdrop-blur border-b">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-bold">

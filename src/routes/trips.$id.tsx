@@ -24,6 +24,7 @@ import { PhotoInput, SapCombobox } from "./trips.new";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { useServerFn } from "@tanstack/react-start";
 import { listUsersWithRoles } from "@/lib/users.functions";
+import { toEnglishDigits } from "@/lib/utils";
 
 export const Route = createFileRoute("/trips/$id")({
   head: () => ({ meta: [{ title: "تفاصيل الرحلة" }] }),
@@ -92,8 +93,9 @@ function TripDetail() {
   if (!trip) return <div className="text-center py-12 text-muted-foreground">الرحلة غير موجودة</div>;
 
   const canClose = trip.status === "open" && (isAdmin || trip.created_by === user?.id);
-  const canDelete = trip.status === "open" && trip.created_by === user?.id;
+  const canDelete = isAdmin || (trip.status === "open" && trip.created_by === user?.id);
   const canEdit = isAdmin || (trip.status === "open" && trip.created_by === user?.id);
+  const canChangePhoto = isAdmin || (trip.status === "open" && trip.created_by === user?.id);
 
 
   const lastOdometer = trip?.start_odometer ?? 0;
@@ -130,8 +132,9 @@ function TripDetail() {
 
   async function deleteTrip() {
     if (!confirm("هل أنت متأكد من حذف هذه الرحلة؟ لا يمكن التراجع.")) return;
-    const { error } = await supabase.from("trips").delete().eq("id", id);
+    const { data, error } = await supabase.from("trips").delete().eq("id", id).select("id");
     if (error) return toast.error(arabicError(error));
+    if (!data || data.length === 0) return toast.error("لا تملك صلاحية حذف هذه الرحلة");
     toast.success("تم حذف الرحلة");
     qc.invalidateQueries({ queryKey: ["trips"] });
     navigate({ to: "/" });
@@ -208,7 +211,7 @@ function TripDetail() {
           <div className="text-xs text-muted-foreground">{new Date(trip.start_at).toLocaleString("ar-EG")}</div>
           {trip.start_photo_url && <OdometerImage path={trip.start_photo_url} signedUrl={startPhotoUrl} onRefresh={setStartPhotoUrl} alt="عداد البداية" />}
           <PhotoAdminControls
-            isAdmin={isAdmin}
+            canChange={canChangePhoto}
             signedUrl={startPhotoUrl}
             tripId={id}
             field="start_photo_url"
@@ -236,7 +239,7 @@ function TripDetail() {
             {trip.notes && <p className="text-sm bg-muted p-2 rounded-md">{trip.notes}</p>}
             {trip.end_photo_url && <OdometerImage path={trip.end_photo_url} signedUrl={endPhotoUrl} onRefresh={setEndPhotoUrl} alt="عداد النهاية" />}
             <PhotoAdminControls
-              isAdmin={isAdmin}
+              canChange={isAdmin}
               signedUrl={endPhotoUrl}
               tripId={id}
               field="end_photo_url"
@@ -264,7 +267,7 @@ function TripDetail() {
             <form onSubmit={closeTrip} className="space-y-3">
               <div className="space-y-1.5">
                 <Label>قراءة العداد عند النهاية (كم)</Label>
-                <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(e.target.value)} dir="ltr" />
+                <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value))} dir="ltr" />
                 <p className="text-xs text-muted-foreground">آخر قراءة مسجلة: {lastOdometer} كم</p>
               </div>
               <div className="space-y-1.5">
@@ -558,12 +561,12 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
 
             <Field label="قراءة عداد البداية (كم)">
-              <Input type="number" value={form.start_odometer} onChange={(e) => set("start_odometer", e.target.value)} dir="ltr" />
+              <Input type="number" value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value))} dir="ltr" />
             </Field>
 
             {trip.status === "closed" && (
               <Field label="قراءة عداد النهاية (كم)">
-                <Input type="number" value={form.end_odometer} onChange={(e) => set("end_odometer", e.target.value)} dir="ltr" />
+                <Input type="number" value={form.end_odometer} onChange={(e) => set("end_odometer", toEnglishDigits(e.target.value))} dir="ltr" />
               </Field>
             )}
 
@@ -740,9 +743,9 @@ function SegmentsCard({
 }
 
 function PhotoAdminControls({
-  isAdmin, signedUrl, tripId, field, prefix, onChanged,
+  canChange, signedUrl, tripId, field, prefix, onChanged,
 }: {
-  isAdmin: boolean;
+  canChange: boolean;
   signedUrl: string;
   tripId: string;
   field: "start_photo_url" | "end_photo_url";
@@ -785,7 +788,7 @@ function PhotoAdminControls({
     }
   }
 
-  if (!signedUrl && !isAdmin) return null;
+  if (!signedUrl && !canChange) return null;
 
   return (
     <div className="flex flex-wrap gap-2 pt-1">
@@ -794,7 +797,7 @@ function PhotoAdminControls({
           <ArrowRight className="size-4 ml-1 rotate-90" /> تنزيل الصورة
         </Button>
       )}
-      {isAdmin && (
+      {canChange && (
         <label className="inline-flex items-center gap-1 text-sm border rounded-md px-3 py-1.5 cursor-pointer hover:bg-accent">
           <Pencil className="size-4" />
           {busy ? "جاري الرفع..." : (signedUrl ? "تغيير الصورة" : "رفع صورة")}

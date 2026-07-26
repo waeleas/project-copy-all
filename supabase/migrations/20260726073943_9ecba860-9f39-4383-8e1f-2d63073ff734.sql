@@ -1,0 +1,1 @@
+CREATE POLICY "user delete own open trips" ON public.trips FOR DELETE USING (auth.uid() = created_by AND status = 'open');

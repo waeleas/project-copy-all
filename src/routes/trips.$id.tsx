@@ -238,7 +238,7 @@ function TripDetail() {
             {trip.notes && <p className="text-sm bg-muted p-2 rounded-md">{trip.notes}</p>}
             {trip.end_photo_url && <OdometerImage path={trip.end_photo_url} signedUrl={endPhotoUrl} onRefresh={setEndPhotoUrl} alt="عداد النهاية" />}
             <PhotoAdminControls
-              isAdmin={isAdmin}
+              canChange={isAdmin}
               signedUrl={endPhotoUrl}
               tripId={id}
               field="end_photo_url"

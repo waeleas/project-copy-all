@@ -131,8 +131,9 @@ function TripDetail() {
 
   async function deleteTrip() {
     if (!confirm("هل أنت متأكد من حذف هذه الرحلة؟ لا يمكن التراجع.")) return;
-    const { error } = await supabase.from("trips").delete().eq("id", id);
+    const { data, error } = await supabase.from("trips").delete().eq("id", id).select("id");
     if (error) return toast.error(arabicError(error));
+    if (!data || data.length === 0) return toast.error("لا تملك صلاحية حذف هذه الرحلة");
     toast.success("تم حذف الرحلة");
     qc.invalidateQueries({ queryKey: ["trips"] });
     navigate({ to: "/" });

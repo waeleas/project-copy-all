@@ -561,12 +561,12 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
 
             <Field label="قراءة عداد البداية (كم)">
-              <Input type="number" value={form.start_odometer} onChange={(e) => set("start_odometer", e.target.value)} dir="ltr" />
+              <Input type="number" value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value))} dir="ltr" />
             </Field>
 
             {trip.status === "closed" && (
               <Field label="قراءة عداد النهاية (كم)">
-                <Input type="number" value={form.end_odometer} onChange={(e) => set("end_odometer", e.target.value)} dir="ltr" />
+                <Input type="number" value={form.end_odometer} onChange={(e) => set("end_odometer", toEnglishDigits(e.target.value))} dir="ltr" />
               </Field>
             )}
 

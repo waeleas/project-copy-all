@@ -553,7 +553,7 @@ function NewTrip() {
           <Field label="قراءة العداد (كم)" invalid={errors.start_odometer}>
             <div className="relative">
               <Gauge className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input type="number" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", e.target.value)} className="pr-10" dir="ltr" />
+              <Input type="number" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value))} className="pr-10" dir="ltr" />
             </div>
           </Field>
           <PhotoInput preview={photoPreview} onFile={(f) => { handlePhoto(f); if (f) setErrors((e) => (e.photo ? { ...e, photo: false } : e)); }} invalid={errors.photo} />

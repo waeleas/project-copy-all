@@ -157,8 +157,13 @@ function NewTrip() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const isWorkerTransport = services.data?.find((s) => s.id === form.service_type_id)?.name === "نقل عاملين";
-    const isAfterSales = services.data?.find((s) => s.id === form.service_type_id)?.name === "خدمة ما بعد البيع";
+    const normalizedCarCode = toEnglishDigits(form.car_code).trim();
+    const normalizedStartOdometer = toEnglishDigits(form.start_odometer).trim();
+    const normalizedRouteStart = form.route_start.trim();
+    const normalizedRentalDriver = form.driver_name_rental.trim();
+    const selectedService = services.data?.find((s) => s.id === form.service_type_id);
+    const isWorkerTransport = selectedService?.name === "نقل عاملين";
+    const isAfterSales = selectedService?.name === "خدمة ما بعد البيع";
     const needsManager =
       (form.car_type !== "company" && !isWorkerTransport && !!form.service_type_id) ||
       (form.car_type === "company" && isAfterSales);
@@ -170,16 +175,16 @@ function NewTrip() {
     if (!form.service_type_id) addMiss("service_type_id", "نوع الخدمة");
     if (needsManager && !form.manager_id) addMiss("manager_id", "المدير المسؤول");
     if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") addMiss("technician_id", "متلقي الخدمة أو الفني");
-    if (form.car_type === "rental" ? !form.driver_name_rental.trim() : !form.driver_id) {
+    if (form.car_type === "rental" ? !normalizedRentalDriver : !form.driver_id) {
       addMiss(form.car_type === "rental" ? "driver_name_rental" : "driver_id", "السائق");
     }
-    if (form.car_type === "company" && !form.car_code) addMiss("car_code", "كود السيارة");
-    if (form.car_type === "rental" && !form.car_plate) addMiss("car_plate", "رقم لوحة السيارة");
-    if (!form.route_start.trim()) addMiss("route_start", "بداية خط السير");
-    if (!form.start_odometer) addMiss("start_odometer", "قراءة العداد");
+    if (form.car_type === "company" && !normalizedCarCode) addMiss("car_code", "كود السيارة");
+    if (form.car_type === "rental" && !form.car_plate.trim()) addMiss("car_plate", "رقم لوحة السيارة");
+    if (!normalizedRouteStart) addMiss("route_start", "بداية خط السير");
+    if (!normalizedStartOdometer) addMiss("start_odometer", "قراءة العداد");
     if (!photo) addMiss("photo", "صورة العداد");
 
-    if (form.route_start.trim().length > 40) {
+    if (normalizedRouteStart.length > 40) {
       setErrors({ ...errs, route_start: true });
       toast.error("بداية خط السير: يجب ألا تزيد عن 40 حرف", { duration: 6000 });
       setTimeout(() => {
@@ -187,7 +192,7 @@ function NewTrip() {
       }, 0);
       return;
     }
-    if (form.start_odometer && (isNaN(parseInt(form.start_odometer, 10)) || parseInt(form.start_odometer, 10) < 0)) {
+    if (normalizedStartOdometer && (isNaN(parseInt(normalizedStartOdometer, 10)) || parseInt(normalizedStartOdometer, 10) < 0)) {
       setErrors({ ...errs, start_odometer: true });
       toast.error("قراءة العداد: يجب أن تكون رقماً صحيحاً موجباً", { duration: 6000 });
       return;
@@ -257,17 +262,17 @@ function NewTrip() {
         manager_id: form.manager_id || null,
         technician_id: form.technician_id && form.technician_id !== "__none__" ? form.technician_id : null,
         driver_id: form.car_type === "rental" ? null : (form.driver_id || null),
-        driver_name_rental: form.car_type === "rental" ? (form.driver_name_rental.trim() || null) : null,
+        driver_name_rental: form.car_type === "rental" ? (normalizedRentalDriver || null) : null,
         service_type_id: form.service_type_id || null,
-        route_start: form.route_start,
-        start_odometer: parseInt(form.start_odometer, 10),
+        route_start: normalizedRouteStart,
+        start_odometer: parseInt(normalizedStartOdometer, 10),
         start_photo_url: path,
-        car_code: form.car_code || null,
-        car_plate: form.car_plate || null,
+        car_code: normalizedCarCode || null,
+        car_plate: form.car_plate.trim() || null,
         car_description: (() => {
           const car = form.car_type === "rental"
             ? cars.data?.find((c) => c.type === "rental" && (c.handheld_code === form.handheld_code || c.plate === form.car_plate))
-            : cars.data?.find((c) => c.code === form.car_code);
+            : cars.data?.find((c) => c.code === normalizedCarCode);
           return car?.description ?? null;
         })(),
         handheld_code: form.car_type === "rental" ? (form.handheld_code || null) : null,
@@ -439,7 +444,7 @@ function NewTrip() {
                   </div>
                   <BarcodeScanner
                     onScan={(text) => {
-                      const v = text.trim();
+                    const v = toEnglishDigits(text).trim();
                       const car = cars.data?.find((c) => c.code === v);
                       setForm((f) => ({ ...f, car_code: v, car_plate: car?.plate ?? "" }));
                       setErrors((e) => (e.car_code ? { ...e, car_code: false } : e));
@@ -460,7 +465,7 @@ function NewTrip() {
                   value={form.handheld_code}
                   placeholder="كود الهاند هيلد"
                   onChange={(e) => {
-                    const v = e.target.value;
+                    const v = toEnglishDigits(e.target.value);
                     const car = cars.data?.find((c) => c.handheld_code === v);
                     const workerService = services.data?.find((s) => s.name === "نقل عاملين");
                     setForm((f) => ({
@@ -477,7 +482,7 @@ function NewTrip() {
               <div className="pb-0.5 flex gap-1">
                 <BarcodeScanner
                   onScan={(text) => {
-                    const v = text.trim();
+                    const v = toEnglishDigits(text).trim();
                     const car =
                       cars.data?.find((c) => c.handheld_code === v) ||
                       cars.data?.find((c) => c.type === "rental" && c.plate === v);
@@ -496,7 +501,7 @@ function NewTrip() {
                 />
                 <NfcScanner
                   onScan={(text) => {
-                    const v = text.trim();
+                    const v = toEnglishDigits(text).trim();
                     const car =
                       cars.data?.find((c) => c.handheld_code === v) ||
                       cars.data?.find((c) => c.type === "rental" && c.plate === v);
@@ -554,7 +559,7 @@ function NewTrip() {
           <Field label="قراءة العداد (كم)" invalid={errors.start_odometer}>
             <div className="relative">
               <Gauge className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input type="number" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value))} className="pr-10" dir="ltr" />
+              <Input type="text" inputMode="numeric" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} className="pr-10" dir="ltr" />
             </div>
           </Field>
           <PhotoInput preview={photoPreview} onFile={(f) => { handlePhoto(f); if (f) setErrors((e) => (e.photo ? { ...e, photo: false } : e)); }} invalid={errors.photo} />
@@ -627,7 +632,7 @@ export function CarCodeCombobox({ items, value, onChange, onComplete, placeholde
         placeholder={placeholder}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
-          const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+          const v = toEnglishDigits(e.target.value).replace(/\D/g, "").slice(0, 4);
           setText(v);
           setOpen(true);
           const match = items?.find((c) => c.code === v);
@@ -679,6 +684,18 @@ export function SapCombobox({ items, value, onChange, placeholder, allowNone, no
   }, [value]);
 
   useEffect(() => {
+    if (value || !items?.length) return;
+    const normalized = toEnglishDigits(text).trim();
+    if (!normalized) return;
+    if (allowNone && (normalized === noneText || normalized === "لا يوجد")) {
+      onChange(NONE);
+      return;
+    }
+    const match = items.find((i) => String(i.sap_number ?? "").trim() === normalized);
+    if (match) onChange(match.id);
+  }, [allowNone, items, noneText, onChange, text, value]);
+
+  useEffect(() => {
     function onDoc(e: MouseEvent) {
       if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
     }
@@ -689,7 +706,7 @@ export function SapCombobox({ items, value, onChange, placeholder, allowNone, no
   const q = text.trim().toLowerCase();
   const filtered = (items ?? []).filter((i) => {
     if (!q) return true;
-    return (i.sap_number ?? "").toLowerCase().includes(q) || (i.name ?? "").toLowerCase().includes(q);
+    return (i.sap_number ?? "").toLowerCase().includes(toEnglishDigits(q)) || (i.name ?? "").toLowerCase().includes(q);
   }).slice(0, 50);
   const showNone = allowNone && (q === "" || "لا يوجد".includes(q) || q.includes("لا"));
 
@@ -701,11 +718,11 @@ export function SapCombobox({ items, value, onChange, placeholder, allowNone, no
         placeholder={placeholder}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
-          const v = e.target.value;
+          const v = toEnglishDigits(e.target.value);
           setText(v);
           setOpen(true);
           if (allowNone && v.trim() === noneText) { onChange(NONE); return; }
-          const match = items?.find((i) => i.sap_number === v);
+          const match = items?.find((i) => String(i.sap_number ?? "").trim() === v.trim());
           onChange(match ? match.id : "");
         }}
       />

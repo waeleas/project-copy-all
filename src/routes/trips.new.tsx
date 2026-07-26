@@ -18,6 +18,7 @@ import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";
 import { CameraCapture } from "@/components/camera-capture";
 import { usePermissions } from "@/hooks/use-permissions";
+import { toEnglishDigits } from "@/lib/utils";
 
 export const Route = createFileRoute("/trips/new")({
   head: () => ({ meta: [{ title: "رحلة جديدة" }] }),

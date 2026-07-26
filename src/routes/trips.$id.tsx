@@ -742,9 +742,9 @@ function SegmentsCard({
 }
 
 function PhotoAdminControls({
-  isAdmin, signedUrl, tripId, field, prefix, onChanged,
+  canChange, signedUrl, tripId, field, prefix, onChanged,
 }: {
-  isAdmin: boolean;
+  canChange: boolean;
   signedUrl: string;
   tripId: string;
   field: "start_photo_url" | "end_photo_url";

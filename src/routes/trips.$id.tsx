@@ -787,7 +787,7 @@ function PhotoAdminControls({
     }
   }
 
-  if (!signedUrl && !isAdmin) return null;
+  if (!signedUrl && !canChange) return null;
 
   return (
     <div className="flex flex-wrap gap-2 pt-1">
@@ -796,7 +796,7 @@ function PhotoAdminControls({
           <ArrowRight className="size-4 ml-1 rotate-90" /> تنزيل الصورة
         </Button>
       )}
-      {isAdmin && (
+      {canChange && (
         <label className="inline-flex items-center gap-1 text-sm border rounded-md px-3 py-1.5 cursor-pointer hover:bg-accent">
           <Pencil className="size-4" />
           {busy ? "جاري الرفع..." : (signedUrl ? "تغيير الصورة" : "رفع صورة")}

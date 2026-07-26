@@ -210,7 +210,7 @@ function TripDetail() {
           <div className="text-xs text-muted-foreground">{new Date(trip.start_at).toLocaleString("ar-EG")}</div>
           {trip.start_photo_url && <OdometerImage path={trip.start_photo_url} signedUrl={startPhotoUrl} onRefresh={setStartPhotoUrl} alt="عداد البداية" />}
           <PhotoAdminControls
-            isAdmin={isAdmin}
+            canChange={canChangePhoto}
             signedUrl={startPhotoUrl}
             tripId={id}
             field="start_photo_url"

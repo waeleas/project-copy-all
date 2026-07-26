@@ -24,6 +24,7 @@ import { PhotoInput, SapCombobox } from "./trips.new";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { useServerFn } from "@tanstack/react-start";
 import { listUsersWithRoles } from "@/lib/users.functions";
+import { toEnglishDigits } from "@/lib/utils";
 
 export const Route = createFileRoute("/trips/$id")({
   head: () => ({ meta: [{ title: "تفاصيل الرحلة" }] }),

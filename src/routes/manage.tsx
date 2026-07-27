@@ -20,6 +20,7 @@ import { Select as UiSelect, SelectContent as UiSelectContent, SelectItem as UiS
 import { Car as CarIcon, ListChecks, Users as UsersIcon, ShieldCheck, Eye, Ban } from "lucide-react";
 import { DataToolbar, exportToXlsx, pick } from "@/components/data-toolbar";
 import { usePersistedState } from "@/hooks/use-persisted-state";
+import { BackupButton } from "@/components/backup-button";
 
 
 export const Route = createFileRoute("/manage")({
@@ -48,10 +49,14 @@ function Manage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">البيانات الأساسية</h1>
-        <p className="text-sm text-muted-foreground">إدارة المكاتب ومتلقي الخدمة أو فنى والسائقين والمستخدمين</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">البيانات الأساسية</h1>
+          <p className="text-sm text-muted-foreground">إدارة المكاتب ومتلقي الخدمة أو فنى والسائقين والمستخدمين</p>
+        </div>
+        <BackupButton />
       </div>
+
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full h-auto">

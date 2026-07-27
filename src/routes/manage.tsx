@@ -21,6 +21,7 @@ import { Car as CarIcon, ListChecks, Users as UsersIcon, ShieldCheck, Eye, Ban }
 import { DataToolbar, exportToXlsx, pick } from "@/components/data-toolbar";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { BackupButton } from "@/components/backup-button";
+import { MessagesManager } from "@/components/messages-manager";
 
 
 export const Route = createFileRoute("/manage")({
@@ -59,8 +60,9 @@ function Manage() {
 
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full h-auto">
+        <TabsList className="grid grid-cols-4 sm:grid-cols-8 w-full h-auto">
           <TabsTrigger value="users">المستخدمون</TabsTrigger>
+          <TabsTrigger value="messages">الرسائل</TabsTrigger>
           <TabsTrigger value="offices">المكاتب</TabsTrigger>
           <TabsTrigger value="managers">المديرون</TabsTrigger>
           <TabsTrigger value="technicians">متلقي الخدمة أو فنى</TabsTrigger>
@@ -70,9 +72,11 @@ function Manage() {
         </TabsList>
 
         <TabsContent value="users"><UsersManager /></TabsContent>
+        <TabsContent value="messages"><MessagesManager /></TabsContent>
         <TabsContent value="offices"><LookupManager table="offices" title="المكاتب" withCode /></TabsContent>
         <TabsContent value="managers"><LookupManager table="managers" title="المديرون" withSap withCostCenter /></TabsContent>
         <TabsContent value="technicians"><LookupManager table="technicians" title="متلقي الخدمة أو فنى" withSap /></TabsContent>
+
         <TabsContent value="drivers"><DriversManager /></TabsContent>
         <TabsContent value="cars"><CarsManager /></TabsContent>
         <TabsContent value="services"><LookupManager table="service_types" title="أنواع الخدمة" /></TabsContent>

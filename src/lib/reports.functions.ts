@@ -1,0 +1,175 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+async function ensureAdminOrViewer(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .in("role", ["admin", "viewer"]);
+  if (!data || data.length === 0) throw new Error("Forbidden");
+}
+
+type TripRow = {
+  car_plate: string | null;
+  car_code: string | null;
+  car_description: string | null;
+  car_type: string | null;
+  driver_id: string | null;
+  driver_name_rental: string | null;
+  created_by_name: string | null;
+  start_odometer: number | null;
+  end_odometer: number | null;
+  start_at: string | null;
+  end_at: string | null;
+  status: string | null;
+};
+
+async function fetchAllCompletedTrips(supabase: any): Promise<TripRow[]> {
+  const all: TripRow[] = [];
+  const PAGE = 1000;
+  let from = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await supabase
+      .from("trips")
+      .select(
+        "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, created_by_name, start_odometer, end_odometer, start_at, end_at, status",
+      )
+      .not("end_odometer", "is", null)
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...(data as TripRow[]));
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
+export const getCarKmReport = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureAdminOrViewer(context.supabase, context.userId);
+    const trips = await fetchAllCompletedTrips(context.supabase);
+
+    const map = new Map<
+      string,
+      {
+        car_plate: string;
+        car_code: string | null;
+        car_description: string | null;
+        car_type: string | null;
+        trips_count: number;
+        total_km: number;
+        min_start: number;
+        max_end: number;
+        first_at: string | null;
+        last_at: string | null;
+      }
+    >();
+
+    for (const t of trips) {
+      const plate = (t.car_plate ?? "").trim();
+      if (!plate) continue;
+      const start = Number(t.start_odometer ?? 0);
+      const end = Number(t.end_odometer ?? 0);
+      const dist = end > start ? end - start : 0;
+      const key = plate;
+      const prev = map.get(key);
+      if (!prev) {
+        map.set(key, {
+          car_plate: plate,
+          car_code: t.car_code,
+          car_description: t.car_description,
+          car_type: t.car_type,
+          trips_count: 1,
+          total_km: dist,
+          min_start: start || Number.POSITIVE_INFINITY,
+          max_end: end,
+          first_at: t.start_at,
+          last_at: t.end_at,
+        });
+      } else {
+        prev.trips_count += 1;
+        prev.total_km += dist;
+        if (start && start < prev.min_start) prev.min_start = start;
+        if (end > prev.max_end) prev.max_end = end;
+        if (t.start_at && (!prev.first_at || t.start_at < prev.first_at)) prev.first_at = t.start_at;
+        if (t.end_at && (!prev.last_at || t.end_at > prev.last_at)) prev.last_at = t.end_at;
+      }
+    }
+
+    return Array.from(map.values())
+      .map((r) => ({
+        ...r,
+        min_start: r.min_start === Number.POSITIVE_INFINITY ? 0 : r.min_start,
+        span_km: r.max_end - (r.min_start === Number.POSITIVE_INFINITY ? 0 : r.min_start),
+      }))
+      .sort((a, b) => b.total_km - a.total_km);
+  });
+
+export const getDriverKmReport = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureAdminOrViewer(context.supabase, context.userId);
+    const trips = await fetchAllCompletedTrips(context.supabase);
+
+    // Resolve driver names
+    const { data: driversData } = await context.supabase.from("drivers").select("id, name, sap_number");
+    const driverById = new Map<string, { name: string; sap: string | null }>();
+    (driversData ?? []).forEach((d: any) =>
+      driverById.set(d.id, { name: d.name, sap: d.sap_number ?? null }),
+    );
+
+    const map = new Map<
+      string,
+      {
+        driver_name: string;
+        sap_number: string | null;
+        trips_count: number;
+        total_km: number;
+        first_at: string | null;
+        last_at: string | null;
+      }
+    >();
+
+    for (const t of trips) {
+      let name = "";
+      let sap: string | null = null;
+      if (t.driver_id && driverById.has(t.driver_id)) {
+        const d = driverById.get(t.driver_id)!;
+        name = d.name;
+        sap = d.sap;
+      } else if (t.driver_name_rental) {
+        name = t.driver_name_rental;
+      } else if (t.created_by_name) {
+        name = t.created_by_name;
+      }
+      name = (name ?? "").trim();
+      if (!name) continue;
+
+      const start = Number(t.start_odometer ?? 0);
+      const end = Number(t.end_odometer ?? 0);
+      const dist = end > start ? end - start : 0;
+      const key = `${name}::${sap ?? ""}`;
+      const prev = map.get(key);
+      if (!prev) {
+        map.set(key, {
+          driver_name: name,
+          sap_number: sap,
+          trips_count: 1,
+          total_km: dist,
+          first_at: t.start_at,
+          last_at: t.end_at,
+        });
+      } else {
+        prev.trips_count += 1;
+        prev.total_km += dist;
+        if (t.start_at && (!prev.first_at || t.start_at < prev.first_at)) prev.first_at = t.start_at;
+        if (t.end_at && (!prev.last_at || t.end_at > prev.last_at)) prev.last_at = t.end_at;
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.total_km - a.total_km);
+  });

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrustRouteImport } from './routes/trust'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ManageRouteImport } from './routes/manage'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -20,6 +21,11 @@ import { Route as TripsIdRouteImport } from './routes/trips.$id'
 const TrustRoute = TrustRouteImport.update({
   id: '/trust',
   path: '/trust',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/manage': typeof ManageRoute
   '/profile': typeof ProfileRoute
+  '/reports': typeof ReportsRoute
   '/trust': typeof TrustRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/manage': typeof ManageRoute
   '/profile': typeof ProfileRoute
+  '/reports': typeof ReportsRoute
   '/trust': typeof TrustRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/manage': typeof ManageRoute
   '/profile': typeof ProfileRoute
+  '/reports': typeof ReportsRoute
   '/trust': typeof TrustRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/manage'
     | '/profile'
+    | '/reports'
     | '/trust'
     | '/trips/$id'
     | '/trips/new'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/manage'
     | '/profile'
+    | '/reports'
     | '/trust'
     | '/trips/$id'
     | '/trips/new'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/manage'
     | '/profile'
+    | '/reports'
     | '/trust'
     | '/trips/$id'
     | '/trips/new'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ManageRoute: typeof ManageRoute
   ProfileRoute: typeof ProfileRoute
+  ReportsRoute: typeof ReportsRoute
   TrustRoute: typeof TrustRoute
   TripsIdRoute: typeof TripsIdRoute
   TripsNewRoute: typeof TripsNewRoute
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/trust'
       fullPath: '/trust'
       preLoaderRoute: typeof TrustRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ManageRoute: ManageRoute,
   ProfileRoute: ProfileRoute,
+  ReportsRoute: ReportsRoute,
   TrustRoute: TrustRoute,
   TripsIdRoute: TripsIdRoute,
   TripsNewRoute: TripsNewRoute,

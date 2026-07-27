@@ -2,19 +2,36 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useIsViewer } from "@/hooks/use-is-viewer";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Car, ListChecks, Plus, Settings, LogOut, Loader2, User } from "lucide-react";
+import { Car, ListChecks, Plus, Settings, LogOut, Loader2, User, Mail, BarChart3 } from "lucide-react";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { NetworkBanner } from "@/components/network-banner";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { isViewer } = useIsViewer();
   const { canCreateTrips } = usePermissions();
   const navigate = useNavigate();
   const { location } = useRouterState();
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["messages-unread", user?.id],
+    enabled: !!user?.id,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("user_messages")
+        .select("id", { count: "exact", head: true })
+        .or(`recipient_id.eq.${user!.id},recipient_id.is.null`)
+        .is("read_at", null);
+      return count ?? 0;
+    },
+  });
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -31,6 +48,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const nav = [
     { to: "/", label: "الرحلات", icon: ListChecks },
     ...(canCreateTrips ? [{ to: "/trips/new", label: "رحلة جديدة", icon: Plus }] : []),
+    { to: "/messages", label: "الرسائل", icon: Mail, badge: unreadCount },
+    ...(isAdmin || isViewer ? [{ to: "/reports", label: "التقارير", icon: BarChart3 }] : []),
     { to: "/profile", label: "حسابي", icon: User },
     ...(isAdmin ? [{ to: "/manage", label: "الإدارة", icon: Settings }] : []),
   ];
@@ -72,16 +91,22 @@ export function AppShell({ children }: { children: ReactNode }) {
           {nav.map((n) => {
             const active = location.pathname === n.to;
             const Icon = n.icon;
+            const badge = (n as any).badge as number | undefined;
             return (
               <Link
                 key={n.to}
                 to={n.to}
-                className={`flex flex-col items-center gap-1 py-3 text-xs transition-colors ${
+                className={`relative flex flex-col items-center gap-1 py-3 text-xs transition-colors ${
                   active ? "text-primary font-bold" : "text-muted-foreground"
                 }`}
               >
                 <Icon className="size-5" />
                 {n.label}
+                {badge && badge > 0 ? (
+                  <span className="absolute top-1 left-1/2 translate-x-3 bg-destructive text-destructive-foreground rounded-full text-[10px] min-w-4 h-4 px-1 flex items-center justify-center">
+                    {badge > 9 ? "9+" : badge}
+                  </span>
+                ) : null}
               </Link>
             );
           })}

@@ -751,7 +751,7 @@ function SegmentsCard({
 }
 
 function PhotoAdminControls({
-  canChange, signedUrl, tripId, field, prefix, onChanged,
+  canChange, signedUrl, tripId, field, prefix, onChanged, onLocalPreview,
 }: {
   canChange: boolean;
   signedUrl: string;
@@ -759,6 +759,7 @@ function PhotoAdminControls({
   field: "start_photo_url" | "end_photo_url";
   prefix: string;
   onChanged: () => void;
+  onLocalPreview?: (url: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
 
@@ -783,6 +784,11 @@ function PhotoAdminControls({
   async function onFile(file: File | null) {
     if (!file) return;
     setBusy(true);
+    // معاينة فورية من الملف المحلي حتى لا ينتظر المستخدم رفع الشبكة
+    try {
+      const localUrl = URL.createObjectURL(file);
+      onLocalPreview?.(localUrl);
+    } catch {}
     try {
       const path = await uploadOdometerPhoto(file, prefix);
       const { error } = await supabase.from("trips").update({ [field]: path } as any).eq("id", tripId);

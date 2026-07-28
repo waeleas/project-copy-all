@@ -299,8 +299,8 @@ function TripDetail() {
           open={editOpen}
           onClose={() => setEditOpen(false)}
           onSaved={() => {
-            qc.invalidateQueries({ queryKey: ["trip", id] });
-            qc.invalidateQueries({ queryKey: ["trips"] });
+            qc.invalidateQueries({ queryKey: ["trip", id], refetchType: "all" });
+            qc.invalidateQueries({ queryKey: ["trips"], refetchType: "all" });
           }}
         />
       )}

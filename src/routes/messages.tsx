@@ -37,13 +37,25 @@ function Inbox() {
 
   useEffect(() => {
     if (!data || !user?.id) return;
+    // Persist broadcast reads locally (broadcasts are shared, can't per-user update in DB)
+    const broadcasts = data.filter((m: any) => m.recipient_id === null);
+    if (broadcasts.length) {
+      const key = `msg.readBroadcasts.${user.id}`;
+      let existing: string[] = [];
+      try { existing = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
+      const merged = Array.from(new Set([...existing, ...broadcasts.map((m: any) => m.id)]));
+      localStorage.setItem(key, JSON.stringify(merged));
+    }
     const unread = data.filter((m: any) => !m.read_at && m.recipient_id === user.id);
-    if (unread.length === 0) return;
-    supabase
-      .from("user_messages")
-      .update({ read_at: new Date().toISOString() })
-      .in("id", unread.map((m: any) => m.id))
-      .then(() => qc.invalidateQueries({ queryKey: ["messages-unread", user.id] }));
+    if (unread.length > 0) {
+      supabase
+        .from("user_messages")
+        .update({ read_at: new Date().toISOString() })
+        .in("id", unread.map((m: any) => m.id))
+        .then(() => qc.invalidateQueries({ queryKey: ["messages-unread", user.id] }));
+    } else {
+      qc.invalidateQueries({ queryKey: ["messages-unread", user.id] });
+    }
   }, [data, user?.id, qc]);
 
   return (

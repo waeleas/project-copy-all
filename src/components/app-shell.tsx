@@ -24,12 +24,25 @@ export function AppShell({ children }: { children: ReactNode }) {
     enabled: !!user?.id,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const { count } = await supabase
+      // Direct unread messages
+      const { count: directUnread } = await supabase
         .from("user_messages")
         .select("id", { count: "exact", head: true })
-        .or(`recipient_id.eq.${user!.id},recipient_id.is.null`)
+        .eq("recipient_id", user!.id)
         .is("read_at", null);
-      return count ?? 0;
+
+      // Broadcasts: mark-as-read is stored per-user in localStorage
+      const { data: broadcasts } = await supabase
+        .from("user_messages")
+        .select("id")
+        .is("recipient_id", null);
+      let readSet = new Set<string>();
+      try {
+        readSet = new Set(JSON.parse(localStorage.getItem(`msg.readBroadcasts.${user!.id}`) || "[]"));
+      } catch {}
+      const broadcastUnread = (broadcasts ?? []).filter((m: any) => !readSet.has(m.id)).length;
+
+      return (directUnread ?? 0) + broadcastUnread;
     },
   });
 

@@ -21,6 +21,7 @@ import { Car as CarIcon, ListChecks, Users as UsersIcon, ShieldCheck, Eye, Ban }
 import { DataToolbar, exportToXlsx, pick } from "@/components/data-toolbar";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { BackupButton } from "@/components/backup-button";
+import { RestoreButton } from "@/components/restore-button";
 import { MessagesManager } from "@/components/messages-manager";
 
 
@@ -55,7 +56,10 @@ function Manage() {
           <h1 className="text-2xl font-bold">البيانات الأساسية</h1>
           <p className="text-sm text-muted-foreground">إدارة المكاتب ومتلقي الخدمة أو فنى والسائقين والمستخدمين</p>
         </div>
-        <BackupButton />
+        <div className="flex items-center gap-2 flex-wrap">
+          <BackupButton />
+          <RestoreButton />
+        </div>
       </div>
 
 

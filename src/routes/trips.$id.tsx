@@ -216,7 +216,11 @@ function TripDetail() {
             tripId={id}
             field="start_photo_url"
             prefix="start"
-            onChanged={() => qc.invalidateQueries({ queryKey: ["trip", id] })}
+            onLocalPreview={setStartPhotoUrl}
+            onChanged={() => {
+              qc.invalidateQueries({ queryKey: ["trip", id], refetchType: "all" });
+              qc.invalidateQueries({ queryKey: ["trips"], refetchType: "all" });
+            }}
           />
         </CardContent>
       </Card>

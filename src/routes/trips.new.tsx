@@ -761,12 +761,33 @@ export function SapCombobox({ items, value, onChange, placeholder, allowNone, no
 }
 
 export function PhotoInput({ preview, onFile, label = "صورة العداد", invalid }: { preview: string; onFile: (f: File | null) => void; label?: string; invalid?: boolean }) {
+  const [info, setInfo] = useState<{ name: string; size: number } | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
+  function handle(f: File | null) {
+    setPreviewFailed(false);
+    if (f) setInfo({ name: f.name || "photo", size: f.size });
+    else setInfo(null);
+    onFile(f);
+  }
   return (
     <div className="space-y-1.5" data-invalid={invalid ? "true" : undefined}>
       <Label className={invalid ? "text-destructive" : undefined}>{label}</Label>
-      {preview && <img src={preview} alt="معاينة" className="w-full max-h-60 object-contain rounded-lg border bg-muted" />}
+      {preview && !previewFailed && (
+        <img
+          src={preview}
+          alt="معاينة"
+          className="w-full max-h-60 object-contain rounded-lg border bg-muted"
+          onError={() => setPreviewFailed(true)}
+        />
+      )}
+      {info && (
+        <div className="text-xs text-success flex items-center gap-1 bg-success/10 rounded-md px-2 py-1">
+          <span>✓</span>
+          <span>تم اختيار الصورة{previewFailed ? " (تعذّر عرض المعاينة لكن سيتم رفعها)" : ""}: {info.name} — {(info.size / 1024).toFixed(0)} KB</span>
+        </div>
+      )}
       <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
-        <CameraCapture onCapture={(f) => onFile(f)} />
+        <CameraCapture onCapture={(f) => handle(f)} />
         <label className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center gap-1 cursor-pointer hover:bg-accent/30 text-sm select-none active:bg-accent/50">
           <span className="text-xl">🖼️</span>
           <span>من المعرض</span>
@@ -776,7 +797,7 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
             className="hidden"
             // إعادة تصفير القيمة تضمن استجابة المعرض حتى عند اختيار نفس الملف مجدداً
             onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
-            onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => handle(e.target.files?.[0] ?? null)}
           />
         </label>
       </div>

@@ -226,12 +226,14 @@ function NewTrip() {
     setErrors({});
     setLoading(true);
     let step = "auth";
-    setSubmitStep("جارٍ التحقق من المستخدم...");
+    let stepLabel = "جارٍ التحقق من المستخدم...";
+    setSubmitStep(stepLabel);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("انتهت الجلسة، يرجى تسجيل الدخول مجدداً");
       step = "open-trip";
-      setSubmitStep("جارٍ التحقق من الرحلات المفتوحة...");
+      stepLabel = "جارٍ التحقق من الرحلات المفتوحة...";
+      setSubmitStep(stepLabel);
       const { data: openTrips } = await supabase
         .from("trips")
         .select("id, trip_no")
@@ -265,10 +267,12 @@ function NewTrip() {
 
       if (!photo) throw new Error("يجب اختيار صورة العداد");
       step = "photo";
-      setSubmitStep("جارٍ ضغط ورفع صورة العداد...");
+      stepLabel = "جارٍ ضغط ورفع صورة العداد...";
+      setSubmitStep(stepLabel);
       const path = await uploadOdometerPhoto(photo, "start");
       step = "profile";
-      setSubmitStep("جارٍ قراءة بيانات المستخدم...");
+      stepLabel = "جارٍ قراءة بيانات المستخدم...";
+      setSubmitStep(stepLabel);
       const { data: prof } = await supabase
         .from("profiles")
         .select("display_name, username")
@@ -276,7 +280,8 @@ function NewTrip() {
         .maybeSingle();
       const creatorName = prof?.display_name ?? prof?.username ?? user.email ?? null;
       step = "insert";
-      setSubmitStep("جارٍ حفظ بيانات الرحلة...");
+      stepLabel = "جارٍ حفظ بيانات الرحلة...";
+      setSubmitStep(stepLabel);
       const { data: trip, error } = await supabase.from("trips").insert({
         created_by: user.id,
         created_by_email: user.email ?? null,
@@ -308,7 +313,7 @@ function NewTrip() {
     } catch (err: any) {
       const msg = getTripSubmitError(err, step);
       toast.error(
-        `${msg}\nالمرحلة: ${submitStep || "إنشاء الرحلة"}\nراجع الحقول وحاول مرة أخرى.`,
+        `${msg}\nالمرحلة: ${stepLabel || "إنشاء الرحلة"}\nراجع الحقول وحاول مرة أخرى.`,
         { duration: 9000, style: { whiteSpace: "pre-line", textAlign: "right" } as any },
       );
     } finally {

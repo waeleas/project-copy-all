@@ -1,9 +1,9 @@
 import { arabicError } from "@/lib/errors";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, type FormEvent, type ReactNode } from "react";
+import { useState, useEffect, useRef, type FormEvent, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getSignedPhotoUrl, uploadOdometerPhoto } from "@/lib/storage";
+import { getSignedPhotoUrl, MAX_ODOMETER_PHOTO_BYTES, uploadOdometerPhoto } from "@/lib/storage";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -762,6 +762,8 @@ function PhotoAdminControls({
   onLocalPreview?: (url: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [pickError, setPickError] = useState("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function download() {
     if (!signedUrl) return;
@@ -783,6 +785,15 @@ function PhotoAdminControls({
 
   async function onFile(file: File | null) {
     if (!file) return;
+    setPickError("");
+    if (file.size > MAX_ODOMETER_PHOTO_BYTES) {
+      setPickError("حجم الصورة كبير جداً، اختر صورة أقل من 15 ميجابايت");
+      return;
+    }
+    if (file.type && !file.type.startsWith("image/")) {
+      setPickError("الملف المختار ليس صورة");
+      return;
+    }
     setBusy(true);
     // معاينة فورية من الملف المحلي حتى لا ينتظر المستخدم رفع الشبكة
     try {
@@ -812,12 +823,23 @@ function PhotoAdminControls({
         </Button>
       )}
       {canChange && (
-        <label className="inline-flex items-center gap-1 text-sm border rounded-md px-3 py-1.5 cursor-pointer hover:bg-accent">
+        <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}>
           <Pencil className="size-4" />
           {busy ? "جاري الرفع..." : (signedUrl ? "تغيير الصورة" : "رفع صورة")}
-          <input type="file" accept="image/*" className="hidden" disabled={busy} onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
-        </label>
+        </Button>
       )}
+      {canChange && (
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          className="hidden"
+          disabled={busy}
+          onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
+          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+        />
+      )}
+      {pickError && <div className="basis-full text-xs text-destructive bg-destructive/10 rounded-md px-2 py-1">{pickError}</div>}
     </div>
   );
 }

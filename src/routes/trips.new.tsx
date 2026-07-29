@@ -12,8 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Camera, Loader2, MapPin, Gauge } from "lucide-react";
-import { uploadOdometerPhoto } from "@/lib/storage";
+import { Loader2, MapPin, Gauge } from "lucide-react";
+import { MAX_ODOMETER_PHOTO_BYTES, uploadOdometerPhoto } from "@/lib/storage";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";
 import { CameraCapture } from "@/components/camera-capture";
@@ -107,6 +107,7 @@ function NewTrip() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [submitStep, setSubmitStep] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const handheldRef = useRef<HTMLInputElement | null>(null);
@@ -152,7 +153,19 @@ function NewTrip() {
 
   function handlePhoto(file: File | null) {
     setPhoto(file);
-    if (file) setPhotoPreview(URL.createObjectURL(file));
+    if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview(file ? URL.createObjectURL(file) : "");
+  }
+
+  function getTripSubmitError(err: unknown, step: string) {
+    const translated = arabicError(err, "");
+    if (translated) return translated;
+    if (step === "photo") return "تعذر رفع صورة العداد. غالباً الشبكة ضعيفة أو نوع الصورة غير مدعوم";
+    if (step === "auth") return "تعذر التحقق من المستخدم. سجّل الخروج ثم ادخل مرة أخرى";
+    if (step === "open-trip") return "تعذر التحقق من الرحلات المفتوحة. افحص الشبكة ثم حاول مرة أخرى";
+    if (step === "profile") return "تعذر قراءة بيانات المستخدم. حاول مرة أخرى";
+    if (step === "insert") return "تعذر حفظ الرحلة في قاعدة البيانات. راجع الحقول المظللة وحاول مرة أخرى";
+    return "تعذّر إنشاء الرحلة. افحص الشبكة ثم حاول مرة أخرى";
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -212,12 +225,19 @@ function NewTrip() {
     }
     setErrors({});
     setLoading(true);
+    let step = "auth";
+    let stepLabel = "جارٍ التحقق من المستخدم...";
+    setSubmitStep(stepLabel);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("انتهت الجلسة، يرجى تسجيل الدخول مجدداً");
+      step = "open-trip";
+      stepLabel = "جارٍ التحقق من الرحلات المفتوحة...";
+      setSubmitStep(stepLabel);
       const { data: openTrips } = await supabase
         .from("trips")
         .select("id, trip_no")
-        .eq("created_by", user!.id)
+        .eq("created_by", user.id)
         .eq("status", "open")
         .limit(1);
       if (openTrips && openTrips.length > 0) {
@@ -245,16 +265,26 @@ function NewTrip() {
         return;
       }
 
-      const path = await uploadOdometerPhoto(photo!, "start");
+      if (!photo) throw new Error("يجب اختيار صورة العداد");
+      step = "photo";
+      stepLabel = "جارٍ ضغط ورفع صورة العداد...";
+      setSubmitStep(stepLabel);
+      const path = await uploadOdometerPhoto(photo, "start");
+      step = "profile";
+      stepLabel = "جارٍ قراءة بيانات المستخدم...";
+      setSubmitStep(stepLabel);
       const { data: prof } = await supabase
         .from("profiles")
         .select("display_name, username")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .maybeSingle();
-      const creatorName = prof?.display_name ?? prof?.username ?? user!.email ?? null;
+      const creatorName = prof?.display_name ?? prof?.username ?? user.email ?? null;
+      step = "insert";
+      stepLabel = "جارٍ حفظ بيانات الرحلة...";
+      setSubmitStep(stepLabel);
       const { data: trip, error } = await supabase.from("trips").insert({
-        created_by: user!.id,
-        created_by_email: user!.email ?? null,
+        created_by: user.id,
+        created_by_email: user.email ?? null,
         created_by_name: creatorName,
         car_type: form.car_type,
 
@@ -281,13 +311,14 @@ function NewTrip() {
       toast.success("تم بدء الرحلة");
       navigate({ to: "/trips/$id", params: { id: trip.id } });
     } catch (err: any) {
-      const msg = arabicError(err, "تعذّر إنشاء الرحلة");
+      const msg = getTripSubmitError(err, step);
       toast.error(
-        `${msg}\nراجع الحقول وحاول مرة أخرى.`,
+        `${msg}\nالمرحلة: ${stepLabel || "إنشاء الرحلة"}\nراجع الحقول وحاول مرة أخرى.`,
         { duration: 9000, style: { whiteSpace: "pre-line", textAlign: "right" } as any },
       );
     } finally {
       setLoading(false);
+      setSubmitStep("");
     }
   }
 
@@ -567,7 +598,7 @@ function NewTrip() {
       </Card>
 
       <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
-        {loading && <Loader2 className="ml-2 size-4 animate-spin" />} بدء الرحلة
+        {loading && <Loader2 className="ml-2 size-4 animate-spin" />} {loading ? (submitStep || "جارٍ إنشاء الرحلة...") : "بدء الرحلة"}
       </Button>
     </form>
   );
@@ -763,10 +794,28 @@ export function SapCombobox({ items, value, onChange, placeholder, allowNone, no
 export function PhotoInput({ preview, onFile, label = "صورة العداد", invalid }: { preview: string; onFile: (f: File | null) => void; label?: string; invalid?: boolean }) {
   const [info, setInfo] = useState<{ name: string; size: number } | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
+  const [pickError, setPickError] = useState("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
   function handle(f: File | null) {
     setPreviewFailed(false);
-    if (f) setInfo({ name: f.name || "photo", size: f.size });
-    else setInfo(null);
+    setPickError("");
+    if (f) {
+      if (f.size > MAX_ODOMETER_PHOTO_BYTES) {
+        setInfo(null);
+        setPickError("حجم الصورة كبير جداً، اختر صورة أقل من 15 ميجابايت");
+        onFile(null);
+        return;
+      }
+      if (f.type && !f.type.startsWith("image/")) {
+        setInfo(null);
+        setPickError("الملف المختار ليس صورة");
+        onFile(null);
+        return;
+      }
+      setInfo({ name: f.name || "photo", size: f.size });
+    } else {
+      setInfo(null);
+    }
     onFile(f);
   }
   return (
@@ -786,20 +835,31 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
           <span>تم اختيار الصورة{previewFailed ? " (تعذّر عرض المعاينة لكن سيتم رفعها)" : ""}: {info.name} — {(info.size / 1024).toFixed(0)} KB</span>
         </div>
       )}
+      {pickError && (
+        <div className="text-xs text-destructive bg-destructive/10 rounded-md px-2 py-1">
+          {pickError}
+        </div>
+      )}
       <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
         <CameraCapture onCapture={(f) => handle(f)} />
-        <label className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center gap-1 cursor-pointer hover:bg-accent/30 text-sm select-none active:bg-accent/50">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-auto min-h-24 border-2 border-dashed flex-col gap-1 hover:bg-accent/30 active:bg-accent/50"
+          onClick={() => fileRef.current?.click()}
+        >
           <span className="text-xl">🖼️</span>
           <span>من المعرض</span>
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            // إعادة تصفير القيمة تضمن استجابة المعرض حتى عند اختيار نفس الملف مجدداً
-            onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
-            onChange={(e) => handle(e.target.files?.[0] ?? null)}
-          />
-        </label>
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          className="hidden"
+          // إعادة تصفير القيمة تضمن استجابة المعرض حتى عند اختيار نفس الملف مجدداً
+          onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
+          onChange={(e) => handle(e.target.files?.[0] ?? null)}
+        />
       </div>
     </div>
   );

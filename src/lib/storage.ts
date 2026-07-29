@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const MAX_BYTES = 15 * 1024 * 1024; // 15 MB (raw camera photos can be large)
+export const MAX_ODOMETER_PHOTO_BYTES = 15 * 1024 * 1024; // 15 MB (raw camera photos can be large)
 
 // Magic-byte sniffing — source of truth for image type
 async function sniffMime(file: File): Promise<string | null> {
@@ -56,12 +56,20 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("غير مسجل");
 
-  if (file.size > MAX_BYTES) throw new Error("حجم الملف كبير جداً");
+  if (file.size > MAX_ODOMETER_PHOTO_BYTES) throw new Error("حجم الصورة كبير جداً، اختر صورة أقل من 15 ميجابايت");
 
   const sniffed = await sniffMime(file);
   const declared = (file.type || "").toLowerCase();
 
+  if (!sniffed && declared && !declared.startsWith("image/")) {
+    throw new Error("الملف المختار ليس صورة، اختر صورة عداد واضحة");
+  }
+
   const compressed = await compressImage(file);
+
+  if (sniffed === "image/heic" && !compressed) {
+    throw new Error("صيغة صورة الآيفون HEIC غير مدعومة على هذا الجهاز. افتح الكاميرا من داخل البرنامج أو اختر صورة JPG / PNG");
+  }
 
   let finalBlob: Blob = file;
   let finalType = sniffed || declared || "application/octet-stream";
@@ -90,6 +98,10 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
     }
   }
 
+  if (!["image/jpeg", "image/png", "image/webp"].includes(finalType)) {
+    throw new Error("نوع الصورة غير مدعوم. استخدم صورة JPG أو PNG أو WEBP");
+  }
+
   const path = `${user.id}/${prefix}-${Date.now()}.${safeExt}`;
 
   // إعادة المحاولة تلقائياً في حال ضعف الشبكة (3 محاولات مع تأخير متزايد)
@@ -112,6 +124,10 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
       if (!/network|fetch|timeout|abort|load|503|502|504/.test(msg)) throw e;
     }
     if (attempt < 3) await sleep(600 * attempt);
+  }
+  const msg = String(lastErr?.message || "").toLowerCase();
+  if (/network|fetch|timeout|abort|load|503|502|504/.test(msg)) {
+    throw new Error("تعذر رفع الصورة بسبب ضعف الشبكة. جرّب مرة أخرى أو التقط صورة أوضح بحجم أقل");
   }
   throw lastErr ?? new Error("تعذر رفع الصورة، الشبكة ضعيفة");
 }

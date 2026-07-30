@@ -129,45 +129,39 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
   const sniffed = await sniffMime(file);
   const declared = (file.type || "").toLowerCase();
 
-  if (!sniffed && declared && !declared.startsWith("image/")) {
-    throw new Error("الملف المختار ليس صورة، اختر صورة عداد واضحة");
-  }
-
+  // نقبل أي امتداد صورة؛ نحاول دائماً التحويل إلى JPEG مضغوط
   const compressed = await compressImage(file);
 
-  if (sniffed === "image/heic" && !compressed) {
-    throw new Error("صيغة صورة الآيفون HEIC غير مدعومة على هذا الجهاز. افتح الكاميرا من داخل البرنامج أو اختر صورة JPG / PNG");
-  }
+  let finalBlob: Blob;
+  let finalType: string;
+  let safeExt: string;
 
-  let finalBlob: Blob = file;
-  let finalType = sniffed || declared || "application/octet-stream";
-  let safeExt = "bin";
-
-  const extMap: Record<string, string> = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/heic": "heic",
-  };
-
-  if (compressed) {
-    finalBlob = compressed.size < file.size ? compressed : (sniffed === "image/heic" ? compressed : file);
-    if (finalBlob === compressed) {
-      finalType = "image/jpeg";
-      safeExt = "jpg";
-    } else {
-      safeExt = extMap[finalType] || (file.name.split(".").pop() || "jpg").toLowerCase();
-    }
+  if (compressed && compressed.size > 0) {
+    finalBlob = compressed;
+    finalType = "image/jpeg";
+    safeExt = "jpg";
   } else {
+    // تعذّر فك الترميز في هذا المتصفح — نرفع الملف كما هو إن كان صورة
+    const extMap: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/heic": "heic",
+      "image/heif": "heif",
+      "image/avif": "avif",
+      "image/gif": "gif",
+      "image/bmp": "bmp",
+      "image/tiff": "tiff",
+    };
     const nameExt = (file.name.split(".").pop() || "").toLowerCase();
-    safeExt = extMap[finalType] || nameExt || "bin";
-    if (!finalType || finalType === "application/octet-stream") {
-      finalType = file.type || "application/octet-stream";
+    const looksImage = !!sniffed || declared.startsWith("image/") ||
+      ["jpg", "jpeg", "png", "webp", "heic", "heif", "avif", "gif", "bmp", "tif", "tiff"].includes(nameExt);
+    if (!looksImage) {
+      throw new Error("الملف المختار ليس صورة، اختر صورة عداد واضحة");
     }
-  }
-
-  if (!["image/jpeg", "image/png", "image/webp"].includes(finalType)) {
-    throw new Error("نوع الصورة غير مدعوم. استخدم صورة JPG أو PNG أو WEBP");
+    finalBlob = file;
+    finalType = sniffed || (declared.startsWith("image/") ? declared : "") || "image/jpeg";
+    safeExt = extMap[finalType] || nameExt || "jpg";
   }
 
   const path = `${user.id}/${prefix}-${Date.now()}.${safeExt}`;

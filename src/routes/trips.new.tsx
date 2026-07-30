@@ -854,7 +854,7 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         <input
           ref={fileRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          accept="image/*"
           className="hidden"
           // إعادة تصفير القيمة تضمن استجابة المعرض حتى عند اختيار نفس الملف مجدداً
           onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}

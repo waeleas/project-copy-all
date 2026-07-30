@@ -419,12 +419,15 @@ function UsersManager() {
                 search={search}
                 onSearch={setSearch}
                 onExport={() => exportToXlsx("users.xlsx", allUsers.map((u: any) => ({
-                  username: u.username, display_name: u.display_name, email: u.email,
-                  is_admin: u.roles.includes("admin") ? 1 : 0,
-                  is_viewer: u.roles.includes("viewer") ? 1 : 0,
-                  rental_cars: u.rental_cars_override === null ? "افتراضي" : u.rental_cars_override ? "مسموح" : "ممنوع",
-                  trip_create: u.trip_create_override === null ? "افتراضي" : u.trip_create_override ? "مسموح" : "ممنوع",
-                })))}
+                  "اسم المستخدم": u.username ?? "",
+                  "الاسم": u.display_name ?? "",
+                  "البريد": u.email ?? "",
+                  "استخدم اليوزر؟": u.last_sign_in_at ? "نعم" : "لا",
+                  "آخر دخول": u.last_sign_in_at ? formatLastSignIn(u.last_sign_in_at) : "لم يسجّل الدخول",
+                  "الدور": u.roles.includes("admin") ? "مشرف" : u.roles.includes("viewer") ? "اطّلاع" : "مستخدم",
+                  "سيارات الإيجار": u.rental_cars_override === null ? "افتراضي" : u.rental_cars_override ? "مسموح" : "ممنوع",
+                  "إنشاء الطلبات": u.trip_create_override === null ? "افتراضي" : u.trip_create_override ? "مسموح" : "ممنوع",
+                })), "تقرير المستخدمين")}
                 onImportRows={importUsers}
                 placeholder="بحث بالاسم أو اليوزر..."
               />

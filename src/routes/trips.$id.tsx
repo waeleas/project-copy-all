@@ -832,7 +832,7 @@ function PhotoAdminControls({
         <input
           ref={fileRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          accept="image/*"
           className="hidden"
           disabled={busy}
           onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}

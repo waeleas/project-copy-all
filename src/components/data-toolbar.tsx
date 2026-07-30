@@ -53,11 +53,97 @@ export function DataToolbar({ search, onSearch, onExport, onImportRows, placehol
   );
 }
 
-export function exportToXlsx(filename: string, rows: any[]) {
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "data");
-  XLSX.writeFile(wb, filename);
+/** تصدير منسّق واحترافي (عربي RTL) لأي جدول بيانات. */
+export async function exportToXlsx(filename: string, rows: any[], title?: string) {
+  if (!rows || rows.length === 0) return;
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "خطوط السير";
+  wb.created = new Date();
+
+  const name = filename.replace(/\.xlsx$/i, "");
+  const ws = wb.addWorksheet("البيانات", {
+    views: [{ rightToLeft: true, state: "frozen", ySplit: 3 }],
+    properties: { defaultRowHeight: 20 },
+  });
+
+  const headers = Object.keys(rows[0]);
+
+  ws.mergeCells(1, 1, 1, headers.length);
+  const titleCell = ws.getCell(1, 1);
+  titleCell.value = `${title ?? name} — ${new Date().toLocaleString("ar-EG")}`;
+  titleCell.font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFFFF" } };
+  titleCell.alignment = { horizontal: "center", vertical: "middle" };
+  titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E3A8A" } };
+  ws.getRow(1).height = 32;
+
+  ws.mergeCells(2, 1, 2, headers.length);
+  const summary = ws.getCell(2, 1);
+  summary.value = `عدد السجلات: ${rows.length}`;
+  summary.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FF1E3A8A" } };
+  summary.alignment = { horizontal: "center", vertical: "middle" };
+  summary.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDBEAFE" } };
+  ws.getRow(2).height = 22;
+
+  const headerRow = ws.getRow(3);
+  headers.forEach((h, i) => {
+    const c = headerRow.getCell(i + 1);
+    c.value = h;
+    c.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+    c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    c.border = {
+      top: { style: "thin", color: { argb: "FF1E3A8A" } },
+      bottom: { style: "medium", color: { argb: "FF1E3A8A" } },
+      left: { style: "thin", color: { argb: "FF1E3A8A" } },
+      right: { style: "thin", color: { argb: "FF1E3A8A" } },
+    };
+  });
+  headerRow.height = 30;
+
+  rows.forEach((r, idx) => {
+    const row = ws.getRow(idx + 4);
+    const zebra = idx % 2 === 0 ? "FFF8FAFC" : "FFFFFFFF";
+    headers.forEach((h, i) => {
+      const cell = row.getCell(i + 1);
+      const v = r[h];
+      cell.value = v === "" || v == null ? null : v;
+      cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      cell.font = { name: "Calibri", size: 10, color: { argb: "FF0F172A" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: zebra } };
+      cell.border = {
+        top: { style: "hair", color: { argb: "FFCBD5E1" } },
+        bottom: { style: "hair", color: { argb: "FFCBD5E1" } },
+        left: { style: "hair", color: { argb: "FFCBD5E1" } },
+        right: { style: "hair", color: { argb: "FFCBD5E1" } },
+      };
+      if (typeof v === "number") cell.numFmt = "#,##0";
+    });
+    row.height = 20;
+  });
+
+  headers.forEach((h, i) => {
+    const maxLen = Math.max(
+      String(h).length,
+      ...rows.slice(0, 300).map((r) => String(r[h] ?? "").length),
+    );
+    ws.getColumn(i + 1).width = Math.min(40, Math.max(12, maxLen + 4));
+  });
+
+  ws.autoFilter = { from: { row: 3, column: 1 }, to: { row: 3, column: headers.length } };
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${name}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 /** Find a value in a row by any of the candidate header names (case/space-insensitive). */

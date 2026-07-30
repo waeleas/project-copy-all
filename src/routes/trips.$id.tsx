@@ -675,6 +675,9 @@ function SegmentsCard({
 }) {
   const [route, setRoute] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   async function add(e: FormEvent) {
     e.preventDefault();
@@ -703,6 +706,27 @@ function SegmentsCard({
     }
   }
 
+  async function saveEdit(id: string) {
+    const v = editValue.trim();
+    if (!v) return toast.error("اكتب اسم المسار");
+    if (v.length > 40) return toast.error("يجب ألا يزيد اسم المسار عن 40 حرف");
+    setEditSaving(true);
+    try {
+      const { error } = await supabase
+        .from("trip_segments" as any)
+        .update({ route: v } as any)
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("تم تعديل المسار");
+      setEditingId(null);
+      onChanged();
+    } catch (err: any) {
+      toast.error(arabicError(err, "فشل التعديل"));
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
   async function remove(id: string) {
     if (!confirm("حذف هذا المسار؟")) return;
     const { error } = await supabase.from("trip_segments" as any).delete().eq("id", id);
@@ -723,14 +747,45 @@ function SegmentsCard({
       <CardContent className="space-y-3">
         {segments.map((s, idx) => (
           <div key={s.id} className="flex items-start justify-between gap-2 border rounded-md p-3 bg-muted/30">
-            <div className="flex items-start gap-2 flex-1 min-w-0 flex-wrap">
-              <Badge variant="secondary" className="shrink-0">مسار #{idx + 1}</Badge>
-              <span className="font-medium break-words whitespace-normal min-w-0 flex-1">{s.route || "—"}</span>
-            </div>
-            {canManage && (
-              <Button type="button" size="sm" variant="ghost" className="shrink-0" onClick={() => remove(s.id)}>
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
+            {editingId === s.id ? (
+              <div className="flex-1 space-y-2">
+                <Input
+                  value={editValue}
+                  maxLength={40}
+                  autoFocus
+                  onChange={(e) => setEditValue(e.target.value.slice(0, 40))}
+                />
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" disabled={editSaving} onClick={() => saveEdit(s.id)}>
+                    {editSaving && <Loader2 className="ml-2 size-4 animate-spin" />} حفظ
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                    إلغاء
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start gap-2 flex-1 min-w-0 flex-wrap">
+                  <Badge variant="secondary" className="shrink-0">مسار #{idx + 1}</Badge>
+                  <span className="font-medium break-words whitespace-normal min-w-0 flex-1">{s.route || "—"}</span>
+                </div>
+                {canManage && (
+                  <div className="flex shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setEditingId(s.id); setEditValue(s.route ?? ""); }}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => remove(s.id)}>
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}

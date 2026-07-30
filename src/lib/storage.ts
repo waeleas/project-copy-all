@@ -24,28 +24,96 @@ async function sniffMime(file: File): Promise<string | null> {
   return null;
 }
 
-// أكثر عدوانية في الضغط لتقليل استهلاك الشبكة للسائقين ذوي الباقات الضعيفة
-async function compressImage(file: File | Blob, maxDim = 1100, quality = 0.6): Promise<Blob | null> {
+// فك ترميز الصورة بأي صيغة يدعمها المتصفح (bitmap أولاً ثم عنصر img كبديل)
+async function decodeImage(file: File | Blob): Promise<{ draw: CanvasImageSource; w: number; h: number; close?: () => void } | null> {
   try {
     const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
-    const w = Math.round(bitmap.width * scale);
-    const h = Math.round(bitmap.height * scale);
-    const canvas = typeof OffscreenCanvas !== "undefined"
-      ? new OffscreenCanvas(w, h)
-      : Object.assign(document.createElement("canvas"), { width: w, height: h });
-    const ctx = (canvas as any).getContext("2d");
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    bitmap.close?.();
-    if ("convertToBlob" in canvas) {
-      return await (canvas as OffscreenCanvas).convertToBlob({ type: "image/jpeg", quality });
-    }
-    return await new Promise<Blob>((resolve, reject) =>
-      (canvas as HTMLCanvasElement).toBlob((b) => (b ? resolve(b) : reject(new Error("compress failed"))), "image/jpeg", quality)
-    );
+    return { draw: bitmap, w: bitmap.width, h: bitmap.height, close: () => bitmap.close?.() };
   } catch {
-    return null;
+    // fallback: <img> يدعم صيغاً إضافية (heic على iOS، avif، gif، bmp، svg...)
+    try {
+      const url = URL.createObjectURL(file);
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("decode failed"));
+        el.src = url;
+      });
+      return {
+        draw: img,
+        w: img.naturalWidth,
+        h: img.naturalHeight,
+        close: () => URL.revokeObjectURL(url),
+      };
+    } catch {
+      return null;
+    }
   }
+}
+
+function makeCanvas(w: number, h: number) {
+  if (typeof OffscreenCanvas !== "undefined") return new OffscreenCanvas(w, h);
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  return c;
+}
+
+async function canvasToBlob(canvas: any, type: string, quality: number): Promise<Blob | null> {
+  if ("convertToBlob" in canvas) {
+    try {
+      return await (canvas as OffscreenCanvas).convertToBlob({ type, quality });
+    } catch {
+      return null;
+    }
+  }
+  return await new Promise<Blob | null>((resolve) =>
+    (canvas as HTMLCanvasElement).toBlob((b) => resolve(b), type, quality),
+  );
+}
+
+/**
+ * ضغط قوي مع الحفاظ على وضوح أرقام العداد:
+ * نبدأ بأبعاد وجودة جيدة ثم نخفض تدريجياً حتى نصل لحجم هدف صغير.
+ */
+const TARGET_BYTES = 220 * 1024; // ~220KB هدف مناسب للباقات الضعيفة
+
+async function compressImage(file: File | Blob): Promise<Blob | null> {
+  const decoded = await decodeImage(file);
+  if (!decoded || !decoded.w || !decoded.h) return null;
+
+  const steps: Array<{ maxDim: number; quality: number }> = [
+    { maxDim: 1600, quality: 0.72 },
+    { maxDim: 1400, quality: 0.65 },
+    { maxDim: 1200, quality: 0.58 },
+    { maxDim: 1000, quality: 0.5 },
+    { maxDim: 900, quality: 0.42 },
+  ];
+
+  let best: Blob | null = null;
+  try {
+    for (const step of steps) {
+      const scale = Math.min(1, step.maxDim / Math.max(decoded.w, decoded.h));
+      const w = Math.max(1, Math.round(decoded.w * scale));
+      const h = Math.max(1, Math.round(decoded.h * scale));
+      const canvas = makeCanvas(w, h);
+      const ctx = (canvas as any).getContext("2d");
+      if (!ctx) continue;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      // خلفية بيضاء للصيغ الشفافة (png/webp) حتى لا تصبح سوداء بعد التحويل لـ jpeg
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(decoded.draw, 0, 0, w, h);
+      const blob = await canvasToBlob(canvas, "image/jpeg", step.quality);
+      if (!blob) continue;
+      best = blob;
+      if (blob.size <= TARGET_BYTES) break;
+    }
+  } finally {
+    decoded.close?.();
+  }
+  return best;
 }
 
 function sleep(ms: number) {

@@ -819,6 +819,7 @@ function PhotoAdminControls({
   const [busy, setBusy] = useState(false);
   const [pickError, setPickError] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const pickerId = `${useId()}-photo`;
 
   async function download() {
     if (!signedUrl) return;

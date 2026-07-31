@@ -69,6 +69,61 @@ function ReportsPage() {
     setRange({ from: null, to: null });
   }
 
+  const carsFiltered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    const list = cars.data ?? [];
+    if (!s) return list;
+    return list.filter(
+      (r: any) =>
+        (r.car_plate ?? "").toLowerCase().includes(s) ||
+        (r.car_code ?? "").toLowerCase().includes(s) ||
+        (r.car_description ?? "").toLowerCase().includes(s),
+    );
+  }, [cars.data, q]);
+
+  const driversFiltered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    const list = drivers.data ?? [];
+    if (!s) return list;
+    return list.filter(
+      (r: any) =>
+        (r.driver_name ?? "").toLowerCase().includes(s) ||
+        (r.sap_number ?? "").toLowerCase().includes(s),
+    );
+  }, [drivers.data, q]);
+
+  const totalCarsKm = (cars.data ?? []).reduce((s: number, r: any) => s + r.total_km, 0);
+  const totalDriversKm = (drivers.data ?? []).reduce((s: number, r: any) => s + r.total_km, 0);
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold">التقارير</h1>
+        <p className="text-sm text-muted-foreground">
+          إجمالي الكيلومترات لكل سيارة ولكل سائق (من الرحلات المكتملة)
+          {range.from || range.to ? ` — الفترة: ${range.from || "البداية"} إلى ${range.to || "اليوم"}` : ""}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">من تاريخ</label>
+          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">إلى تاريخ</label>
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
+        </div>
+        <Button size="sm" onClick={applyRange}>تطبيق</Button>
+        <Button size="sm" variant="outline" onClick={clearRange}>الكل</Button>
+        <Input
+          placeholder="بحث..."
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
+
 
       <Tabs defaultValue="cars">
         <TabsList>

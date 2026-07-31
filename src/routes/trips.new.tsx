@@ -113,6 +113,20 @@ function NewTrip() {
   const handheldRef = useRef<HTMLInputElement | null>(null);
   const routeStartRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // آخر قراءة عداد لهذه السيارة من جميع الطلبات
+  const lastReading = useQuery({
+    queryKey: ["last-odometer", form.car_code, form.car_plate],
+    enabled: !!(form.car_code || form.car_plate),
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("last_odometer_for_car", {
+        _car_code: form.car_code || null,
+        _car_plate: form.car_plate || null,
+      });
+      if (error) throw error;
+      return ((data as any[]) ?? [])[0] ?? null;
+    },
+  });
+
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
     setErrors((e) => (e[k as string] ? { ...e, [k as string]: false } : e));

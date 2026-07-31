@@ -477,6 +477,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      last_odometer_for_car: {
+        Args: { _car_code?: string; _car_plate?: string }
+        Returns: {
+          at: string
+          reading: number
+          trip_no: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "viewer"

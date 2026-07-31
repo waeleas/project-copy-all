@@ -1,7 +1,7 @@
 import { arabicError } from "@/lib/errors";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useRef, type FormEvent, type ReactNode } from "react";
+import { useState, useEffect, useRef, useId, type FormEvent, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSignedPhotoUrl, MAX_ODOMETER_PHOTO_BYTES, uploadOdometerPhoto } from "@/lib/storage";
 import { AppShell } from "@/components/app-shell";
@@ -819,6 +819,7 @@ function PhotoAdminControls({
   const [busy, setBusy] = useState(false);
   const [pickError, setPickError] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const pickerId = `${useId()}-photo`;
 
   async function download() {
     if (!signedUrl) return;
@@ -878,17 +879,21 @@ function PhotoAdminControls({
         </Button>
       )}
       {canChange && (
-        <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}>
+        <label
+          htmlFor={pickerId}
+          className={`inline-flex h-8 items-center gap-1 rounded-md border px-3 text-sm cursor-pointer hover:bg-accent/40 ${busy ? "pointer-events-none opacity-60" : ""}`}
+        >
           <Pencil className="size-4" />
           {busy ? "جاري الرفع..." : (signedUrl ? "تغيير الصورة" : "رفع صورة")}
-        </Button>
+        </label>
       )}
       {canChange && (
         <input
+          id={pickerId}
           ref={fileRef}
           type="file"
           accept="image/*"
-          className="hidden"
+          className="sr-only"
           disabled={busy}
           onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
           onChange={(e) => onFile(e.target.files?.[0] ?? null)}

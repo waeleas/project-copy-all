@@ -93,6 +93,8 @@ async function compressImage(file: File | Blob): Promise<Blob | null> {
   let best: Blob | null = null;
   try {
     for (const step of steps) {
+      // إفساح المجال للواجهة حتى لا يتجمد التطبيق أثناء الضغط
+      await new Promise((r) => setTimeout(r, 0));
       const scale = Math.min(1, step.maxDim / Math.max(decoded.w, decoded.h));
       const w = Math.max(1, Math.round(decoded.w * scale));
       const h = Math.max(1, Math.round(decoded.h * scale));

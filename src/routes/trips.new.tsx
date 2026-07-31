@@ -842,21 +842,35 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       )}
       <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
         <CameraCapture onCapture={(f) => handle(f)} />
-        <Button
-          type="button"
-          variant="outline"
-          className="h-auto min-h-24 border-2 border-dashed flex-col gap-1 hover:bg-accent/30 active:bg-accent/50"
-          onClick={() => fileRef.current?.click()}
+        {/* label أصلي: يفتح المعرض مباشرة بدون JS (أكثر استقراراً على الجوال) */}
+        <label
+          htmlFor={galleryId}
+          className="h-auto min-h-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center gap-1 text-sm cursor-pointer hover:bg-accent/30 active:bg-accent/50 select-none"
         >
           <span className="text-xl">🖼️</span>
           <span>من المعرض</span>
-        </Button>
+        </label>
         <input
+          id={galleryId}
           ref={fileRef}
           type="file"
           accept="image/*"
-          className="hidden"
+          className="sr-only"
           // إعادة تصفير القيمة تضمن استجابة المعرض حتى عند اختيار نفس الملف مجدداً
+          onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
+          onChange={(e) => handle(e.target.files?.[0] ?? null)}
+        />
+        {/* بديل: بدون تقييد النوع — يعمل حتى لو مُنع إذن الصور */}
+        <label
+          htmlFor={anyFileId}
+          className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-1"
+        >
+          لم يفتح المعرض؟ اختر ملفاً من الجهاز
+        </label>
+        <input
+          id={anyFileId}
+          type="file"
+          className="sr-only"
           onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
           onChange={(e) => handle(e.target.files?.[0] ?? null)}
         />

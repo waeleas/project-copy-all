@@ -92,12 +92,13 @@ export const getCarKmReport = createServerFn({ method: "GET" })
       const dist = end > start ? end - start : 0;
       const key = plate;
       const prev = map.get(key);
+      const master = carByPlate.get(plate);
       if (!prev) {
         map.set(key, {
           car_plate: plate,
-          car_code: t.car_code,
-          car_description: t.car_description,
-          car_type: t.car_type,
+          car_code: master?.code ?? t.car_code,
+          car_description: master?.description ?? t.car_description,
+          car_type: master?.type ?? t.car_type,
           trips_count: 1,
           total_km: dist,
           min_start: start || Number.POSITIVE_INFINITY,
@@ -105,6 +106,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
           first_at: t.start_at,
           last_at: t.end_at,
         });
+
       } else {
         prev.trips_count += 1;
         prev.total_km += dist;

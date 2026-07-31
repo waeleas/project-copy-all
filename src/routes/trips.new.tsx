@@ -606,7 +606,27 @@ function NewTrip() {
               <Gauge className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input type="text" inputMode="numeric" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} className="pr-10" dir="ltr" />
             </div>
+            {(form.car_code || form.car_plate) && (
+              <div className="mt-1 text-xs">
+                {lastReading.isLoading ? (
+                  <span className="text-muted-foreground">جارٍ جلب آخر قراءة للعداد...</span>
+                ) : lastReading.data ? (
+                  <button
+                    type="button"
+                    onClick={() => set("start_odometer", String(lastReading.data.reading))}
+                    className="rounded-md bg-accent/40 px-2 py-1 text-right hover:bg-accent"
+                  >
+                    آخر قراءة لهذه السيارة:{" "}
+                    <span dir="ltr" className="font-mono font-semibold">{lastReading.data.reading}</span>{" "}
+                    كم (طلب #{lastReading.data.trip_no} — {new Date(lastReading.data.at).toLocaleDateString("ar-EG")}) — اضغط للاستخدام
+                  </button>
+                ) : (
+                  <span className="text-muted-foreground">لا توجد قراءة سابقة لهذه السيارة</span>
+                )}
+              </div>
+            )}
           </Field>
+
           <PhotoInput preview={photoPreview} onFile={(f) => { handlePhoto(f); if (f) setErrors((e) => (e.photo ? { ...e, photo: false } : e)); }} invalid={errors.photo} />
         </CardContent>
       </Card>

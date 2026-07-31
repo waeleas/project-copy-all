@@ -128,9 +128,11 @@ export const getCarKmReport = createServerFn({ method: "GET" })
 
 export const getDriverKmReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: ReportRange) => parseRange(input))
+  .handler(async ({ context, data }) => {
     await ensureAdminOrViewer(context.supabase, context.userId);
-    const trips = await fetchAllCompletedTrips(context.supabase);
+    const trips = await fetchAllCompletedTrips(context.supabase, data);
+
 
     // Resolve driver names
     const { data: driversData } = await context.supabase.from("drivers").select("id, name, sap_number");

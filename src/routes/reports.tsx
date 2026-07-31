@@ -32,6 +32,9 @@ function ReportsPage() {
   const { isViewer, loading: lv } = useIsViewer();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [range, setRange] = useState<{ from: string | null; to: string | null }>({ from: null, to: null });
 
   useEffect(() => {
     if (!la && !lv && !isAdmin && !isViewer) {
@@ -43,8 +46,28 @@ function ReportsPage() {
   const carsFn = useServerFn(getCarKmReport);
   const driversFn = useServerFn(getDriverKmReport);
 
-  const cars = useQuery({ queryKey: ["report", "cars"], queryFn: () => carsFn() });
-  const drivers = useQuery({ queryKey: ["report", "drivers"], queryFn: () => driversFn() });
+  const cars = useQuery({
+    queryKey: ["report", "cars", range.from, range.to],
+    queryFn: () => carsFn({ data: range }),
+  });
+  const drivers = useQuery({
+    queryKey: ["report", "drivers", range.from, range.to],
+    queryFn: () => driversFn({ data: range }),
+  });
+
+  function applyRange() {
+    if (from && to && from > to) {
+      toast.error("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
+      return;
+    }
+    setRange({ from: from || null, to: to || null });
+  }
+
+  function clearRange() {
+    setFrom("");
+    setTo("");
+    setRange({ from: null, to: null });
+  }
 
   const carsFiltered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -76,15 +99,31 @@ function ReportsPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">التقارير</h1>
-        <p className="text-sm text-muted-foreground">إجمالي الكيلومترات لكل سيارة ولكل سائق (من الرحلات المكتملة)</p>
+        <p className="text-sm text-muted-foreground">
+          إجمالي الكيلومترات لكل سيارة ولكل سائق (من الرحلات المكتملة)
+          {range.from || range.to ? ` — الفترة: ${range.from || "البداية"} إلى ${range.to || "اليوم"}` : ""}
+        </p>
       </div>
 
-      <Input
-        placeholder="بحث..."
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">من تاريخ</label>
+          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">إلى تاريخ</label>
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
+        </div>
+        <Button size="sm" onClick={applyRange}>تطبيق</Button>
+        <Button size="sm" variant="outline" onClick={clearRange}>الكل</Button>
+        <Input
+          placeholder="بحث..."
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
+
 
       <Tabs defaultValue="cars">
         <TabsList>

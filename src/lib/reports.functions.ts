@@ -25,19 +25,29 @@ type TripRow = {
   status: string | null;
 };
 
-async function fetchAllCompletedTrips(supabase: any): Promise<TripRow[]> {
+export type ReportRange = { from?: string | null; to?: string | null };
+
+function parseRange(input: any): ReportRange {
+  const from = input?.from ? String(input.from) : null;
+  const to = input?.to ? String(input.to) : null;
+  return { from, to };
+}
+
+async function fetchAllCompletedTrips(supabase: any, range: ReportRange): Promise<TripRow[]> {
   const all: TripRow[] = [];
   const PAGE = 1000;
   let from = 0;
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("trips")
       .select(
         "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, created_by_name, start_odometer, end_odometer, start_at, end_at, status",
       )
-      .not("end_odometer", "is", null)
-      .range(from, from + PAGE - 1);
+      .not("end_odometer", "is", null);
+    if (range.from) q = q.gte("start_at", `${range.from}T00:00:00.000Z`);
+    if (range.to) q = q.lte("start_at", `${range.to}T23:59:59.999Z`);
+    const { data, error } = await q.range(from, from + PAGE - 1);
     if (error) throw error;
     if (!data || data.length === 0) break;
     all.push(...(data as TripRow[]));
@@ -49,9 +59,14 @@ async function fetchAllCompletedTrips(supabase: any): Promise<TripRow[]> {
 
 export const getCarKmReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: ReportRange) => parseRange(input))
+  .handler(async ({ context, data }) => {
     await ensureAdminOrViewer(context.supabase, context.userId);
-    const trips = await fetchAllCompletedTrips(context.supabase);
+    const trips = await fetchAllCompletedTrips(context.supabase, data);
+    const { data: carsData } = await context.supabase.from("cars").select("plate, code, description, type");
+    const carByPlate = new Map<string, any>();
+    (carsData ?? []).forEach((c: any) => carByPlate.set(String(c.plate ?? "").trim(), c));
+
 
     const map = new Map<
       string,
@@ -77,12 +92,13 @@ export const getCarKmReport = createServerFn({ method: "GET" })
       const dist = end > start ? end - start : 0;
       const key = plate;
       const prev = map.get(key);
+      const master = carByPlate.get(plate);
       if (!prev) {
         map.set(key, {
           car_plate: plate,
-          car_code: t.car_code,
-          car_description: t.car_description,
-          car_type: t.car_type,
+          car_code: master?.code ?? t.car_code,
+          car_description: master?.description ?? t.car_description,
+          car_type: master?.type ?? t.car_type,
           trips_count: 1,
           total_km: dist,
           min_start: start || Number.POSITIVE_INFINITY,
@@ -90,6 +106,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
           first_at: t.start_at,
           last_at: t.end_at,
         });
+
       } else {
         prev.trips_count += 1;
         prev.total_km += dist;
@@ -111,9 +128,11 @@ export const getCarKmReport = createServerFn({ method: "GET" })
 
 export const getDriverKmReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: ReportRange) => parseRange(input))
+  .handler(async ({ context, data }) => {
     await ensureAdminOrViewer(context.supabase, context.userId);
-    const trips = await fetchAllCompletedTrips(context.supabase);
+    const trips = await fetchAllCompletedTrips(context.supabase, data);
+
 
     // Resolve driver names
     const { data: driversData } = await context.supabase.from("drivers").select("id, name, sap_number");

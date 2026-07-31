@@ -32,6 +32,9 @@ function ReportsPage() {
   const { isViewer, loading: lv } = useIsViewer();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [range, setRange] = useState<{ from: string | null; to: string | null }>({ from: null, to: null });
 
   useEffect(() => {
     if (!la && !lv && !isAdmin && !isViewer) {
@@ -43,48 +46,29 @@ function ReportsPage() {
   const carsFn = useServerFn(getCarKmReport);
   const driversFn = useServerFn(getDriverKmReport);
 
-  const cars = useQuery({ queryKey: ["report", "cars"], queryFn: () => carsFn() });
-  const drivers = useQuery({ queryKey: ["report", "drivers"], queryFn: () => driversFn() });
+  const cars = useQuery({
+    queryKey: ["report", "cars", range.from, range.to],
+    queryFn: () => carsFn({ data: range }),
+  });
+  const drivers = useQuery({
+    queryKey: ["report", "drivers", range.from, range.to],
+    queryFn: () => driversFn({ data: range }),
+  });
 
-  const carsFiltered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    const list = cars.data ?? [];
-    if (!s) return list;
-    return list.filter(
-      (r: any) =>
-        (r.car_plate ?? "").toLowerCase().includes(s) ||
-        (r.car_code ?? "").toLowerCase().includes(s) ||
-        (r.car_description ?? "").toLowerCase().includes(s),
-    );
-  }, [cars.data, q]);
+  function applyRange() {
+    if (from && to && from > to) {
+      toast.error("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
+      return;
+    }
+    setRange({ from: from || null, to: to || null });
+  }
 
-  const driversFiltered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    const list = drivers.data ?? [];
-    if (!s) return list;
-    return list.filter(
-      (r: any) =>
-        (r.driver_name ?? "").toLowerCase().includes(s) ||
-        (r.sap_number ?? "").toLowerCase().includes(s),
-    );
-  }, [drivers.data, q]);
+  function clearRange() {
+    setFrom("");
+    setTo("");
+    setRange({ from: null, to: null });
+  }
 
-  const totalCarsKm = (cars.data ?? []).reduce((s: number, r: any) => s + r.total_km, 0);
-  const totalDriversKm = (drivers.data ?? []).reduce((s: number, r: any) => s + r.total_km, 0);
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">التقارير</h1>
-        <p className="text-sm text-muted-foreground">إجمالي الكيلومترات لكل سيارة ولكل سائق (من الرحلات المكتملة)</p>
-      </div>
-
-      <Input
-        placeholder="بحث..."
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        className="max-w-sm"
-      />
 
       <Tabs defaultValue="cars">
         <TabsList>

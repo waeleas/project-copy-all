@@ -796,6 +796,9 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
   const [previewFailed, setPreviewFailed] = useState(false);
   const [pickError, setPickError] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const uid = useId();
+  const galleryId = `${uid}-gallery`;
+  const anyFileId = `${uid}-anyfile`;
   function handle(f: File | null) {
     setPreviewFailed(false);
     setPickError("");

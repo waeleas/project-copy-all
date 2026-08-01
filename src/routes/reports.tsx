@@ -279,7 +279,6 @@ function ReportsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        </TabsContent>
 
         <TabsContent value="compare">
           <Card>

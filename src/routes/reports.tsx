@@ -148,6 +148,7 @@ function ReportsPage() {
         <TabsList>
           <TabsTrigger value="cars"><CarIcon className="size-4 ml-1" /> السيارات</TabsTrigger>
           <TabsTrigger value="drivers"><UserIcon className="size-4 ml-1" /> السائقون</TabsTrigger>
+          <TabsTrigger value="compare"><GitCompare className="size-4 ml-1" /> المقارنة</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cars">

@@ -192,3 +192,99 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
 
     return Array.from(map.values()).sort((a, b) => b.total_km - a.total_km);
   });
+
+export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: ReportRange) => parseRange(input))
+  .handler(async ({ context, data }) => {
+    await ensureAdminOrViewer(context.supabase, context.userId);
+    const trips = await fetchAllCompletedTrips(context.supabase, data);
+
+    const { data: carsData } = await context.supabase.from("cars").select("plate, code, description, type");
+    const carByPlate = new Map<string, any>();
+    (carsData ?? []).forEach((c: any) => carByPlate.set(String(c.plate ?? "").trim(), c));
+
+    const { data: driversData } = await context.supabase.from("drivers").select("id, name");
+    const driverById = new Map<string, string>();
+    (driversData ?? []).forEach((d: any) => driverById.set(d.id, d.name));
+
+    type Row = {
+      car_plate: string;
+      car_code: string | null;
+      car_description: string | null;
+      car_type: string | null;
+      trips_count: number;
+      car_total_km: number;
+      drivers_total_km: number;
+      unassigned_km: number;
+      diff_km: number;
+      drivers_count: number;
+      top_driver: string | null;
+      top_driver_km: number;
+    };
+
+    const map = new Map<string, Row & { _drivers: Map<string, number> }>();
+
+    for (const t of trips) {
+      const plate = (t.car_plate ?? "").trim();
+      if (!plate) continue;
+      const start = Number(t.start_odometer ?? 0);
+      const end = Number(t.end_odometer ?? 0);
+      const dist = end > start ? end - start : 0;
+
+      let driverName = "";
+      if (t.driver_id && driverById.has(t.driver_id)) driverName = driverById.get(t.driver_id)!;
+      else if (t.driver_name_rental) driverName = t.driver_name_rental;
+      else if (t.created_by_name) driverName = t.created_by_name;
+      driverName = (driverName ?? "").trim();
+
+      const master = carByPlate.get(plate);
+      let row = map.get(plate);
+      if (!row) {
+        row = {
+          car_plate: plate,
+          car_code: master?.code ?? t.car_code,
+          car_description: master?.description ?? t.car_description,
+          car_type: master?.type ?? t.car_type,
+          trips_count: 0,
+          car_total_km: 0,
+          drivers_total_km: 0,
+          unassigned_km: 0,
+          diff_km: 0,
+          drivers_count: 0,
+          top_driver: null,
+          top_driver_km: 0,
+          _drivers: new Map<string, number>(),
+        };
+        map.set(plate, row);
+      }
+      row.trips_count += 1;
+      row.car_total_km += dist;
+      if (driverName) {
+        row.drivers_total_km += dist;
+        row._drivers.set(driverName, (row._drivers.get(driverName) ?? 0) + dist);
+      } else {
+        row.unassigned_km += dist;
+      }
+    }
+
+    return Array.from(map.values())
+      .map(({ _drivers, ...r }) => {
+        let top: string | null = null;
+        let topKm = 0;
+        _drivers.forEach((km, name) => {
+          if (km > topKm) {
+            topKm = km;
+            top = name;
+          }
+        });
+        return {
+          ...r,
+          drivers_count: _drivers.size,
+          top_driver: top,
+          top_driver_km: topKm,
+          diff_km: r.car_total_km - r.drivers_total_km,
+        };
+      })
+      .sort((a, b) => b.car_total_km - a.car_total_km);
+  });

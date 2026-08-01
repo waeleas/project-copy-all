@@ -97,8 +97,22 @@ function ReportsPage() {
     );
   }, [drivers.data, q]);
 
+  const compareFiltered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    const list = compare.data ?? [];
+    if (!s) return list;
+    return list.filter(
+      (r: any) =>
+        (r.car_plate ?? "").toLowerCase().includes(s) ||
+        (r.car_code ?? "").toLowerCase().includes(s) ||
+        (r.car_description ?? "").toLowerCase().includes(s) ||
+        (r.top_driver ?? "").toLowerCase().includes(s),
+    );
+  }, [compare.data, q]);
+
   const totalCarsKm = (cars.data ?? []).reduce((s: number, r: any) => s + r.total_km, 0);
   const totalDriversKm = (drivers.data ?? []).reduce((s: number, r: any) => s + r.total_km, 0);
+  const totalDiffKm = totalCarsKm - totalDriversKm;
 
   return (
     <div className="space-y-4">

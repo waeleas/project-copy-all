@@ -437,6 +437,13 @@ function TripsList() {
                     </div>
                     <div className="font-bold mt-1">{t.service_type?.name ?? "بدون نوع"}</div>
                     <div className="text-sm text-muted-foreground">{t.office?.name ?? (t.car_type === "company" ? "سيارة شركة" : "—")}</div>
+                    <div className="text-sm flex items-center gap-1 mt-1">
+                      <Car className="size-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">السيارة:</span>
+                      <b>{t.car_code ?? "—"}</b>
+                      <span className="text-muted-foreground">|</span>
+                      <b>{t.car_plate ?? "—"}</b>
+                    </div>
                   </div>
                   {t.status === "open" ? (
                     <Badge className="bg-warning text-warning-foreground"><Clock className="size-3 ml-1" /> مفتوحة</Badge>

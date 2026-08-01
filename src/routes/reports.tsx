@@ -45,6 +45,7 @@ function ReportsPage() {
 
   const carsFn = useServerFn(getCarKmReport);
   const driversFn = useServerFn(getDriverKmReport);
+  const compareFn = useServerFn(getCarDriverComparisonReport);
 
   const cars = useQuery({
     queryKey: ["report", "cars", range.from, range.to],
@@ -53,6 +54,10 @@ function ReportsPage() {
   const drivers = useQuery({
     queryKey: ["report", "drivers", range.from, range.to],
     queryFn: () => driversFn({ data: range }),
+  });
+  const compare = useQuery({
+    queryKey: ["report", "compare", range.from, range.to],
+    queryFn: () => compareFn({ data: range }),
   });
 
   function applyRange() {

@@ -234,14 +234,19 @@ function NewTrip() {
       setSubmitStep(stepLabel);
       const { data: openTrips } = await supabase
         .from("trips")
-        .select("id, trip_no")
+        .select("id, trip_no, car_code, car_plate")
         .eq("created_by", user.id)
-        .eq("status", "open")
-        .limit(1);
-      if (openTrips && openTrips.length > 0) {
-        const openTrip = openTrips[0] as { id: string; trip_no: number | string };
+        .eq("status", "open");
+      const currentPlate = form.car_plate.trim();
+      const sameCarOpen = (openTrips ?? []).find((t: any) =>
+        (normalizedCarCode && t.car_code && String(t.car_code).trim() === normalizedCarCode) ||
+        (currentPlate && t.car_plate && String(t.car_plate).trim() === currentPlate)
+      ) as { id: string; trip_no: number | string } | undefined;
+      if (sameCarOpen) {
+        const openTrip = sameCarOpen;
         setLoading(false);
-        toast.error(`يجب إكمال الرحلة المفتوحة رقم #${openTrip.trip_no} أو حذفها`, {
+        toast.error(`يوجد رحلة مفتوحة رقم #${openTrip.trip_no} لنفس السيارة، يجب إكمالها أو حذفها`, {
+
           duration: 10000,
           action: {
             label: "فتح الرحلة",

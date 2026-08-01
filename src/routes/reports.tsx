@@ -279,6 +279,85 @@ function ReportsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        </TabsContent>
+
+        <TabsContent value="compare">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">
+                مقارنة السيارات والسائقين — سيارات: {fmt(totalCarsKm)} كم / سائقون: {fmt(totalDriversKm)} كم / الفرق: {fmt(totalDiffKm)} كم
+              </CardTitle>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  exportToXlsx(
+                    "car-driver-comparison",
+                    compareFiltered.map((r: any) => ({
+                      "رقم اللوحة": r.car_plate,
+                      "كود السيارة": r.car_code ?? "",
+                      "الوصف": r.car_description ?? "",
+                      "عدد الرحلات": r.trips_count,
+                      "مسافة السيارة (كم)": Math.round(r.car_total_km),
+                      "مسافة السائقين (كم)": Math.round(r.drivers_total_km),
+                      "الفرق (كم)": Math.round(r.diff_km),
+                      "عدد السائقين": r.drivers_count,
+                      "أكثر سائق": r.top_driver ?? "",
+                      "كم أكثر سائق": Math.round(r.top_driver_km),
+                    })),
+                  )
+                }
+              >
+                <Download className="size-4 ml-1" /> Excel
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {compare.isLoading ? (
+                <Loader2 className="size-6 animate-spin mx-auto text-primary" />
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-right border-b">
+                      <tr>
+                        <th className="p-2">اللوحة</th>
+                        <th className="p-2">الكود</th>
+                        <th className="p-2">الوصف</th>
+                        <th className="p-2">الرحلات</th>
+                        <th className="p-2">مسافة السيارة</th>
+                        <th className="p-2">مسافة السائقين</th>
+                        <th className="p-2">الفرق</th>
+                        <th className="p-2">عدد السائقين</th>
+                        <th className="p-2">أكثر سائق</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {compareFiltered.map((r: any) => (
+                        <tr key={r.car_plate} className="border-b hover:bg-muted/40">
+                          <td className="p-2 font-semibold">{r.car_plate}</td>
+                          <td className="p-2">{r.car_code ?? "-"}</td>
+                          <td className="p-2">{r.car_description ?? "-"}</td>
+                          <td className="p-2">{r.trips_count}</td>
+                          <td className="p-2 font-bold text-primary">{fmt(r.car_total_km)}</td>
+                          <td className="p-2 font-bold">{fmt(r.drivers_total_km)}</td>
+                          <td className={`p-2 font-bold ${r.diff_km > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                            {fmt(r.diff_km)}
+                          </td>
+                          <td className="p-2">{r.drivers_count}</td>
+                          <td className="p-2">
+                            {r.top_driver ? `${r.top_driver} (${fmt(r.top_driver_km)} كم)` : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                      {compareFiltered.length === 0 && (
+                        <tr><td colSpan={9} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );

@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download, Car as CarIcon, User as UserIcon } from "lucide-react";
+import { Loader2, Download, Car as CarIcon, User as UserIcon, GitCompare } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useIsViewer } from "@/hooks/use-is-viewer";
 import { toast } from "sonner";
-import { getCarKmReport, getDriverKmReport } from "@/lib/reports.functions";
+import { getCarKmReport, getDriverKmReport, getCarDriverComparisonReport } from "@/lib/reports.functions";
 import { exportToXlsx } from "@/components/data-toolbar";
 
 export const Route = createFileRoute("/reports")({

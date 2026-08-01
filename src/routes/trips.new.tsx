@@ -50,23 +50,7 @@ function NewTrip() {
       navigate({ to: "/" });
       return;
     }
-    async function checkOpen() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setCheckingOpenTrip(false);
-        return;
-      }
-      const { data } = await supabase
-        .from("trips")
-        .select("id, trip_no")
-        .eq("created_by", user.id)
-        .eq("status", "open")
-        .limit(1);
-      const trip = (data ?? [])[0] as { id: string; trip_no: number | string } | undefined;
-      if (trip) setOpenTrip(trip);
-      setCheckingOpenTrip(false);
-    }
-    checkOpen();
+    setCheckingOpenTrip(false);
   }, [permLoading, canCreateTrips, navigate]);
 
   useEffect(() => {

@@ -106,7 +106,8 @@ function ReportsPage() {
         (r.car_plate ?? "").toLowerCase().includes(s) ||
         (r.car_code ?? "").toLowerCase().includes(s) ||
         (r.car_description ?? "").toLowerCase().includes(s) ||
-        (r.top_driver ?? "").toLowerCase().includes(s),
+        (r.top_driver ?? "").toLowerCase().includes(s) ||
+        (r.driver_breakdown ?? []).some((d: any) => (d.name ?? "").toLowerCase().includes(s)),
     );
   }, [compare.data, q]);
 

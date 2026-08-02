@@ -375,18 +375,26 @@ function ReportsPage() {
                             {r.top_driver ? `${r.top_driver} (${fmt(r.top_driver_km)} كم)` : "-"}
                           </td>
                           <td className="p-2">
-                            {(r.driver_breakdown ?? []).length > 0 ? (
+                            {(r.driver_breakdown ?? []).length > 0 || (r.unassigned_km ?? 0) > 0 ? (
                               <ul className="space-y-1">
-                                {(r.driver_breakdown as any[]).map((d: any) => (
+                                {(r.driver_breakdown as any[] ?? []).map((d: any) => (
                                   <li key={d.name} className="text-xs">
-                                    {d.name}: <span className="font-semibold">{fmt(d.km)} كم</span>
+                                    {d.name}: <span className="font-semibold">{fmt(d.km)} كم</span>{" "}
+                                    <span className="text-muted-foreground">({d.trips} رحلة)</span>
                                   </li>
                                 ))}
+                                {(r.unassigned_km ?? 0) > 0 && (
+                                  <li className="text-xs text-destructive">
+                                    غير منسوب لسائق: <span className="font-semibold">{fmt(r.unassigned_km)} كم</span>{" "}
+                                    ({r.unassigned_trips} رحلة)
+                                  </li>
+                                )}
                               </ul>
                             ) : (
                               "-"
                             )}
                           </td>
+
                         </tr>
                       ))}
                       {compareFiltered.length === 0 && (

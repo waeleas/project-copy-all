@@ -208,6 +208,8 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
     const driverById = new Map<string, string>();
     (driversData ?? []).forEach((d: any) => driverById.set(d.id, d.name));
 
+    type DriverBreakdown = { name: string; km: number };
+
     type Row = {
       car_plate: string;
       car_code: string | null;
@@ -221,6 +223,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       drivers_count: number;
       top_driver: string | null;
       top_driver_km: number;
+      driver_breakdown: DriverBreakdown[];
     };
 
     const map = new Map<string, Row & { _drivers: Map<string, number> }>();
@@ -254,6 +257,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
           drivers_count: 0,
           top_driver: null,
           top_driver_km: 0,
+          driver_breakdown: [],
           _drivers: new Map<string, number>(),
         };
         map.set(plate, row);
@@ -272,18 +276,22 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       .map(({ _drivers, ...r }) => {
         let top: string | null = null;
         let topKm = 0;
+        const breakdown: DriverBreakdown[] = [];
         _drivers.forEach((km, name) => {
+          breakdown.push({ name, km });
           if (km > topKm) {
             topKm = km;
             top = name;
           }
         });
+        breakdown.sort((a, b) => b.km - a.km);
         return {
           ...r,
           drivers_count: _drivers.size,
           top_driver: top,
           top_driver_km: topKm,
           diff_km: r.car_total_km - r.drivers_total_km,
+          driver_breakdown: breakdown,
         };
       })
       .sort((a, b) => b.car_total_km - a.car_total_km);

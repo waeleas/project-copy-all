@@ -282,13 +282,14 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
         let top: string | null = null;
         let topKm = 0;
         const breakdown: DriverBreakdown[] = [];
-        _drivers.forEach((km, name) => {
-          breakdown.push({ name, km });
-          if (km > topKm) {
-            topKm = km;
+        _drivers.forEach((v, name) => {
+          breakdown.push({ name, km: v.km, trips: v.trips });
+          if (v.km > topKm) {
+            topKm = v.km;
             top = name;
           }
         });
+
         breakdown.sort((a, b) => b.km - a.km);
         return {
           ...r,

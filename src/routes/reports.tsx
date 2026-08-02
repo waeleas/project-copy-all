@@ -106,7 +106,8 @@ function ReportsPage() {
         (r.car_plate ?? "").toLowerCase().includes(s) ||
         (r.car_code ?? "").toLowerCase().includes(s) ||
         (r.car_description ?? "").toLowerCase().includes(s) ||
-        (r.top_driver ?? "").toLowerCase().includes(s),
+        (r.top_driver ?? "").toLowerCase().includes(s) ||
+        (r.driver_breakdown ?? []).some((d: any) => (d.name ?? "").toLowerCase().includes(s)),
     );
   }, [compare.data, q]);
 
@@ -324,6 +325,9 @@ function ReportsPage() {
                       "عدد السائقين": r.drivers_count,
                       "أكثر سائق": r.top_driver ?? "",
                       "كم أكثر سائق": Math.round(r.top_driver_km),
+                      "تفصيل مسافة كل سائق": (r.driver_breakdown ?? [])
+                        .map((d: any) => `${d.name}: ${fmt(d.km)} كم`)
+                        .join(" — "),
                     })),
                   )
                 }
@@ -348,6 +352,7 @@ function ReportsPage() {
                         <th className="p-2">الفرق</th>
                         <th className="p-2">عدد السائقين</th>
                         <th className="p-2">أكثر سائق</th>
+                        <th className="p-2">مسافة كل سائق</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -366,10 +371,23 @@ function ReportsPage() {
                           <td className="p-2">
                             {r.top_driver ? `${r.top_driver} (${fmt(r.top_driver_km)} كم)` : "-"}
                           </td>
+                          <td className="p-2">
+                            {(r.driver_breakdown ?? []).length > 0 ? (
+                              <ul className="space-y-1">
+                                {(r.driver_breakdown as any[]).map((d: any) => (
+                                  <li key={d.name} className="text-xs">
+                                    {d.name}: <span className="font-semibold">{fmt(d.km)} كم</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
                         </tr>
                       ))}
                       {compareFiltered.length === 0 && (
-                        <tr><td colSpan={9} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={10} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
                     </tbody>
                   </table>

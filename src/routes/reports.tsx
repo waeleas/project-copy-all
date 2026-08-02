@@ -325,9 +325,12 @@ function ReportsPage() {
                       "عدد السائقين": r.drivers_count,
                       "أكثر سائق": r.top_driver ?? "",
                       "كم أكثر سائق": Math.round(r.top_driver_km),
+                      "كم غير منسوب": Math.round(r.unassigned_km ?? 0),
+                      "رحلات غير منسوبة": r.unassigned_trips ?? 0,
                       "تفصيل مسافة كل سائق": (r.driver_breakdown ?? [])
-                        .map((d: any) => `${d.name}: ${fmt(d.km)} كم`)
+                        .map((d: any) => `${d.name}: ${fmt(d.km)} كم (${d.trips} رحلة)`)
                         .join(" — "),
+
                     })),
                   )
                 }

@@ -208,7 +208,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
     const driverById = new Map<string, string>();
     (driversData ?? []).forEach((d: any) => driverById.set(d.id, d.name));
 
-    type DriverBreakdown = { name: string; km: number };
+    type DriverBreakdown = { name: string; km: number; trips: number };
 
     type Row = {
       car_plate: string;
@@ -219,6 +219,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       car_total_km: number;
       drivers_total_km: number;
       unassigned_km: number;
+      unassigned_trips: number;
       diff_km: number;
       drivers_count: number;
       top_driver: string | null;
@@ -226,7 +227,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       driver_breakdown: DriverBreakdown[];
     };
 
-    const map = new Map<string, Row & { _drivers: Map<string, number> }>();
+    const map = new Map<string, Row & { _drivers: Map<string, { km: number; trips: number }> }>();
 
     for (const t of trips) {
       const plate = (t.car_plate ?? "").trim();
@@ -253,12 +254,13 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
           car_total_km: 0,
           drivers_total_km: 0,
           unassigned_km: 0,
+          unassigned_trips: 0,
           diff_km: 0,
           drivers_count: 0,
           top_driver: null,
           top_driver_km: 0,
           driver_breakdown: [],
-          _drivers: new Map<string, number>(),
+          _drivers: new Map<string, { km: number; trips: number }>(),
         };
         map.set(plate, row);
       }
@@ -266,11 +268,14 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       row.car_total_km += dist;
       if (driverName) {
         row.drivers_total_km += dist;
-        row._drivers.set(driverName, (row._drivers.get(driverName) ?? 0) + dist);
+        const prevD = row._drivers.get(driverName);
+        row._drivers.set(driverName, { km: (prevD?.km ?? 0) + dist, trips: (prevD?.trips ?? 0) + 1 });
       } else {
         row.unassigned_km += dist;
+        row.unassigned_trips += 1;
       }
     }
+
 
     return Array.from(map.values())
       .map(({ _drivers, ...r }) => {

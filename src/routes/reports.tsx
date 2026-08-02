@@ -280,7 +280,28 @@ function ReportsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="compare">
+        <TabsContent value="compare" className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-sm text-muted-foreground">إجمالي مسافة السيارات</div>
+                <div className="text-xl font-bold text-primary">{fmt(totalCarsKm)} كم</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-sm text-muted-foreground">إجمالي مسافة السائقين من الطلبات</div>
+                <div className="text-xl font-bold text-primary">{fmt(totalDriversKm)} كم</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-sm text-muted-foreground">الفرق</div>
+                <div className={`text-xl font-bold ${totalDiffKm > 0 ? "text-destructive" : "text-muted-foreground"}`}>{fmt(totalDiffKm)} كم</div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">

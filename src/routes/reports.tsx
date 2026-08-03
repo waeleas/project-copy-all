@@ -288,17 +288,23 @@ function ReportsPage() {
         </TabsContent>
 
         <TabsContent value="compare" className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-sm text-muted-foreground">إجمالي مسافة السيارات</div>
-                <div className="text-xl font-bold text-primary">{fmt(totalCarsKm)} كم</div>
+                <div className="text-xl font-bold text-primary">{fmt(cmpCarsKm)} كم</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-sm text-muted-foreground">إجمالي مسافة السائقين من الطلبات</div>
-                <div className="text-xl font-bold text-primary">{fmt(totalDriversKm)} كم</div>
+                <div className="text-xl font-bold text-primary">{fmt(cmpDriversKm)} كم</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-sm text-muted-foreground">كم غير منسوب لسائق</div>
+                <div className="text-xl font-bold text-destructive">{fmt(cmpUnassignedKm)} كم</div>
               </CardContent>
             </Card>
             <Card>
@@ -312,7 +318,8 @@ function ReportsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">
-                مقارنة السيارات والسائقين — سيارات: {fmt(totalCarsKm)} كم / سائقون: {fmt(totalDriversKm)} كم / الفرق: {fmt(totalDiffKm)} كم
+                مقارنة السيارات والسائقين — سيارات: {fmt(cmpCarsKm)} كم / سائقون: {fmt(cmpDriversKm)} كم / الفرق: {fmt(totalDiffKm)} كم
+
               </CardTitle>
               <Button
                 size="sm"

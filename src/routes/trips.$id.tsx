@@ -879,26 +879,29 @@ function PhotoAdminControls({
         </Button>
       )}
       {canChange && (
-        <label
-          htmlFor={pickerId}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => { const el = fileRef.current; if (!el) return; try { el.value = ""; } catch { /* تجاهل */ } el.click(); }}
           className={`inline-flex h-8 items-center gap-1 rounded-md border px-3 text-sm cursor-pointer hover:bg-accent/40 ${busy ? "pointer-events-none opacity-60" : ""}`}
         >
           <Pencil className="size-4" />
           {busy ? "جاري الرفع..." : (signedUrl ? "تغيير الصورة" : "رفع صورة")}
-        </label>
+        </button>
       )}
       {canChange && (
         <input
           id={pickerId}
           ref={fileRef}
           type="file"
-          accept="image/*"
-          className="sr-only"
+          accept="image/*,.heic,.heif"
+          className="absolute size-px opacity-0 -z-10 overflow-hidden"
+          tabIndex={-1}
           disabled={busy}
-          onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
           onChange={(e) => onFile(e.target.files?.[0] ?? null)}
         />
       )}
+
       {pickError && <div className="basis-full text-xs text-destructive bg-destructive/10 rounded-md px-2 py-1">{pickError}</div>}
     </div>
   );

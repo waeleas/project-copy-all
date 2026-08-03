@@ -817,14 +817,18 @@ export function SapCombobox({ items, value, onChange, placeholder, allowNone, no
 export function PhotoInput({ preview, onFile, label = "صورة العداد", invalid }: { preview: string; onFile: (f: File | null) => void; label?: string; invalid?: boolean }) {
   const [info, setInfo] = useState<{ name: string; size: number } | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
+  const [dataPreview, setDataPreview] = useState("");
   const [pickError, setPickError] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const uid = useId();
-  const galleryId = `${uid}-gallery`;
-  const anyFileId = `${uid}-anyfile`;
+  const anyRef = useRef<HTMLInputElement | null>(null);
+  // معرّفات ASCII فقط (useId قد يُرجع رموزاً غير قياسية تكسر ربط label بالحقل)
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const galleryId = `ph-${uid}-gallery`;
+  const anyFileId = `ph-${uid}-anyfile`;
   function handle(f: File | null) {
     setPreviewFailed(false);
     setPickError("");
+    setDataPreview("");
     if (f) {
       if (f.size > MAX_ODOMETER_PHOTO_BYTES) {
         setInfo(null);
@@ -832,18 +836,35 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         onFile(null);
         return;
       }
-      if (f.type && !f.type.startsWith("image/")) {
+      const nameExt = (f.name.split(".").pop() || "").toLowerCase();
+      const looksImage = (f.type || "").startsWith("image/") ||
+        ["jpg", "jpeg", "png", "webp", "heic", "heif", "avif", "gif", "bmp", "tif", "tiff"].includes(nameExt);
+      if (!looksImage) {
         setInfo(null);
-        setPickError("الملف المختار ليس صورة");
+        setPickError("الملف المختار ليس صورة، اختر صورة عداد واضحة");
         onFile(null);
         return;
       }
       setInfo({ name: f.name || "photo", size: f.size });
+      // معاينة بديلة كـ data URL في حال فشل عرض رابط blob على بعض الأجهزة
+      try {
+        const reader = new FileReader();
+        reader.onload = () => setDataPreview(String(reader.result || ""));
+        reader.readAsDataURL(f);
+      } catch { /* تجاهل */ }
     } else {
       setInfo(null);
     }
     onFile(f);
   }
+  // فتح منتقي الملفات برمجياً كخطة بديلة إن لم يستجب المتصفح لـ label
+  function openPicker(ref: React.RefObject<HTMLInputElement | null>) {
+    const el = ref.current;
+    if (!el) return;
+    try { el.value = ""; } catch { /* تجاهل */ }
+    el.click();
+  }
+
   return (
     <div className="space-y-1.5" data-invalid={invalid ? "true" : undefined}>
       <Label className={invalid ? "text-destructive" : undefined}>{label}</Label>

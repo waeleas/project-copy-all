@@ -868,9 +868,9 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
   return (
     <div className="space-y-1.5" data-invalid={invalid ? "true" : undefined}>
       <Label className={invalid ? "text-destructive" : undefined}>{label}</Label>
-      {preview && !previewFailed && (
+      {(dataPreview || (preview && !previewFailed)) && (
         <img
-          src={preview}
+          src={dataPreview || preview}
           alt="معاينة"
           className="w-full max-h-60 object-contain rounded-lg border bg-muted"
           onError={() => setPreviewFailed(true)}
@@ -879,7 +879,7 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       {info && (
         <div className="text-xs text-success flex items-center gap-1 bg-success/10 rounded-md px-2 py-1">
           <span>✓</span>
-          <span>تم اختيار الصورة{previewFailed ? " (تعذّر عرض المعاينة لكن سيتم رفعها)" : ""}: {info.name} — {(info.size / 1024).toFixed(0)} KB</span>
+          <span>تم اختيار الصورة{previewFailed && !dataPreview ? " (تعذّر عرض المعاينة لكن سيتم رفعها)" : ""}: {info.name} — {(info.size / 1024).toFixed(0)} KB</span>
         </div>
       )}
       {pickError && (
@@ -889,39 +889,42 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       )}
       <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
         <CameraCapture onCapture={(f) => handle(f)} />
-        {/* label أصلي: يفتح المعرض مباشرة بدون JS (أكثر استقراراً على الجوال) */}
-        <label
-          htmlFor={galleryId}
+        {/* زر يفتح المعرض برمجياً — أكثر موثوقية من ربط label عندما يكون الحقل مخفياً */}
+        <button
+          type="button"
+          onClick={() => openPicker(fileRef)}
           className="h-auto min-h-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center gap-1 text-sm cursor-pointer hover:bg-accent/30 active:bg-accent/50 select-none"
         >
           <span className="text-xl">🖼️</span>
           <span>من المعرض</span>
-        </label>
+        </button>
         <input
           id={galleryId}
           ref={fileRef}
           type="file"
-          accept="image/*"
-          className="sr-only"
-          // إعادة تصفير القيمة تضمن استجابة المعرض حتى عند اختيار نفس الملف مجدداً
-          onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
+          accept="image/*,.heic,.heif"
+          className="absolute size-px opacity-0 -z-10 overflow-hidden"
+          tabIndex={-1}
           onChange={(e) => handle(e.target.files?.[0] ?? null)}
         />
         {/* بديل: بدون تقييد النوع — يعمل حتى لو مُنع إذن الصور */}
-        <label
-          htmlFor={anyFileId}
+        <button
+          type="button"
+          onClick={() => openPicker(anyRef)}
           className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-1"
         >
           لم يفتح المعرض؟ اختر ملفاً من الجهاز
-        </label>
+        </button>
         <input
           id={anyFileId}
+          ref={anyRef}
           type="file"
-          className="sr-only"
-          onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
+          className="absolute size-px opacity-0 -z-10 overflow-hidden"
+          tabIndex={-1}
           onChange={(e) => handle(e.target.files?.[0] ?? null)}
         />
       </div>
+
     </div>
   );
 }

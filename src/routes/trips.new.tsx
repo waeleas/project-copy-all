@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Loader2, MapPin, Gauge } from "lucide-react";
-import { MAX_ODOMETER_PHOTO_BYTES, uploadOdometerPhoto } from "@/lib/storage";
+import { MAX_ODOMETER_PHOTO_BYTES, makeThumbnail, uploadOdometerPhoto } from "@/lib/storage";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";
 import { CameraCapture } from "@/components/camera-capture";
@@ -837,21 +837,34 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         return;
       }
       const nameExt = (f.name.split(".").pop() || "").toLowerCase();
-      const looksImage = (f.type || "").startsWith("image/") ||
+      const type = (f.type || "").toLowerCase();
+      const knownNonImage = !!type && !type.startsWith("image/");
+      const looksImage = type.startsWith("image/") ||
         ["jpg", "jpeg", "png", "webp", "heic", "heif", "avif", "gif", "bmp", "tif", "tiff"].includes(nameExt);
-      if (!looksImage) {
+      if (!looksImage && knownNonImage) {
         setInfo(null);
         setPickError("الملف المختار ليس صورة، اختر صورة عداد واضحة");
         onFile(null);
         return;
       }
       setInfo({ name: f.name || "photo", size: f.size });
-      // معاينة بديلة كـ data URL في حال فشل عرض رابط blob على بعض الأجهزة
-      try {
-        const reader = new FileReader();
-        reader.onload = () => setDataPreview(String(reader.result || ""));
-        reader.readAsDataURL(f);
-      } catch { /* تجاهل */ }
+      // مصغّرة مضمونة العرض (تعمل مع heic/avif وغيرها) مع بديل data URL
+      (async () => {
+        const thumb = await makeThumbnail(f);
+        if (thumb) {
+          setDataPreview(thumb);
+          setPreviewFailed(false);
+          return;
+        }
+        try {
+          const reader = new FileReader();
+          reader.onload = () => setDataPreview(String(reader.result || ""));
+          reader.onerror = () => setPreviewFailed(true);
+          reader.readAsDataURL(f);
+        } catch {
+          setPreviewFailed(true);
+        }
+      })();
     } else {
       setInfo(null);
     }
@@ -865,17 +878,20 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
     el.click();
   }
 
+  const previewSrc = dataPreview || (previewFailed ? "" : preview);
+
   return (
     <div className="space-y-1.5" data-invalid={invalid ? "true" : undefined}>
       <Label className={invalid ? "text-destructive" : undefined}>{label}</Label>
-      {(dataPreview || (preview && !previewFailed)) && (
+      {previewSrc && (
         <img
-          src={dataPreview || preview}
+          src={previewSrc}
           alt="معاينة"
           className="w-full max-h-60 object-contain rounded-lg border bg-muted"
-          onError={() => setPreviewFailed(true)}
+          onError={() => { setDataPreview(""); setPreviewFailed(true); }}
         />
       )}
+
       {info && (
         <div className="text-xs text-success flex items-center gap-1 bg-success/10 rounded-md px-2 py-1">
           <span>✓</span>

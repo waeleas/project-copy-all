@@ -217,6 +217,9 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       car_type: string | null;
       trips_count: number;
       car_total_km: number;
+      car_span_km: number;
+      min_start: number;
+      max_end: number;
       drivers_total_km: number;
       unassigned_km: number;
       unassigned_trips: number;
@@ -228,6 +231,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
     };
 
     const map = new Map<string, Row & { _drivers: Map<string, { km: number; trips: number }> }>();
+
 
     for (const t of trips) {
       const plate = (t.car_plate ?? "").trim();

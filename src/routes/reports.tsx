@@ -321,7 +321,7 @@ function ReportsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">
-                مقارنة السيارات والسائقين — سيارات: {fmt(cmpCarsKm)} كم / سائقون: {fmt(cmpDriversKm)} كم / الفرق: {fmt(totalDiffKm)} كم
+                مقارنة السيارات والسائقين — سيارات (عدّاد): {fmt(cmpCarsKm)} كم / سائقون (طلبات): {fmt(cmpDriversKm)} كم / الفرق: {fmt(totalDiffKm)} كم
 
               </CardTitle>
               <Button
@@ -335,7 +335,10 @@ function ReportsPage() {
                       "كود السيارة": r.car_code ?? "",
                       "الوصف": r.car_description ?? "",
                       "عدد الرحلات": r.trips_count,
-                      "مسافة السيارة (كم)": Math.round(r.car_total_km),
+                      "أول عداد": Math.round(r.min_start ?? 0),
+                      "آخر عداد": Math.round(r.max_end ?? 0),
+                      "مسافة السيارة (عدّاد) كم": Math.round(r.car_span_km ?? 0),
+                      "مسافة السيارة (مجموع الطلبات) كم": Math.round(r.car_total_km),
                       "مسافة السائقين (كم)": Math.round(r.drivers_total_km),
                       "الفرق (كم)": Math.round(r.diff_km),
                       "عدد السائقين": r.drivers_count,
@@ -366,7 +369,10 @@ function ReportsPage() {
                         <th className="p-2">الكود</th>
                         <th className="p-2">الوصف</th>
                         <th className="p-2">الرحلات</th>
-                        <th className="p-2">مسافة السيارة</th>
+                        <th className="p-2">أول عداد</th>
+                        <th className="p-2">آخر عداد</th>
+                        <th className="p-2">مسافة السيارة (عدّاد)</th>
+                        <th className="p-2">مسافة السيارة (طلبات)</th>
                         <th className="p-2">مسافة السائقين</th>
                         <th className="p-2">الفرق</th>
                         <th className="p-2">عدد السائقين</th>
@@ -381,11 +387,15 @@ function ReportsPage() {
                           <td className="p-2">{r.car_code ?? "-"}</td>
                           <td className="p-2">{r.car_description ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
-                          <td className="p-2 font-bold text-primary">{fmt(r.car_total_km)}</td>
+                          <td className="p-2">{fmt(r.min_start ?? 0)}</td>
+                          <td className="p-2">{fmt(r.max_end ?? 0)}</td>
+                          <td className="p-2 font-bold text-primary">{fmt(r.car_span_km ?? 0)}</td>
+                          <td className="p-2">{fmt(r.car_total_km)}</td>
                           <td className="p-2 font-bold">{fmt(r.drivers_total_km)}</td>
-                          <td className={`p-2 font-bold ${r.diff_km > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                          <td className={`p-2 font-bold ${r.diff_km !== 0 ? "text-destructive" : "text-muted-foreground"}`}>
                             {fmt(r.diff_km)}
                           </td>
+
                           <td className="p-2">{r.drivers_count}</td>
                           <td className="p-2">
                             {r.top_driver ? `${r.top_driver} (${fmt(r.top_driver_km)} كم)` : "-"}

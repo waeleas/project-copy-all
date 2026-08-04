@@ -115,10 +115,13 @@ function ReportsPage() {
   const totalDriversKm = (drivers.data ?? []).reduce((s: number, r: any) => s + r.total_km, 0);
 
   // إجماليات تبويب المقارنة تُحسب من نفس صفوف المقارنة حتى تتطابق مع التفصيل لكل سيارة
-  const cmpCarsKm = (compare.data ?? []).reduce((s: number, r: any) => s + (r.car_total_km ?? 0), 0);
+  // السيارات: من أول عداد إلى آخر عداد (span) — السائقون: مجموع كيلومترات الرحلات المكتملة
+  const cmpCarsKm = (compare.data ?? []).reduce((s: number, r: any) => s + (r.car_span_km ?? 0), 0);
+  const cmpCarsTripsKm = (compare.data ?? []).reduce((s: number, r: any) => s + (r.car_total_km ?? 0), 0);
   const cmpDriversKm = (compare.data ?? []).reduce((s: number, r: any) => s + (r.drivers_total_km ?? 0), 0);
   const cmpUnassignedKm = (compare.data ?? []).reduce((s: number, r: any) => s + (r.unassigned_km ?? 0), 0);
   const totalDiffKm = cmpCarsKm - cmpDriversKm;
+
 
 
   return (

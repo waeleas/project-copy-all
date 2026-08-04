@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Loader2, MapPin, Gauge } from "lucide-react";
-import { MAX_ODOMETER_PHOTO_BYTES, uploadOdometerPhoto } from "@/lib/storage";
+import { MAX_ODOMETER_PHOTO_BYTES, makeThumbnail, uploadOdometerPhoto } from "@/lib/storage";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";
 import { CameraCapture } from "@/components/camera-capture";

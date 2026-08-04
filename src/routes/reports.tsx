@@ -294,10 +294,12 @@ function ReportsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4 text-center">
-                <div className="text-sm text-muted-foreground">إجمالي مسافة السيارات</div>
+                <div className="text-sm text-muted-foreground">إجمالي مسافة السيارات (من أول عداد لآخر عداد)</div>
                 <div className="text-xl font-bold text-primary">{fmt(cmpCarsKm)} كم</div>
+                <div className="text-xs text-muted-foreground mt-1">مجموع الطلبات: {fmt(cmpCarsTripsKm)} كم</div>
               </CardContent>
             </Card>
+
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-sm text-muted-foreground">إجمالي مسافة السائقين من الطلبات</div>

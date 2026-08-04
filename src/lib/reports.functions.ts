@@ -217,6 +217,9 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       car_type: string | null;
       trips_count: number;
       car_total_km: number;
+      car_span_km: number;
+      min_start: number;
+      max_end: number;
       drivers_total_km: number;
       unassigned_km: number;
       unassigned_trips: number;
@@ -228,6 +231,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
     };
 
     const map = new Map<string, Row & { _drivers: Map<string, { km: number; trips: number }> }>();
+
 
     for (const t of trips) {
       const plate = (t.car_plate ?? "").trim();
@@ -252,6 +256,9 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
           car_type: master?.type ?? t.car_type,
           trips_count: 0,
           car_total_km: 0,
+          car_span_km: 0,
+          min_start: Number.POSITIVE_INFINITY,
+          max_end: 0,
           drivers_total_km: 0,
           unassigned_km: 0,
           unassigned_trips: 0,
@@ -266,6 +273,8 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       }
       row.trips_count += 1;
       row.car_total_km += dist;
+      if (start && start < row.min_start) row.min_start = start;
+      if (end > row.max_end) row.max_end = end;
       if (driverName) {
         row.drivers_total_km += dist;
         const prevD = row._drivers.get(driverName);
@@ -291,14 +300,19 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
         });
 
         breakdown.sort((a, b) => b.km - a.km);
+        const minStart = r.min_start === Number.POSITIVE_INFINITY ? 0 : r.min_start;
+        const spanKm = Math.max(0, r.max_end - minStart);
         return {
           ...r,
+          min_start: minStart,
+          car_span_km: spanKm,
           drivers_count: _drivers.size,
           top_driver: top,
           top_driver_km: topKm,
-          diff_km: r.car_total_km - r.drivers_total_km,
+          diff_km: spanKm - r.drivers_total_km,
           driver_breakdown: breakdown,
         };
       })
-      .sort((a, b) => b.car_total_km - a.car_total_km);
+      .sort((a, b) => b.car_span_km - a.car_span_km);
+
   });

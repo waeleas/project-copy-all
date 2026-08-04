@@ -118,9 +118,39 @@ async function compressImage(file: File | Blob): Promise<Blob | null> {
   return best;
 }
 
+/** مصغّرة للمعاينة تعمل مع أي صيغة يستطيع المتصفح فك ترميزها (heic/avif...) */
+export async function makeThumbnail(file: File | Blob, maxDim = 900): Promise<string | null> {
+  const decoded = await decodeImage(file);
+  if (!decoded || !decoded.w || !decoded.h) return null;
+  try {
+    const scale = Math.min(1, maxDim / Math.max(decoded.w, decoded.h));
+    const w = Math.max(1, Math.round(decoded.w * scale));
+    const h = Math.max(1, Math.round(decoded.h * scale));
+    const canvas = makeCanvas(w, h);
+    const ctx = (canvas as any).getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(decoded.draw, 0, 0, w, h);
+    const blob = await canvasToBlob(canvas, "image/jpeg", 0.7);
+    if (!blob) return null;
+    return await new Promise<string | null>((resolve) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result || "") || null);
+      r.onerror = () => resolve(null);
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  } finally {
+    decoded.close?.();
+  }
+}
+
 function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));
 }
+
 
 export async function uploadOdometerPhoto(file: File, prefix: string): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();

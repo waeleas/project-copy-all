@@ -206,6 +206,7 @@ function ReportsPage() {
                         <th className="p-2">الكود</th>
                         <th className="p-2">الوصف</th>
                         <th className="p-2">النوع</th>
+                        <th className="p-2">المحافظة</th>
                         <th className="p-2">الرحلات</th>
                         <th className="p-2">إجمالي كم</th>
                         <th className="p-2">أول عداد</th>

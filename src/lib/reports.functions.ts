@@ -156,6 +156,7 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
         total_km: number;
         first_at: string | null;
         last_at: string | null;
+        governorates: Set<string>;
       }
     >();
 

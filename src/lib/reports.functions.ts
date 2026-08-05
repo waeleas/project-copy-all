@@ -44,7 +44,7 @@ async function fetchAllCompletedTrips(supabase: any, range: ReportRange): Promis
     let q = supabase
       .from("trips")
       .select(
-        "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, created_by_name, start_odometer, end_odometer, start_at, end_at, status",
+        "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, created_by_name, start_odometer, end_odometer, start_at, end_at, status, governorate_id, governorate_name",
       )
       .not("end_odometer", "is", null);
     if (range.from) q = q.gte("start_at", `${range.from}T00:00:00.000Z`);

@@ -83,6 +83,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
         max_end: number;
         first_at: string | null;
         last_at: string | null;
+        governorates: Set<string>;
       }
     >();
 

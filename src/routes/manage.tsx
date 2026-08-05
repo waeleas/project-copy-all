@@ -86,6 +86,7 @@ function Manage() {
         <TabsContent value="drivers"><DriversManager /></TabsContent>
         <TabsContent value="cars"><CarsManager /></TabsContent>
         <TabsContent value="services"><LookupManager table="service_types" title="أنواع الخدمة" /></TabsContent>
+        <TabsContent value="governorates"><LookupManager table="governorates" title="المحافظات" withCode /></TabsContent>
       </Tabs>
     </div>
   );

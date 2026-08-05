@@ -181,6 +181,7 @@ function ReportsPage() {
                       "كود السيارة": r.car_code ?? "",
                       "الوصف": r.car_description ?? "",
                       "النوع": r.car_type === "rental" ? "إيجار" : "شركة",
+                      "المحافظة": r.governorates ?? "",
                       "عدد الرحلات": r.trips_count,
                       "إجمالي الكيلومترات": Math.round(r.total_km),
                       "أول عداد": Math.round(r.min_start),

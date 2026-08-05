@@ -23,6 +23,8 @@ type TripRow = {
   start_at: string | null;
   end_at: string | null;
   status: string | null;
+  governorate_id: string | null;
+  governorate_name: string | null;
 };
 
 export type ReportRange = { from?: string | null; to?: string | null };

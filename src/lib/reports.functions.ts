@@ -325,6 +325,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
           top_driver_km: topKm,
           diff_km: spanKm - r.drivers_total_km,
           driver_breakdown: breakdown,
+          governorates: Array.from(r.governorates).join("، "),
         };
       })
       .sort((a, b) => b.car_span_km - a.car_span_km);

@@ -239,6 +239,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       top_driver: string | null;
       top_driver_km: number;
       driver_breakdown: DriverBreakdown[];
+      governorates: Set<string>;
     };
 
     const map = new Map<string, Row & { _drivers: Map<string, { km: number; trips: number }> }>();

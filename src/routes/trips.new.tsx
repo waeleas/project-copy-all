@@ -82,7 +82,7 @@ function NewTrip() {
 
   const [form, setForm] = useState({
     car_type: "company",
-    office_id: "", manager_id: "", technician_id: "", driver_id: "", driver_name_rental: "", service_type_id: "",
+    office_id: "", manager_id: "", technician_id: "", driver_id: "", driver_name_rental: "", service_type_id: "", governorate_id: "",
     route_start: "", start_odometer: "", car_code: "", car_plate: "",
     handheld_code: "",
   });

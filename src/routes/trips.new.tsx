@@ -298,6 +298,8 @@ function NewTrip() {
         driver_id: form.car_type === "rental" ? null : (form.driver_id || null),
         driver_name_rental: form.car_type === "rental" ? (normalizedRentalDriver || null) : null,
         service_type_id: form.service_type_id || null,
+        governorate_id: form.governorate_id || null,
+        governorate_name: governorates.data?.find((g) => g.id === form.governorate_id)?.name ?? null,
         route_start: normalizedRouteStart,
         start_odometer: parseInt(normalizedStartOdometer, 10),
         start_photo_url: path,

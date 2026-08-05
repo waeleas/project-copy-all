@@ -82,7 +82,8 @@ function ReportsPage() {
       (r: any) =>
         (r.car_plate ?? "").toLowerCase().includes(s) ||
         (r.car_code ?? "").toLowerCase().includes(s) ||
-        (r.car_description ?? "").toLowerCase().includes(s),
+        (r.car_description ?? "").toLowerCase().includes(s) ||
+        (r.governorates ?? "").toLowerCase().includes(s),
     );
   }, [cars.data, q]);
 
@@ -93,7 +94,8 @@ function ReportsPage() {
     return list.filter(
       (r: any) =>
         (r.driver_name ?? "").toLowerCase().includes(s) ||
-        (r.sap_number ?? "").toLowerCase().includes(s),
+        (r.sap_number ?? "").toLowerCase().includes(s) ||
+        (r.governorates ?? "").toLowerCase().includes(s),
     );
   }, [drivers.data, q]);
 
@@ -106,6 +108,7 @@ function ReportsPage() {
         (r.car_plate ?? "").toLowerCase().includes(s) ||
         (r.car_code ?? "").toLowerCase().includes(s) ||
         (r.car_description ?? "").toLowerCase().includes(s) ||
+        (r.governorates ?? "").toLowerCase().includes(s) ||
         (r.top_driver ?? "").toLowerCase().includes(s) ||
         (r.driver_breakdown ?? []).some((d: any) => (d.name ?? "").toLowerCase().includes(s)),
     );

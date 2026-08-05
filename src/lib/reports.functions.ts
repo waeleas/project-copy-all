@@ -23,6 +23,8 @@ type TripRow = {
   start_at: string | null;
   end_at: string | null;
   status: string | null;
+  governorate_id: string | null;
+  governorate_name: string | null;
 };
 
 export type ReportRange = { from?: string | null; to?: string | null };
@@ -42,7 +44,7 @@ async function fetchAllCompletedTrips(supabase: any, range: ReportRange): Promis
     let q = supabase
       .from("trips")
       .select(
-        "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, created_by_name, start_odometer, end_odometer, start_at, end_at, status",
+        "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, created_by_name, start_odometer, end_odometer, start_at, end_at, status, governorate_id, governorate_name",
       )
       .not("end_odometer", "is", null);
     if (range.from) q = q.gte("start_at", `${range.from}T00:00:00.000Z`);
@@ -81,6 +83,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
         max_end: number;
         first_at: string | null;
         last_at: string | null;
+        governorates: Set<string>;
       }
     >();
 
@@ -105,6 +108,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
           max_end: end,
           first_at: t.start_at,
           last_at: t.end_at,
+          governorates: new Set(t.governorate_name ? [t.governorate_name] : []),
         });
 
       } else {
@@ -114,6 +118,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
         if (end > prev.max_end) prev.max_end = end;
         if (t.start_at && (!prev.first_at || t.start_at < prev.first_at)) prev.first_at = t.start_at;
         if (t.end_at && (!prev.last_at || t.end_at > prev.last_at)) prev.last_at = t.end_at;
+        if (t.governorate_name) prev.governorates.add(t.governorate_name);
       }
     }
 
@@ -122,6 +127,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
         ...r,
         min_start: r.min_start === Number.POSITIVE_INFINITY ? 0 : r.min_start,
         span_km: r.max_end - (r.min_start === Number.POSITIVE_INFINITY ? 0 : r.min_start),
+        governorates: Array.from(r.governorates).join("، "),
       }))
       .sort((a, b) => b.total_km - a.total_km);
   });
@@ -150,6 +156,7 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
         total_km: number;
         first_at: string | null;
         last_at: string | null;
+        governorates: Set<string>;
       }
     >();
 
@@ -181,16 +188,20 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
           total_km: dist,
           first_at: t.start_at,
           last_at: t.end_at,
+          governorates: new Set(t.governorate_name ? [t.governorate_name] : []),
         });
       } else {
         prev.trips_count += 1;
         prev.total_km += dist;
         if (t.start_at && (!prev.first_at || t.start_at < prev.first_at)) prev.first_at = t.start_at;
         if (t.end_at && (!prev.last_at || t.end_at > prev.last_at)) prev.last_at = t.end_at;
+        if (t.governorate_name) prev.governorates.add(t.governorate_name);
       }
     }
 
-    return Array.from(map.values()).sort((a, b) => b.total_km - a.total_km);
+    return Array.from(map.values())
+      .map((r) => ({ ...r, governorates: Array.from(r.governorates).join("، ") }))
+      .sort((a, b) => b.total_km - a.total_km);
   });
 
 export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
@@ -228,6 +239,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       top_driver: string | null;
       top_driver_km: number;
       driver_breakdown: DriverBreakdown[];
+      governorates: Set<string>;
     };
 
     const map = new Map<string, Row & { _drivers: Map<string, { km: number; trips: number }> }>();
@@ -267,6 +279,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
           top_driver: null,
           top_driver_km: 0,
           driver_breakdown: [],
+          governorates: new Set<string>(),
           _drivers: new Map<string, { km: number; trips: number }>(),
         };
         map.set(plate, row);
@@ -275,6 +288,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       row.car_total_km += dist;
       if (start && start < row.min_start) row.min_start = start;
       if (end > row.max_end) row.max_end = end;
+      if (t.governorate_name) row.governorates.add(t.governorate_name);
       if (driverName) {
         row.drivers_total_km += dist;
         const prevD = row._drivers.get(driverName);
@@ -311,6 +325,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
           top_driver_km: topKm,
           diff_km: spanKm - r.drivers_total_km,
           driver_breakdown: breakdown,
+          governorates: Array.from(r.governorates).join("، "),
         };
       })
       .sort((a, b) => b.car_span_km - a.car_span_km);

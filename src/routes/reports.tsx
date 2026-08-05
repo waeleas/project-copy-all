@@ -82,7 +82,8 @@ function ReportsPage() {
       (r: any) =>
         (r.car_plate ?? "").toLowerCase().includes(s) ||
         (r.car_code ?? "").toLowerCase().includes(s) ||
-        (r.car_description ?? "").toLowerCase().includes(s),
+        (r.car_description ?? "").toLowerCase().includes(s) ||
+        (r.governorates ?? "").toLowerCase().includes(s),
     );
   }, [cars.data, q]);
 
@@ -93,7 +94,8 @@ function ReportsPage() {
     return list.filter(
       (r: any) =>
         (r.driver_name ?? "").toLowerCase().includes(s) ||
-        (r.sap_number ?? "").toLowerCase().includes(s),
+        (r.sap_number ?? "").toLowerCase().includes(s) ||
+        (r.governorates ?? "").toLowerCase().includes(s),
     );
   }, [drivers.data, q]);
 
@@ -106,6 +108,7 @@ function ReportsPage() {
         (r.car_plate ?? "").toLowerCase().includes(s) ||
         (r.car_code ?? "").toLowerCase().includes(s) ||
         (r.car_description ?? "").toLowerCase().includes(s) ||
+        (r.governorates ?? "").toLowerCase().includes(s) ||
         (r.top_driver ?? "").toLowerCase().includes(s) ||
         (r.driver_breakdown ?? []).some((d: any) => (d.name ?? "").toLowerCase().includes(s)),
     );
@@ -178,6 +181,7 @@ function ReportsPage() {
                       "كود السيارة": r.car_code ?? "",
                       "الوصف": r.car_description ?? "",
                       "النوع": r.car_type === "rental" ? "إيجار" : "شركة",
+                      "المحافظة": r.governorates ?? "",
                       "عدد الرحلات": r.trips_count,
                       "إجمالي الكيلومترات": Math.round(r.total_km),
                       "أول عداد": Math.round(r.min_start),
@@ -202,6 +206,7 @@ function ReportsPage() {
                         <th className="p-2">الكود</th>
                         <th className="p-2">الوصف</th>
                         <th className="p-2">النوع</th>
+                        <th className="p-2">المحافظة</th>
                         <th className="p-2">الرحلات</th>
                         <th className="p-2">إجمالي كم</th>
                         <th className="p-2">أول عداد</th>
@@ -215,6 +220,7 @@ function ReportsPage() {
                           <td className="p-2">{r.car_code ?? "-"}</td>
                           <td className="p-2">{r.car_description ?? "-"}</td>
                           <td className="p-2">{r.car_type === "rental" ? "إيجار" : "شركة"}</td>
+                          <td className="p-2">{r.governorates ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
                           <td className="p-2 font-bold text-primary">{fmt(r.total_km)}</td>
                           <td className="p-2">{fmt(r.min_start)}</td>
@@ -222,7 +228,7 @@ function ReportsPage() {
                         </tr>
                       ))}
                       {carsFiltered.length === 0 && (
-                        <tr><td colSpan={8} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={9} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -247,6 +253,7 @@ function ReportsPage() {
                     driversFiltered.map((r: any) => ({
                       "اسم السائق": r.driver_name,
                       "رقم الساب": r.sap_number ?? "",
+                      "المحافظة": r.governorates ?? "",
                       "عدد الرحلات": r.trips_count,
                       "إجمالي الكيلومترات": Math.round(r.total_km),
                     })),
@@ -266,6 +273,7 @@ function ReportsPage() {
                       <tr>
                         <th className="p-2">السائق</th>
                         <th className="p-2">رقم الساب</th>
+                        <th className="p-2">المحافظة</th>
                         <th className="p-2">الرحلات</th>
                         <th className="p-2">إجمالي كم</th>
                       </tr>
@@ -275,12 +283,13 @@ function ReportsPage() {
                         <tr key={`${r.driver_name}-${r.sap_number ?? ""}`} className="border-b hover:bg-muted/40">
                           <td className="p-2 font-semibold">{r.driver_name}</td>
                           <td className="p-2">{r.sap_number ?? "-"}</td>
+                          <td className="p-2">{r.governorates ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
                           <td className="p-2 font-bold text-primary">{fmt(r.total_km)}</td>
                         </tr>
                       ))}
                       {driversFiltered.length === 0 && (
-                        <tr><td colSpan={4} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={5} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -336,6 +345,7 @@ function ReportsPage() {
                       "رقم اللوحة": r.car_plate,
                       "كود السيارة": r.car_code ?? "",
                       "الوصف": r.car_description ?? "",
+                      "المحافظة": r.governorates ?? "",
                       "عدد الرحلات": r.trips_count,
                       "أول عداد": Math.round(r.min_start ?? 0),
                       "آخر عداد": Math.round(r.max_end ?? 0),
@@ -370,6 +380,7 @@ function ReportsPage() {
                         <th className="p-2">اللوحة</th>
                         <th className="p-2">الكود</th>
                         <th className="p-2">الوصف</th>
+                        <th className="p-2">المحافظة</th>
                         <th className="p-2">الرحلات</th>
                         <th className="p-2">أول عداد</th>
                         <th className="p-2">آخر عداد</th>
@@ -388,6 +399,7 @@ function ReportsPage() {
                           <td className="p-2 font-semibold">{r.car_plate}</td>
                           <td className="p-2">{r.car_code ?? "-"}</td>
                           <td className="p-2">{r.car_description ?? "-"}</td>
+                          <td className="p-2">{r.governorates ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
                           <td className="p-2">{fmt(r.min_start ?? 0)}</td>
                           <td className="p-2">{fmt(r.max_end ?? 0)}</td>
@@ -426,7 +438,7 @@ function ReportsPage() {
                         </tr>
                       ))}
                       {compareFiltered.length === 0 && (
-                        <tr><td colSpan={10} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={11} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
                     </tbody>
                   </table>

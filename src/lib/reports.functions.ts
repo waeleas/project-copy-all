@@ -188,16 +188,20 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
           total_km: dist,
           first_at: t.start_at,
           last_at: t.end_at,
+          governorates: new Set(t.governorate_name ? [t.governorate_name] : []),
         });
       } else {
         prev.trips_count += 1;
         prev.total_km += dist;
         if (t.start_at && (!prev.first_at || t.start_at < prev.first_at)) prev.first_at = t.start_at;
         if (t.end_at && (!prev.last_at || t.end_at > prev.last_at)) prev.last_at = t.end_at;
+        if (t.governorate_name) prev.governorates.add(t.governorate_name);
       }
     }
 
-    return Array.from(map.values()).sort((a, b) => b.total_km - a.total_km);
+    return Array.from(map.values())
+      .map((r) => ({ ...r, governorates: Array.from(r.governorates).join("، ") }))
+      .sort((a, b) => b.total_km - a.total_km);
   });
 
 export const getCarDriverComparisonReport = createServerFn({ method: "GET" })

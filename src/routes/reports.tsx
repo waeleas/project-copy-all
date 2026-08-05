@@ -253,6 +253,7 @@ function ReportsPage() {
                     driversFiltered.map((r: any) => ({
                       "اسم السائق": r.driver_name,
                       "رقم الساب": r.sap_number ?? "",
+                      "المحافظة": r.governorates ?? "",
                       "عدد الرحلات": r.trips_count,
                       "إجمالي الكيلومترات": Math.round(r.total_km),
                     })),

@@ -345,6 +345,7 @@ function ReportsPage() {
                       "رقم اللوحة": r.car_plate,
                       "كود السيارة": r.car_code ?? "",
                       "الوصف": r.car_description ?? "",
+                      "المحافظة": r.governorates ?? "",
                       "عدد الرحلات": r.trips_count,
                       "أول عداد": Math.round(r.min_start ?? 0),
                       "آخر عداد": Math.round(r.max_end ?? 0),

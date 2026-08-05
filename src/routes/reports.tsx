@@ -380,6 +380,7 @@ function ReportsPage() {
                         <th className="p-2">اللوحة</th>
                         <th className="p-2">الكود</th>
                         <th className="p-2">الوصف</th>
+                        <th className="p-2">المحافظة</th>
                         <th className="p-2">الرحلات</th>
                         <th className="p-2">أول عداد</th>
                         <th className="p-2">آخر عداد</th>
@@ -398,6 +399,7 @@ function ReportsPage() {
                           <td className="p-2 font-semibold">{r.car_plate}</td>
                           <td className="p-2">{r.car_code ?? "-"}</td>
                           <td className="p-2">{r.car_description ?? "-"}</td>
+                          <td className="p-2">{r.governorates ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
                           <td className="p-2">{fmt(r.min_start ?? 0)}</td>
                           <td className="p-2">{fmt(r.max_end ?? 0)}</td>
@@ -436,7 +438,7 @@ function ReportsPage() {
                         </tr>
                       ))}
                       {compareFiltered.length === 0 && (
-                        <tr><td colSpan={10} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={11} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
                     </tbody>
                   </table>

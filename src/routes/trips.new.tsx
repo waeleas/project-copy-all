@@ -68,6 +68,7 @@ function NewTrip() {
   const technicians = useLookup("technicians");
   const drivers = useLookup("drivers");
   const services = useLookup("service_types");
+  const governorates = useLookup("governorates");
   const cars = useQuery({
     queryKey: ["cars", canSeeRentals],
     queryFn: async () => {
@@ -81,7 +82,7 @@ function NewTrip() {
 
   const [form, setForm] = useState({
     car_type: "company",
-    office_id: "", manager_id: "", technician_id: "", driver_id: "", driver_name_rental: "", service_type_id: "",
+    office_id: "", manager_id: "", technician_id: "", driver_id: "", driver_name_rental: "", service_type_id: "", governorate_id: "",
     route_start: "", start_odometer: "", car_code: "", car_plate: "",
     handheld_code: "",
   });
@@ -297,6 +298,8 @@ function NewTrip() {
         driver_id: form.car_type === "rental" ? null : (form.driver_id || null),
         driver_name_rental: form.car_type === "rental" ? (normalizedRentalDriver || null) : null,
         service_type_id: form.service_type_id || null,
+        governorate_id: form.governorate_id || null,
+        governorate_name: governorates.data?.find((g) => g.id === form.governorate_id)?.name ?? null,
         route_start: normalizedRouteStart,
         start_odometer: parseInt(normalizedStartOdometer, 10),
         start_photo_url: path,
@@ -411,6 +414,10 @@ function NewTrip() {
           <Field label="نوع الخدمة" invalid={errors.service_type_id}>
             <LookupSelect items={services.data} value={form.service_type_id} onChange={(v) => set("service_type_id", v)} placeholder="اختر النوع" />
           </Field>
+          <Field label="المحافظة" invalid={errors.governorate_id}>
+            <LookupSelect items={governorates.data} value={form.governorate_id} onChange={(v) => set("governorate_id", v)} placeholder="اختر المحافظة" />
+          </Field>
+
           {((form.car_type !== "company" && services.data?.find((s) => s.id === form.service_type_id)?.name !== "نقل عاملين") ||
             (form.car_type === "company" && services.data?.find((s) => s.id === form.service_type_id)?.name === "خدمة ما بعد البيع")) && (
             <Field label="المدير المسؤول" invalid={errors.manager_id}>

@@ -64,7 +64,7 @@ function Manage() {
 
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 sm:grid-cols-8 w-full h-auto">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-9 w-full h-auto">
           <TabsTrigger value="users">المستخدمون</TabsTrigger>
           <TabsTrigger value="messages">الرسائل</TabsTrigger>
           <TabsTrigger value="offices">المكاتب</TabsTrigger>
@@ -73,7 +73,9 @@ function Manage() {
           <TabsTrigger value="drivers">السائقون</TabsTrigger>
           <TabsTrigger value="cars">السيارات</TabsTrigger>
           <TabsTrigger value="services">الخدمات</TabsTrigger>
+          <TabsTrigger value="governorates">المحافظات</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="users"><UsersManager /></TabsContent>
         <TabsContent value="messages"><MessagesManager /></TabsContent>
@@ -84,6 +86,7 @@ function Manage() {
         <TabsContent value="drivers"><DriversManager /></TabsContent>
         <TabsContent value="cars"><CarsManager /></TabsContent>
         <TabsContent value="services"><LookupManager table="service_types" title="أنواع الخدمة" /></TabsContent>
+        <TabsContent value="governorates"><LookupManager table="governorates" title="المحافظات" withCode /></TabsContent>
       </Tabs>
     </div>
   );

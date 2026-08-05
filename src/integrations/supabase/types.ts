@@ -106,6 +106,27 @@ export type Database = {
         }
         Relationships: []
       }
+      governorates: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       managers: {
         Row: {
           cost_center: string | null
@@ -289,6 +310,8 @@ export type Database = {
           end_odometer: number | null
           end_photo_url: string | null
           follow_office_id: string | null
+          governorate_id: string | null
+          governorate_name: string | null
           handheld_code: string | null
           id: string
           manager_id: string | null
@@ -320,6 +343,8 @@ export type Database = {
           end_odometer?: number | null
           end_photo_url?: string | null
           follow_office_id?: string | null
+          governorate_id?: string | null
+          governorate_name?: string | null
           handheld_code?: string | null
           id?: string
           manager_id?: string | null
@@ -351,6 +376,8 @@ export type Database = {
           end_odometer?: number | null
           end_photo_url?: string | null
           follow_office_id?: string | null
+          governorate_id?: string | null
+          governorate_name?: string | null
           handheld_code?: string | null
           id?: string
           manager_id?: string | null
@@ -380,6 +407,13 @@ export type Database = {
             columns: ["follow_office_id"]
             isOneToOne: false
             referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_governorate_id_fkey"
+            columns: ["governorate_id"]
+            isOneToOne: false
+            referencedRelation: "governorates"
             referencedColumns: ["id"]
           },
           {

@@ -68,6 +68,7 @@ function NewTrip() {
   const technicians = useLookup("technicians");
   const drivers = useLookup("drivers");
   const services = useLookup("service_types");
+  const governorates = useLookup("governorates");
   const cars = useQuery({
     queryKey: ["cars", canSeeRentals],
     queryFn: async () => {

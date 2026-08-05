@@ -118,6 +118,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
         if (end > prev.max_end) prev.max_end = end;
         if (t.start_at && (!prev.first_at || t.start_at < prev.first_at)) prev.first_at = t.start_at;
         if (t.end_at && (!prev.last_at || t.end_at > prev.last_at)) prev.last_at = t.end_at;
+        if (t.governorate_name) prev.governorates.add(t.governorate_name);
       }
     }
 
@@ -126,6 +127,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
         ...r,
         min_start: r.min_start === Number.POSITIVE_INFINITY ? 0 : r.min_start,
         span_km: r.max_end - (r.min_start === Number.POSITIVE_INFINITY ? 0 : r.min_start),
+        governorates: Array.from(r.governorates).join("، "),
       }))
       .sort((a, b) => b.total_km - a.total_km);
   });

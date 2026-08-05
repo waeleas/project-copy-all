@@ -279,6 +279,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
           top_driver: null,
           top_driver_km: 0,
           driver_breakdown: [],
+          governorates: new Set<string>(),
           _drivers: new Map<string, { km: number; trips: number }>(),
         };
         map.set(plate, row);
@@ -287,6 +288,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
       row.car_total_km += dist;
       if (start && start < row.min_start) row.min_start = start;
       if (end > row.max_end) row.max_end = end;
+      if (t.governorate_name) row.governorates.add(t.governorate_name);
       if (driverName) {
         row.drivers_total_km += dist;
         const prevD = row._drivers.get(driverName);

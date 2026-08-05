@@ -220,6 +220,7 @@ function ReportsPage() {
                           <td className="p-2">{r.car_code ?? "-"}</td>
                           <td className="p-2">{r.car_description ?? "-"}</td>
                           <td className="p-2">{r.car_type === "rental" ? "إيجار" : "شركة"}</td>
+                          <td className="p-2">{r.governorates ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
                           <td className="p-2 font-bold text-primary">{fmt(r.total_km)}</td>
                           <td className="p-2">{fmt(r.min_start)}</td>
@@ -227,7 +228,7 @@ function ReportsPage() {
                         </tr>
                       ))}
                       {carsFiltered.length === 0 && (
-                        <tr><td colSpan={8} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={9} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
                     </tbody>
                   </table>

@@ -273,6 +273,7 @@ function ReportsPage() {
                       <tr>
                         <th className="p-2">السائق</th>
                         <th className="p-2">رقم الساب</th>
+                        <th className="p-2">المحافظة</th>
                         <th className="p-2">الرحلات</th>
                         <th className="p-2">إجمالي كم</th>
                       </tr>
@@ -282,12 +283,13 @@ function ReportsPage() {
                         <tr key={`${r.driver_name}-${r.sap_number ?? ""}`} className="border-b hover:bg-muted/40">
                           <td className="p-2 font-semibold">{r.driver_name}</td>
                           <td className="p-2">{r.sap_number ?? "-"}</td>
+                          <td className="p-2">{r.governorates ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
                           <td className="p-2 font-bold text-primary">{fmt(r.total_km)}</td>
                         </tr>
                       ))}
                       {driversFiltered.length === 0 && (
-                        <tr><td colSpan={4} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={5} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
                     </tbody>
                   </table>

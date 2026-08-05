@@ -414,6 +414,10 @@ function NewTrip() {
           <Field label="نوع الخدمة" invalid={errors.service_type_id}>
             <LookupSelect items={services.data} value={form.service_type_id} onChange={(v) => set("service_type_id", v)} placeholder="اختر النوع" />
           </Field>
+          <Field label="المحافظة" invalid={errors.governorate_id}>
+            <LookupSelect items={governorates.data} value={form.governorate_id} onChange={(v) => set("governorate_id", v)} placeholder="اختر المحافظة" />
+          </Field>
+
           {((form.car_type !== "company" && services.data?.find((s) => s.id === form.service_type_id)?.name !== "نقل عاملين") ||
             (form.car_type === "company" && services.data?.find((s) => s.id === form.service_type_id)?.name === "خدمة ما بعد البيع")) && (
             <Field label="المدير المسؤول" invalid={errors.manager_id}>

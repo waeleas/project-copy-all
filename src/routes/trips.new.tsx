@@ -185,6 +185,7 @@ function NewTrip() {
 
     if (form.car_type === "rental" && !form.office_id) addMiss("office_id", "المكتب");
     if (!form.service_type_id) addMiss("service_type_id", "نوع الخدمة");
+    if (!form.governorate_id) addMiss("governorate_id", "المحافظة");
     if (needsManager && !form.manager_id) addMiss("manager_id", "المدير المسؤول");
     if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") addMiss("technician_id", "متلقي الخدمة أو الفني");
     if (form.car_type === "rental" ? !normalizedRentalDriver : !form.driver_id) {

@@ -71,7 +71,7 @@ function TripsList() {
           t.service_type?.name,
           t.technician?.name, t.technician?.sap_number,
           t.driver?.name, t.driver?.sap_number, t.driver_name_rental,
-          t.created_by_name, t.created_by_email,
+          t.created_by_name, t.created_by_email, t.governorate_name,
         ].map((v) => String(v ?? "").toLowerCase()).join(" | ");
         if (!hay.includes(q)) return false;
       }
@@ -146,6 +146,7 @@ function TripsList() {
         "كود السيارة": t.car_code ?? "",
         "رقم لوحة السيارة": t.car_plate ?? "",
         "وصف السيارة": t.car_description ?? "",
+        "المحافظة": t.governorate_name ?? "",
         "خط السير": t.route_start ?? "",
         "قراءة العداد (كم)": t.start_odometer,
         "وقت التسجيل": new Date(t.start_at).toLocaleString("ar-EG"),

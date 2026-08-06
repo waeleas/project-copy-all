@@ -192,6 +192,7 @@ function TripDetail() {
           <Info icon={Hash} label="رقم لوحة السيارة" value={trip.car_plate} />
           <Info icon={Car} label="وصف السيارة" value={trip.car_description} />
           {trip.car_type === "rental" && <Info icon={Hash} label="كود الهاند هيلد" value={trip.handheld_code} />}
+          <Info icon={MapPin} label="المحافظة" value={trip.governorate_name} />
           <Info icon={MapPin} label="بداية خط السير" value={trip.route_start} full />
           <Info icon={User} label="منشئ الطلب" value={trip.created_by_name ?? trip.created_by_email} />
           <Info icon={Timer} label={trip.status === "open" ? "المدة حتى الآن" : "إجمالى مدة الرحلة"} value={formatDuration(tripDurationMs(trip, now))} full />
@@ -333,6 +334,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
   const technicians = useLookup("technicians");
   const drivers = useLookup("drivers");
   const services = useLookup("service_types");
+  const governorates = useLookup("governorates");
   const cars = useQuery({
     queryKey: ["cars"],
     queryFn: async () => {
@@ -370,6 +372,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     driver_id: trip.driver_id ?? "",
     driver_name_rental: trip.driver_name_rental ?? "",
     service_type_id: trip.service_type_id ?? "",
+    governorate_id: trip.governorate_id ?? "",
     car_code: trip.car_code ?? "",
     car_plate: trip.car_plate ?? "",
     car_description: trip.car_description ?? "",
@@ -402,6 +405,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     if (endVal != null && endVal - startVal > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     if (form.car_type === "rental" && !form.office_id) return toast.error("المكتب مطلوب لسيارات الإيجار");
     if (form.route_start.trim().length > 40) return toast.error("يجب ألا يزيد وصف خط السير عن 40 حرف");
+    if (!form.governorate_id) return toast.error("المحافظة مطلوبة");
 
     setSaving(true);
     try {
@@ -413,6 +417,8 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
         driver_id: form.car_type === "rental" ? null : (form.driver_id || null),
         driver_name_rental: form.car_type === "rental" ? (form.driver_name_rental.trim() || null) : null,
         service_type_id: form.service_type_id || null,
+        governorate_id: form.governorate_id || null,
+        governorate_name: governorates.data?.find((g) => g.id === form.governorate_id)?.name ?? null,
         car_code: form.car_code || null,
         car_plate: form.car_plate || null,
         car_description: form.car_description.trim() || null,
@@ -475,6 +481,15 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
               </Select>
             </Field>
           )}
+
+          <Field label="المحافظة (مطلوب)">
+            <Select value={form.governorate_id} onValueChange={(v) => set("governorate_id", v)}>
+              <SelectTrigger><SelectValue placeholder="اختر المحافظة" /></SelectTrigger>
+              <SelectContent>
+                {governorates.data?.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {!(form.car_type === "rental" && services.data?.find((s) => s.id === form.service_type_id)?.name === "نقل عاملين") && (

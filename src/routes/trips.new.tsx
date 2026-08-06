@@ -185,6 +185,7 @@ function NewTrip() {
 
     if (form.car_type === "rental" && !form.office_id) addMiss("office_id", "المكتب");
     if (!form.service_type_id) addMiss("service_type_id", "نوع الخدمة");
+    if (!form.governorate_id) addMiss("governorate_id", "المحافظة");
     if (needsManager && !form.manager_id) addMiss("manager_id", "المدير المسؤول");
     if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") addMiss("technician_id", "متلقي الخدمة أو الفني");
     if (form.car_type === "rental" ? !normalizedRentalDriver : !form.driver_id) {
@@ -414,7 +415,7 @@ function NewTrip() {
           <Field label="نوع الخدمة" invalid={errors.service_type_id}>
             <LookupSelect items={services.data} value={form.service_type_id} onChange={(v) => set("service_type_id", v)} placeholder="اختر النوع" />
           </Field>
-          <Field label="المحافظة" invalid={errors.governorate_id}>
+          <Field label="المحافظة (مطلوب)" invalid={errors.governorate_id}>
             <LookupSelect items={governorates.data} value={form.governorate_id} onChange={(v) => set("governorate_id", v)} placeholder="اختر المحافظة" />
           </Field>
 

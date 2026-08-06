@@ -878,12 +878,26 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
     }
     onFile(f);
   }
-  // فتح منتقي الملفات برمجياً كخطة بديلة إن لم يستجب المتصفح لـ label
+  // فتح منتقي الملفات برمجياً + خطة بديلة: بعض متصفحات الأندرويد لا تُطلق حدث change
+  function watchForFile(el: HTMLInputElement) {
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries++;
+      const f = el.files?.[0] ?? null;
+      if (f) {
+        window.clearInterval(timer);
+        handle(f);
+      } else if (tries > 40) {
+        window.clearInterval(timer);
+      }
+    }, 300);
+  }
   function openPicker(ref: React.RefObject<HTMLInputElement | null>) {
     const el = ref.current;
     if (!el) return;
     try { el.value = ""; } catch { /* تجاهل */ }
     el.click();
+    watchForFile(el);
   }
 
   const previewSrc = dataPreview || (previewFailed ? "" : preview);
@@ -913,41 +927,43 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       )}
       <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
         <CameraCapture onCapture={(f) => handle(f)} />
-        {/* زر يفتح المعرض برمجياً — أكثر موثوقية من ربط label عندما يكون الحقل مخفياً */}
-        <button
-          type="button"
-          onClick={() => openPicker(fileRef)}
+        {/* label أصلي يحتوي الحقل — أعلى موثوقية على الجوال */}
+        <label
+          htmlFor={galleryId}
           className="h-auto min-h-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center gap-1 text-sm cursor-pointer hover:bg-accent/30 active:bg-accent/50 select-none"
         >
           <span className="text-xl">🖼️</span>
           <span>من المعرض</span>
-        </button>
-        <input
-          id={galleryId}
-          ref={fileRef}
-          type="file"
-          accept="image/*,.heic,.heif"
-          className="absolute size-px opacity-0 -z-10 overflow-hidden"
-          tabIndex={-1}
-          onChange={(e) => handle(e.target.files?.[0] ?? null)}
-        />
+          <input
+            id={galleryId}
+            ref={fileRef}
+            type="file"
+            accept="image/*,.heic,.heif"
+            className="sr-only"
+            onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
+            onChange={(e) => handle(e.target.files?.[0] ?? null)}
+            onInput={(e) => handle((e.target as HTMLInputElement).files?.[0] ?? null)}
+          />
+        </label>
         {/* بديل: بدون تقييد النوع — يعمل حتى لو مُنع إذن الصور */}
-        <button
-          type="button"
-          onClick={() => openPicker(anyRef)}
-          className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-1"
+        <label
+          htmlFor={anyFileId}
+          className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-2"
+          onClick={() => { const el = anyRef.current; if (el) watchForFile(el); }}
         >
           لم يفتح المعرض؟ اختر ملفاً من الجهاز
-        </button>
-        <input
-          id={anyFileId}
-          ref={anyRef}
-          type="file"
-          className="absolute size-px opacity-0 -z-10 overflow-hidden"
-          tabIndex={-1}
-          onChange={(e) => handle(e.target.files?.[0] ?? null)}
-        />
+          <input
+            id={anyFileId}
+            ref={anyRef}
+            type="file"
+            className="sr-only"
+            onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
+            onChange={(e) => handle(e.target.files?.[0] ?? null)}
+            onInput={(e) => handle((e.target as HTMLInputElement).files?.[0] ?? null)}
+          />
+        </label>
       </div>
+
 
     </div>
   );

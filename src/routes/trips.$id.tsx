@@ -877,8 +877,12 @@ function PhotoAdminControls({
       const { error } = await supabase.from("trips").update({ [field]: path } as any).eq("id", tripId);
       if (error) throw error;
       // لا ننتظر إعادة جلب الطلب: اعرض النسخة المرفوعة فوراً برابط جديد غير مخزّن مؤقتاً.
-      const fresh = await getSignedPhotoUrl(path);
-      onLocalPreview?.(`${fresh}${fresh.includes("?") ? "&" : "?"}t=${Date.now()}`);
+      try {
+        const fresh = await getSignedPhotoUrl(path);
+        onLocalPreview?.(`${fresh}${fresh.includes("?") ? "&" : "?"}t=${Date.now()}`);
+      } catch {
+        // تم الحفظ بالفعل؛ إعادة جلب بيانات الرحلة ستنشئ الرابط عند تحسن الشبكة.
+      }
       toast.success("تم تحديث الصورة");
       onChanged();
     } catch (err: any) {

@@ -866,20 +866,29 @@ function PhotoAdminControls({
       return;
     }
     setBusy(true);
+    let localUrl = "";
     // معاينة فورية من الملف المحلي حتى لا ينتظر المستخدم رفع الشبكة
     try {
-      const localUrl = URL.createObjectURL(file);
+      localUrl = URL.createObjectURL(file);
       onLocalPreview?.(localUrl);
     } catch {}
     try {
       const path = await uploadOdometerPhoto(file, prefix);
       const { error } = await supabase.from("trips").update({ [field]: path } as any).eq("id", tripId);
       if (error) throw error;
+      // لا ننتظر إعادة جلب الطلب: اعرض النسخة المرفوعة فوراً برابط جديد غير مخزّن مؤقتاً.
+      try {
+        const fresh = await getSignedPhotoUrl(path);
+        onLocalPreview?.(`${fresh}${fresh.includes("?") ? "&" : "?"}t=${Date.now()}`);
+      } catch {
+        // تم الحفظ بالفعل؛ إعادة جلب بيانات الرحلة ستنشئ الرابط عند تحسن الشبكة.
+      }
       toast.success("تم تحديث الصورة");
       onChanged();
     } catch (err: any) {
       toast.error(arabicError(err, "فشل تحديث الصورة"));
     } finally {
+      if (localUrl) URL.revokeObjectURL(localUrl);
       setBusy(false);
     }
   }
@@ -894,15 +903,16 @@ function PhotoAdminControls({
         </Button>
       )}
       {canChange && (
-        <button
+        <Button
           type="button"
+          size="sm"
+          variant="outline"
           disabled={busy}
           onClick={() => { const el = fileRef.current; if (!el) return; try { el.value = ""; } catch { /* تجاهل */ } el.click(); }}
-          className={`inline-flex h-8 items-center gap-1 rounded-md border px-3 text-sm cursor-pointer hover:bg-accent/40 ${busy ? "pointer-events-none opacity-60" : ""}`}
         >
           <Pencil className="size-4" />
           {busy ? "جاري الرفع..." : (signedUrl ? "تغيير الصورة" : "رفع صورة")}
-        </button>
+        </Button>
       )}
       {canChange && (
         <input
@@ -931,6 +941,11 @@ function OdometerImage({ path, signedUrl, onRefresh, alt }: {
   const [failed, setFailed] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [retrying, setRetrying] = useState(false);
+  useEffect(() => {
+    // الصورة الجديدة يجب أن تحصل على محاولة عرض جديدة، حتى لو فشل الرابط السابق.
+    setFailed(false);
+    setAttempts(0);
+  }, [path, signedUrl]);
   async function refresh() {
     if (retrying) return;
     setRetrying(true);

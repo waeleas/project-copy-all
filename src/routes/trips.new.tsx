@@ -892,13 +892,6 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       }
     }, 300);
   }
-  function openPicker(ref: React.RefObject<HTMLInputElement | null>) {
-    const el = ref.current;
-    if (!el) return;
-    try { el.value = ""; } catch { /* تجاهل */ }
-    el.click();
-    watchForFile(el);
-  }
 
   const previewSrc = dataPreview || (previewFailed ? "" : preview);
 

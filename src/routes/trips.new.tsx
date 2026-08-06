@@ -415,7 +415,7 @@ function NewTrip() {
           <Field label="نوع الخدمة" invalid={errors.service_type_id}>
             <LookupSelect items={services.data} value={form.service_type_id} onChange={(v) => set("service_type_id", v)} placeholder="اختر النوع" />
           </Field>
-          <Field label="المحافظة" invalid={errors.governorate_id}>
+          <Field label="المحافظة (مطلوب)" invalid={errors.governorate_id}>
             <LookupSelect items={governorates.data} value={form.governorate_id} onChange={(v) => set("governorate_id", v)} placeholder="اختر المحافظة" />
           </Field>
 

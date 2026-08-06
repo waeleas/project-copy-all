@@ -833,7 +833,11 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const galleryId = `ph-${uid}-gallery`;
   const anyFileId = `ph-${uid}-anyfile`;
+  const lastFileRef = useRef<string>("");
   function handle(f: File | null) {
+    const sig = f ? `${f.name}|${f.size}|${f.lastModified}` : "";
+    if (f && sig === lastFileRef.current) return;
+    lastFileRef.current = sig;
     setPreviewFailed(false);
     setPickError("");
     setDataPreview("");

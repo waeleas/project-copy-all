@@ -872,6 +872,7 @@ function PhotoAdminControls({
       localUrl = URL.createObjectURL(file);
       onLocalPreview?.(localUrl);
     } catch {}
+    let replaced = false;
     try {
       const path = await uploadOdometerPhoto(file, prefix);
       const { error } = await supabase.from("trips").update({ [field]: path } as any).eq("id", tripId);
@@ -880,6 +881,7 @@ function PhotoAdminControls({
       try {
         const fresh = await getSignedPhotoUrl(path);
         onLocalPreview?.(`${fresh}${fresh.includes("?") ? "&" : "?"}t=${Date.now()}`);
+        replaced = true;
       } catch {
         // تم الحفظ بالفعل؛ إعادة جلب بيانات الرحلة ستنشئ الرابط عند تحسن الشبكة.
       }
@@ -888,9 +890,15 @@ function PhotoAdminControls({
     } catch (err: any) {
       toast.error(arabicError(err, "فشل تحديث الصورة"));
     } finally {
-      if (localUrl) URL.revokeObjectURL(localUrl);
+      // لا نلغِ رابط المعاينة المحلية إلا بعد استبداله برابط فعلي،
+      // وإلا تظهر الصورة مكسورة لأن المتصفح فقد الرابط المؤقت.
+      if (localUrl && replaced) {
+        const toRevoke = localUrl;
+        setTimeout(() => URL.revokeObjectURL(toRevoke), 10000);
+      }
       setBusy(false);
     }
+
   }
 
   if (!signedUrl && !canChange) return null;

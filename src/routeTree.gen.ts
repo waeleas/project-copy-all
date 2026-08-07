@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TripsNewRouteImport } from './routes/trips.new'
 import { Route as TripsIdRouteImport } from './routes/trips.$id'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 
 const TrustRoute = TrustRouteImport.update({
   id: '/trust',
@@ -64,6 +65,11 @@ const TripsIdRoute = TripsIdRouteImport.update({
   path: '/trips/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
   '/trust': typeof TrustRoute
+  '/api/chat': typeof ApiChatRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
   '/trust': typeof TrustRoute
+  '/api/chat': typeof ApiChatRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
   '/trust': typeof TrustRoute
+  '/api/chat': typeof ApiChatRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reports'
     | '/trust'
+    | '/api/chat'
     | '/trips/$id'
     | '/trips/new'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reports'
     | '/trust'
+    | '/api/chat'
     | '/trips/$id'
     | '/trips/new'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reports'
     | '/trust'
+    | '/api/chat'
     | '/trips/$id'
     | '/trips/new'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ReportsRoute: typeof ReportsRoute
   TrustRoute: typeof TrustRoute
+  ApiChatRoute: typeof ApiChatRoute
   TripsIdRoute: typeof TripsIdRoute
   TripsNewRoute: typeof TripsNewRoute
 }
@@ -212,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -223,19 +243,10 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ReportsRoute: ReportsRoute,
   TrustRoute: TrustRoute,
+  ApiChatRoute: ApiChatRoute,
   TripsIdRoute: TripsIdRoute,
   TripsNewRoute: TripsNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

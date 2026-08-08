@@ -43,9 +43,9 @@ function AdminChats() {
       if (error) throw error;
       const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, username");
       const nameOf = new Map<string, string>();
-      (profiles ?? []).forEach((p: any) =>
-        nameOf.set(p.user_id, p.display_name || p.username || p.user_id.slice(0, 8)),
-      );
+      ((profiles as any[]) ?? []).forEach((p: any) => {
+        nameOf.set(p.user_id, p.display_name || p.username || String(p.user_id).slice(0, 8));
+      });
       const groups = new Map<string, { name: string; items: any[] }>();
       ((msgs as any[]) ?? []).forEach((m) => {
         const g = groups.get(m.user_id) ?? { name: nameOf.get(m.user_id) ?? m.user_id.slice(0, 8), items: [] };

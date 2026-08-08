@@ -65,6 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/messages", label: "الرسائل", icon: Mail, badge: unreadCount },
     ...(isAdmin || isViewer ? [{ to: "/reports", label: "التقارير", icon: BarChart3 }] : []),
     { to: "/profile", label: "حسابي", icon: User },
+    ...(isAdmin ? [{ to: "/chats", label: "المحادثات", icon: MessagesSquare }] : []),
     ...(isAdmin ? [{ to: "/manage", label: "الإدارة", icon: Settings }] : []),
   ];
 

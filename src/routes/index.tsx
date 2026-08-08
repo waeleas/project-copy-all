@@ -112,15 +112,26 @@ function TripsList() {
   async function exportExcel() {
     if (!filtered || filtered.length === 0) return toast.error("لا توجد بيانات للتصدير");
     const ids = filtered.map((t: any) => t.id);
-    const { data: segs } = await supabase
-      .from("trip_segments" as any)
-      .select("*")
-      .in("trip_id", ids)
-      .order("sequence", { ascending: true });
+    const segsAll: any[] = [];
+    for (let i = 0; i < ids.length; i += 100) {
+      const chunk = ids.slice(i, i + 100);
+      const { data: segs, error: segErr } = await supabase
+        .from("trip_segments" as any)
+        .select("*")
+        .in("trip_id", chunk)
+        .order("sequence", { ascending: true });
+      if (segErr) {
+        toast.error("تعذر تحميل المسارات الإضافية — سيتم التصدير بدونها");
+        break;
+      }
+      segsAll.push(...((segs as any[]) ?? []));
+    }
     const segsByTrip: Record<string, any[]> = {};
-    (segs as any[] | null)?.forEach((s) => {
-      (segsByTrip[s.trip_id] ||= []).push(s);
-    });
+    segsAll
+      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+      .forEach((s) => {
+        (segsByTrip[s.trip_id] ||= []).push(s);
+      });
 
     type Row = Record<string, any> & { __kind: "start" | "seg" | "end" };
     const rows: Row[] = [];
@@ -147,6 +158,9 @@ function TripsList() {
         "رقم لوحة السيارة": t.car_plate ?? "",
         "وصف السيارة": t.car_description ?? "",
         "المحافظة": t.governorate_name ?? "",
+        "مكتب المتابعة": t.follow_office?.name ?? "",
+        "كود خط السير": t.route_code ?? "",
+        "كود الجهاز": t.handheld_code ?? "",
         "خط السير": t.route_start ?? "",
         "قراءة العداد (كم)": t.start_odometer,
         "وقت التسجيل": new Date(t.start_at).toLocaleString("ar-EG"),
@@ -155,9 +169,13 @@ function TripsList() {
         "وقت النهاية": "",
         "المدة (دقائق)": "",
         "المدة": "",
+        "عدد المسارات الإضافية": tSegs.length,
         "منشئ الطلب": t.created_by_name ?? t.created_by_email ?? "",
+        "بريد منشئ الطلب": t.created_by_email ?? "",
         "ملاحظات": "",
+        "صورة العداد": t.start_photo_url ?? "",
         "تم الإنشاء": new Date(t.created_at).toLocaleString("ar-EG"),
+        "آخر تحديث": t.updated_at ? new Date(t.updated_at).toLocaleString("ar-EG") : "",
       };
       rows.push({ ...baseRow, __kind: "start" });
 
@@ -165,11 +183,14 @@ function TripsList() {
         rows.push({
           ...baseRow,
           "نوع المسار": `مسار إضافي #${i + 1}`,
-          "ترتيب المسار": i + 1,
+          "ترتيب المسار": s.sequence ?? i + 1,
           "خط السير": s.route ?? "",
-          "قراءة العداد (كم)": "",
-          "وقت التسجيل": new Date(s.created_at).toLocaleString("ar-EG"),
+          "قراءة العداد (كم)": s.odometer ?? "",
+          "وقت التسجيل": s.created_at ? new Date(s.created_at).toLocaleString("ar-EG") : "",
+          "ملاحظات": s.notes ?? "",
+          "صورة العداد": s.photo_url ?? "",
           "تم الإنشاء": "",
+          "آخر تحديث": s.updated_at ? new Date(s.updated_at).toLocaleString("ar-EG") : "",
           __kind: "seg",
         });
       });
@@ -187,6 +208,7 @@ function TripsList() {
           "المدة (دقائق)": totalMin,
           "المدة": formatDuration(durMs),
           "ملاحظات": t.notes ?? "",
+          "صورة العداد": t.end_photo_url ?? "",
           "تم الإنشاء": "",
           __kind: "end",
         });

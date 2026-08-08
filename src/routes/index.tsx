@@ -112,15 +112,26 @@ function TripsList() {
   async function exportExcel() {
     if (!filtered || filtered.length === 0) return toast.error("لا توجد بيانات للتصدير");
     const ids = filtered.map((t: any) => t.id);
-    const { data: segs } = await supabase
-      .from("trip_segments" as any)
-      .select("*")
-      .in("trip_id", ids)
-      .order("sequence", { ascending: true });
+    const segsAll: any[] = [];
+    for (let i = 0; i < ids.length; i += 100) {
+      const chunk = ids.slice(i, i + 100);
+      const { data: segs, error: segErr } = await supabase
+        .from("trip_segments" as any)
+        .select("*")
+        .in("trip_id", chunk)
+        .order("sequence", { ascending: true });
+      if (segErr) {
+        toast.error("تعذر تحميل المسارات الإضافية — سيتم التصدير بدونها");
+        break;
+      }
+      segsAll.push(...((segs as any[]) ?? []));
+    }
     const segsByTrip: Record<string, any[]> = {};
-    (segs as any[] | null)?.forEach((s) => {
-      (segsByTrip[s.trip_id] ||= []).push(s);
-    });
+    segsAll
+      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+      .forEach((s) => {
+        (segsByTrip[s.trip_id] ||= []).push(s);
+      });
 
     type Row = Record<string, any> & { __kind: "start" | "seg" | "end" };
     const rows: Row[] = [];

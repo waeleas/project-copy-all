@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, X, RotateCcw } from "lucide-react";
+import { X, RotateCcw, ImagePlus, Mic, MicOff, Volume2, Square, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -24,18 +24,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import janshAvatar from "@/assets/jansh-avatar.png";
 
-const STORAGE_KEY = "jansh.conversation.v1";
-
-function loadMessages(): UIMessage[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? (parsed as UIMessage[]) : [];
-  } catch {
-    return [];
-  }
-}
+const POS_KEY = "jansh.bubble.pos.v1";
 
 const SUGGESTIONS = [
   "إزاي أسجل قراءة العداد صح؟",
@@ -43,13 +32,83 @@ const SUGGESTIONS = [
   "العربية وقفت في الطريق، أعمل إيه؟",
 ];
 
+/** ضغط الصورة لحجم صغير مناسب للإرسال والتخزين */
+async function compressToDataUrl(file: File): Promise<string> {
+  const bitmapUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("decode"));
+      el.src = bitmapUrl;
+    });
+    const max = 900;
+    const scale = Math.min(1, max / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.6);
+  } finally {
+    URL.revokeObjectURL(bitmapUrl);
+  }
+}
+
+function textOf(m: UIMessage) {
+  return m.parts.map((p: any) => (p.type === "text" ? p.text : "")).join("");
+}
+function imageOf(m: UIMessage): string | null {
+  const part: any = m.parts.find((p: any) => p.type === "file" && String(p.mediaType ?? "").startsWith("image/"));
+  return part?.url ?? null;
+}
+
 export function JanshAssistant() {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  const [initial] = useState<UIMessage[]>(() => loadMessages());
+  const [image, setImage] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [initial, setInitial] = useState<UIMessage[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const recognitionRef = useRef<any>(null);
   const { user } = useAuth();
 
+  /* ===== موضع الفقاعة (قابلة للتحريك) ===== */
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    if (typeof window === "undefined") return { x: 16, y: 400 };
+    try {
+      const raw = window.localStorage.getItem(POS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return { x: 16, y: Math.max(80, window.innerHeight - 200) };
+  });
+  const dragRef = useRef<{ dx: number; dy: number; moved: boolean } | null>(null);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    dragRef.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y, moved: false };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const nx = Math.min(window.innerWidth - 70, Math.max(4, e.clientX - d.dx));
+    const ny = Math.min(window.innerHeight - 70, Math.max(4, e.clientY - d.dy));
+    if (Math.abs(nx - pos.x) > 3 || Math.abs(ny - pos.y) > 3) d.moved = true;
+    setPos({ x: nx, y: ny });
+  };
+  const onPointerUp = () => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (d && !d.moved) setOpen(true);
+    try {
+      window.localStorage.setItem(POS_KEY, JSON.stringify(pos));
+    } catch {}
+  };
+
+  /* ===== سياق السائق ===== */
   const { data: ctx } = useQuery({
     queryKey: ["jansh-context", user?.id],
     enabled: !!user?.id && open,
@@ -85,21 +144,60 @@ export function JanshAssistant() {
     },
   });
 
+  /* ===== تحميل المحادثة من قاعدة البيانات (خاصة بكل مستخدم) ===== */
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("chat_messages" as any)
+        .select("id, role, content, image_url, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true })
+        .limit(200);
+      if (cancelled) return;
+      const msgs: UIMessage[] = ((data as any[]) ?? []).map((r) => ({
+        id: r.id,
+        role: r.role,
+        parts: [
+          ...(r.image_url ? [{ type: "file", mediaType: "image/jpeg", url: r.image_url } as any] : []),
+          { type: "text", text: r.content ?? "" } as any,
+        ],
+      }));
+      setInitial(msgs);
+      setReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const persist = useCallback(
+    async (role: "user" | "assistant", content: string, imageUrl?: string | null) => {
+      if (!user?.id) return;
+      await supabase.from("chat_messages" as any).insert({
+        user_id: user.id,
+        role,
+        content,
+        image_url: imageUrl ?? null,
+      });
+    },
+    [user?.id],
+  );
+
   const { messages, sendMessage, status, setMessages } = useChat({
-    id: "jansh",
+    id: `jansh-${user?.id ?? "guest"}`,
     messages: initial,
     transport: new DefaultChatTransport({ api: "/api/chat" }),
+    onFinish: ({ message }: any) => {
+      void persist("assistant", textOf(message as UIMessage));
+    },
     onError: () => toast.error("معلش، حصلت مشكلة في الاتصال بجنش — جرّب تاني"),
   });
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    } catch {
-      /* تخزين ممتلئ */
-    }
-  }, [messages]);
+    if (ready && initial.length) setMessages(initial);
+  }, [ready, initial, setMessages]);
 
   useEffect(() => {
     if (open) textareaRef.current?.focus();
@@ -109,19 +207,95 @@ export function JanshAssistant() {
 
   function send(value: string) {
     const trimmed = value.trim();
-    if (!trimmed || busy) return;
+    if ((!trimmed && !image) || busy) return;
+    const img = image;
     setText("");
-    void sendMessage({ text: trimmed }, { body: { context: ctx } });
+    setImage(null);
+    void persist("user", trimmed, img);
+    void sendMessage(
+      {
+        text: trimmed || "شوف الصورة دي",
+        ...(img ? { files: [{ type: "file", mediaType: "image/jpeg", url: img } as any] } : {}),
+      } as any,
+      { body: { context: ctx } },
+    );
   }
+
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    try {
+      setImage(await compressToDataUrl(f));
+    } catch {
+      toast.error("مش قادر أقرأ الصورة دي، جرّب صورة تانية");
+    }
+  }
+
+  /* ===== الميكروفون (تحويل الكلام لنص) ===== */
+  function toggleMic() {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return toast.error("المتصفح ده مش بيدعم الميكروفون");
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "ar-EG";
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.onresult = (ev: any) => {
+      let out = "";
+      for (let i = ev.resultIndex; i < ev.results.length; i++) out += ev.results[i][0].transcript;
+      setText((prev) => (prev ? `${prev} ${out}`.trim() : out));
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    rec.start();
+    setListening(true);
+  }
+
+  /* ===== قراءة الرد بصوت عالي ===== */
+  function speak(id: string, body: string) {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      return toast.error("المتصفح ده مش بيدعم القراءة الصوتية");
+    }
+    if (speakingId === id) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(body);
+    u.lang = "ar-EG";
+    u.rate = 1;
+    u.onend = () => setSpeakingId(null);
+    u.onerror = () => setSpeakingId(null);
+    setSpeakingId(id);
+    window.speechSynthesis.speak(u);
+  }
+
+  async function clearChat() {
+    setMessages([]);
+    setInitial([]);
+    if (user?.id) await supabase.from("chat_messages" as any).delete().eq("user_id", user.id);
+  }
+
+  const panelLeft = Math.min(Math.max(8, pos.x), Math.max(8, (typeof window !== "undefined" ? window.innerWidth : 400) - 24));
 
   return (
     <>
       {!open && (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
           aria-label="افتح المساعد جنش"
-          className="fixed bottom-24 left-4 z-40 flex items-center gap-2 rounded-full bg-primary py-2 pl-4 pr-2 text-primary-foreground shadow-lg transition-transform active:scale-95"
+          style={{ left: pos.x, top: pos.y, touchAction: "none" }}
+          className="fixed z-40 flex items-center gap-2 rounded-full bg-primary py-2 pl-4 pr-2 text-primary-foreground shadow-lg transition-transform active:scale-95"
         >
           <img
             src={janshAvatar}
@@ -129,14 +303,18 @@ export function JanshAssistant() {
             width={512}
             height={512}
             loading="lazy"
-            className="size-9 rounded-full bg-background object-contain"
+            className="size-9 rounded-full bg-background object-contain pointer-events-none"
           />
-          <span className="text-sm font-bold">جنش</span>
+          <span className="text-sm font-bold pointer-events-none">جنش</span>
+          <GripVertical className="size-4 opacity-70 pointer-events-none" />
         </button>
       )}
 
       {open && (
-        <div className="fixed bottom-24 left-3 right-3 z-40 flex h-[70vh] max-h-[560px] flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl sm:right-auto sm:w-[380px]">
+        <div
+          style={{ left: panelLeft }}
+          className="fixed bottom-24 right-3 z-40 flex h-[70vh] max-h-[560px] flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl sm:right-auto sm:w-[380px]"
+        >
           <div className="flex items-center justify-between gap-2 border-b bg-primary px-3 py-2 text-primary-foreground">
             <div className="flex items-center gap-2">
               <img
@@ -158,7 +336,7 @@ export function JanshAssistant() {
                 variant="ghost"
                 className="text-primary-foreground hover:bg-primary-foreground/15"
                 aria-label="محادثة جديدة"
-                onClick={() => setMessages([])}
+                onClick={clearChat}
               >
                 <RotateCcw className="size-4" />
               </Button>
@@ -197,9 +375,8 @@ export function JanshAssistant() {
               )}
 
               {messages.map((m) => {
-                const body = m.parts
-                  .map((p) => (p.type === "text" ? p.text : ""))
-                  .join("");
+                const body = textOf(m);
+                const img = imageOf(m);
                 return (
                   <Message key={m.id} from={m.role}>
                     <MessageContent
@@ -209,8 +386,35 @@ export function JanshAssistant() {
                           : "bg-transparent p-0 text-foreground"
                       }
                     >
+                      {img && (
+                        <img
+                          src={img}
+                          alt="صورة مرفقة"
+                          className="mb-2 max-h-40 rounded-lg object-contain"
+                        />
+                      )}
                       {m.role === "assistant" ? (
-                        <MessageResponse>{body}</MessageResponse>
+                        <>
+                          <MessageResponse>{body}</MessageResponse>
+                          {body.trim() && (
+                            <button
+                              type="button"
+                              onClick={() => speak(m.id, body)}
+                              className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                              aria-label="اقرأ الرد بصوت"
+                            >
+                              {speakingId === m.id ? (
+                                <>
+                                  <Square className="size-3.5" /> إيقاف
+                                </>
+                              ) : (
+                                <>
+                                  <Volume2 className="size-3.5" /> استمع
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </>
                       ) : (
                         <span className="whitespace-pre-wrap text-sm">{body}</span>
                       )}
@@ -225,17 +429,55 @@ export function JanshAssistant() {
           </Conversation>
 
           <div className="border-t p-2">
-            <PromptInput
-              onSubmit={(message: PromptInputMessage) => send(message.text ?? text)}
-            >
+            {image && (
+              <div className="relative mb-2 inline-block">
+                <img src={image} alt="مرفق" className="h-16 rounded-lg border object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setImage(null)}
+                  className="absolute -top-2 -left-2 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                  aria-label="حذف الصورة"
+                >
+                  <X className="size-3" />
+                </button>
+              </div>
+            )}
+            <PromptInput onSubmit={(message: PromptInputMessage) => send(message.text ?? text)}>
               <PromptInputTextarea
                 ref={textareaRef}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="اكتب سؤالك لجنش..."
               />
-              <PromptInputFooter className="justify-end">
-                <PromptInputSubmit status={status} disabled={busy || !text.trim()} />
+              <PromptInputFooter className="justify-between">
+                <div className="flex items-center gap-1">
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onPickImage}
+                  />
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label="إرفاق صورة"
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    <ImagePlus className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant={listening ? "destructive" : "ghost"}
+                    aria-label="تسجيل صوتي"
+                    onClick={toggleMic}
+                  >
+                    {listening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                  </Button>
+                </div>
+                <PromptInputSubmit status={status} disabled={busy || (!text.trim() && !image)} />
               </PromptInputFooter>
             </PromptInput>
           </div>

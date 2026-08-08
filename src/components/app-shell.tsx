@@ -6,7 +6,7 @@ import { useIsViewer } from "@/hooks/use-is-viewer";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Car, ListChecks, Plus, Settings, LogOut, Loader2, User, Mail, BarChart3 } from "lucide-react";
+import { Car, ListChecks, Plus, Settings, LogOut, Loader2, User, Mail, BarChart3, MessagesSquare } from "lucide-react";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NetworkBanner } from "@/components/network-banner";

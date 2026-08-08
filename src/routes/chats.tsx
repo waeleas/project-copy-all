@@ -48,7 +48,8 @@ function AdminChats() {
       });
       const groups = new Map<string, { name: string; items: any[] }>();
       ((msgs as any[]) ?? []).forEach((m) => {
-        const g = groups.get(m.user_id) ?? { name: nameOf.get(m.user_id) ?? m.user_id.slice(0, 8), items: [] };
+        const g: { name: string; items: any[] } =
+          groups.get(m.user_id) ?? { name: nameOf.get(m.user_id) ?? String(m.user_id).slice(0, 8), items: [] };
         g.items.push(m);
         groups.set(m.user_id, g);
       });

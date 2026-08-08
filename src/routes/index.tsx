@@ -208,6 +208,7 @@ function TripsList() {
           "المدة (دقائق)": totalMin,
           "المدة": formatDuration(durMs),
           "ملاحظات": t.notes ?? "",
+          "صورة العداد": t.end_photo_url ?? "",
           "تم الإنشاء": "",
           __kind: "end",
         });

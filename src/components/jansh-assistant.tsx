@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useQuery } from "@tanstack/react-query";
-import { X, RotateCcw, ImagePlus, Mic, MicOff, Volume2, Square, GripVertical } from "lucide-react";
+import { X, RotateCcw, ImagePlus, Camera, Mic, MicOff, Volume2, Square, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

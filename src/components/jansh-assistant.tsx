@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useQuery } from "@tanstack/react-query";
-import { X, RotateCcw, ImagePlus, Mic, MicOff, Volume2, Square, GripVertical } from "lucide-react";
+import { X, RotateCcw, ImagePlus, Camera, Mic, MicOff, Volume2, Square, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -228,53 +228,156 @@ export function JanshAssistant() {
     try {
       setImage(await compressToDataUrl(f));
     } catch {
-      toast.error("مش قادر أقرأ الصورة دي، جرّب صورة تانية");
+      // متصفح مش قادر يفك الصورة (HEIC مثلاً) — نبعتها زي ما هي
+      try {
+        const raw = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result));
+          r.onerror = () => reject(new Error("read"));
+          r.readAsDataURL(f);
+        });
+        if (raw.length > 4_000_000) throw new Error("big");
+        setImage(raw);
+      } catch {
+        toast.error("مش قادر أقرأ الصورة دي، جرّب صورة تانية أو أصغر");
+      }
     }
   }
 
-  /* ===== الميكروفون (تحويل الكلام لنص) ===== */
-  function toggleMic() {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return toast.error("المتصفح ده مش بيدعم الميكروفون");
-    if (listening) {
-      recognitionRef.current?.stop();
+
+  /* ===== الميكروفون: SpeechRecognition لو متاح، وإلا تسجيل + تفريغ على الخادم ===== */
+  const mediaRef = useRef<{ rec: MediaRecorder; chunks: BlobPart[] } | null>(null);
+
+  async function startServerRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+      rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+        mediaRef.current = null;
+        setListening(false);
+        if (blob.size < 1024) return toast.error("التسجيل فاضي، جرّب تاني");
+        const fd = new FormData();
+        fd.append("audio", blob, "recording.webm");
+        try {
+          const res = await fetch("/api/stt", { method: "POST", body: fd });
+          const data = await res.json().catch(() => ({}) as any);
+          if (!res.ok || !data.text) throw new Error(data.error ?? "stt");
+          setText((prev) => (prev ? `${prev} ${data.text}`.trim() : data.text));
+        } catch {
+          toast.error("مش قادر أفهم الصوت، جرّب تاني");
+        }
+      };
+      mediaRef.current = { rec, chunks };
+      rec.start();
+      setListening(true);
+    } catch {
+      toast.error("مش قادر أفتح الميكروفون — اسمح بالإذن وجرّب تاني");
       setListening(false);
-      return;
     }
-    const rec = new SR();
-    rec.lang = "ar-EG";
-    rec.interimResults = true;
-    rec.continuous = false;
-    rec.onresult = (ev: any) => {
-      let out = "";
-      for (let i = ev.resultIndex; i < ev.results.length; i++) out += ev.results[i][0].transcript;
-      setText((prev) => (prev ? `${prev} ${out}`.trim() : out));
-    };
-    rec.onerror = () => setListening(false);
-    rec.onend = () => setListening(false);
-    recognitionRef.current = rec;
-    rec.start();
-    setListening(true);
   }
 
-  /* ===== قراءة الرد بصوت عالي ===== */
-  function speak(id: string, body: string) {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      return toast.error("المتصفح ده مش بيدعم القراءة الصوتية");
-    }
-    if (speakingId === id) {
-      window.speechSynthesis.cancel();
-      setSpeakingId(null);
+  function toggleMic() {
+    if (listening) {
+      if (mediaRef.current) mediaRef.current.rec.stop();
+      else {
+        recognitionRef.current?.stop();
+        setListening(false);
+      }
       return;
     }
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(body);
-    u.lang = "ar-EG";
-    u.rate = 1;
-    u.onend = () => setSpeakingId(null);
-    u.onerror = () => setSpeakingId(null);
-    setSpeakingId(id);
-    window.speechSynthesis.speak(u);
+
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return void startServerRecording();
+
+    try {
+      const rec = new SR();
+      rec.lang = "ar-EG";
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.onresult = (ev: any) => {
+        let out = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) out += ev.results[i][0].transcript;
+        setText((prev) => (prev ? `${prev} ${out}`.trim() : out));
+      };
+      rec.onerror = () => {
+        recognitionRef.current = null;
+        setListening(false);
+        void startServerRecording();
+      };
+      rec.onend = () => setListening(false);
+      recognitionRef.current = rec;
+      rec.start();
+      setListening(true);
+    } catch {
+      void startServerRecording();
+    }
+  }
+
+  /* ===== قراءة الرد بصوت عالي (متصفح أو خادم) ===== */
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  function stopSpeaking() {
+    try {
+      window.speechSynthesis?.cancel();
+    } catch {}
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setSpeakingId(null);
+  }
+
+  async function speakServer(id: string, body: string) {
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: body }),
+      });
+      if (!res.ok) throw new Error("tts");
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        setSpeakingId(null);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setSpeakingId(null);
+      };
+      setSpeakingId(id);
+      await audio.play();
+    } catch {
+      setSpeakingId(null);
+      toast.error("مش قادر أشغّل الصوت دلوقتي");
+    }
+  }
+
+  function speak(id: string, body: string) {
+    if (speakingId === id) return stopSpeaking();
+    stopSpeaking();
+
+    const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
+    const arVoice = synth?.getVoices?.().find((v) => v.lang?.toLowerCase().startsWith("ar"));
+    if (!synth || !arVoice) return void speakServer(id, body);
+
+    try {
+      const u = new SpeechSynthesisUtterance(body);
+      u.lang = "ar-EG";
+      u.voice = arVoice;
+      u.rate = 1;
+      u.onend = () => setSpeakingId(null);
+      u.onerror = () => void speakServer(id, body);
+      setSpeakingId(id);
+      synth.speak(u);
+    } catch {
+      void speakServer(id, body);
+    }
   }
 
   async function clearChat() {
@@ -283,7 +386,6 @@ export function JanshAssistant() {
     if (user?.id) await supabase.from("chat_messages" as any).delete().eq("user_id", user.id);
   }
 
-  const panelLeft = Math.min(Math.max(8, pos.x), Math.max(8, (typeof window !== "undefined" ? window.innerWidth : 400) - 24));
 
   return (
     <>
@@ -311,10 +413,9 @@ export function JanshAssistant() {
       )}
 
       {open && (
-        <div
-          style={{ left: panelLeft }}
-          className="fixed bottom-24 right-3 z-40 flex h-[70vh] max-h-[560px] flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl sm:right-auto sm:w-[380px]"
-        >
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-3">
+          <div className="flex h-[80vh] max-h-[620px] w-full max-w-[420px] flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl">
+
           <div className="flex items-center justify-between gap-2 border-b bg-primary px-3 py-2 text-primary-foreground">
             <div className="flex items-center gap-2">
               <img
@@ -451,22 +552,35 @@ export function JanshAssistant() {
               />
               <PromptInputFooter className="justify-between">
                 <div className="flex items-center gap-1">
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={onPickImage}
-                  />
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label="إرفاق صورة"
-                    onClick={() => fileRef.current?.click()}
+                  <label
+                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-accent"
+                    aria-label="إرفاق صورة من المعرض"
+                    title="من المعرض"
                   >
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*,.heic,.heif"
+                      className="sr-only"
+                      onChange={onPickImage}
+                    />
                     <ImagePlus className="size-4" />
-                  </Button>
+                  </label>
+                  <label
+                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-accent"
+                    aria-label="صورة بالكاميرا"
+                    title="الكاميرا"
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="sr-only"
+                      onChange={onPickImage}
+                    />
+                    <Camera className="size-4" />
+                  </label>
+
                   <Button
                     type="button"
                     size="icon-sm"
@@ -481,8 +595,10 @@ export function JanshAssistant() {
               </PromptInputFooter>
             </PromptInput>
           </div>
+          </div>
         </div>
       )}
+
     </>
   );
 }

@@ -36,9 +36,7 @@ function TripsList() {
   const { data: trips, isLoading } = useQuery({
     queryKey: ["trips"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("trips")
-        .select(`
+      const SELECT = `
           *,
           office:offices!trips_office_id_fkey(name),
           follow_office:offices!trips_follow_office_id_fkey(name),
@@ -46,12 +44,24 @@ function TripsList() {
           technician:technicians(name, sap_number),
           driver:drivers(name, sap_number),
           service_type:service_types(name)
-        `)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+        `;
+      const CHUNK = 1000;
+      const all: any[] = [];
+      for (let from = 0; ; from += CHUNK) {
+        const { data, error } = await supabase
+          .from("trips")
+          .select(SELECT)
+          .order("created_at", { ascending: false })
+          .range(from, from + CHUNK - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < CHUNK) break;
+      }
+      return all;
     },
   });
+
 
   const filtered = useMemo(() => {
     if (!trips) return [];

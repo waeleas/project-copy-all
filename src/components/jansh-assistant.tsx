@@ -539,22 +539,35 @@ export function JanshAssistant() {
               />
               <PromptInputFooter className="justify-between">
                 <div className="flex items-center gap-1">
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={onPickImage}
-                  />
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label="إرفاق صورة"
-                    onClick={() => fileRef.current?.click()}
+                  <label
+                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-accent"
+                    aria-label="إرفاق صورة من المعرض"
+                    title="من المعرض"
                   >
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*,.heic,.heif"
+                      className="sr-only"
+                      onChange={onPickImage}
+                    />
                     <ImagePlus className="size-4" />
-                  </Button>
+                  </label>
+                  <label
+                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-accent"
+                    aria-label="صورة بالكاميرا"
+                    title="الكاميرا"
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="sr-only"
+                      onChange={onPickImage}
+                    />
+                    <Camera className="size-4" />
+                  </label>
+
                   <Button
                     type="button"
                     size="icon-sm"

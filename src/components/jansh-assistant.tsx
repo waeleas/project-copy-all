@@ -228,9 +228,22 @@ export function JanshAssistant() {
     try {
       setImage(await compressToDataUrl(f));
     } catch {
-      toast.error("مش قادر أقرأ الصورة دي، جرّب صورة تانية");
+      // متصفح مش قادر يفك الصورة (HEIC مثلاً) — نبعتها زي ما هي
+      try {
+        const raw = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result));
+          r.onerror = () => reject(new Error("read"));
+          r.readAsDataURL(f);
+        });
+        if (raw.length > 4_000_000) throw new Error("big");
+        setImage(raw);
+      } catch {
+        toast.error("مش قادر أقرأ الصورة دي، جرّب صورة تانية أو أصغر");
+      }
     }
   }
+
 
   /* ===== الميكروفون: SpeechRecognition لو متاح، وإلا تسجيل + تفريغ على الخادم ===== */
   const mediaRef = useRef<{ rec: MediaRecorder; chunks: BlobPart[] } | null>(null);

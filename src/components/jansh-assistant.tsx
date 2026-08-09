@@ -400,10 +400,9 @@ export function JanshAssistant() {
       )}
 
       {open && (
-        <div
-          style={{ left: panelLeft }}
-          className="fixed bottom-24 right-3 z-40 flex h-[70vh] max-h-[560px] flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl sm:right-auto sm:w-[380px]"
-        >
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-3">
+          <div className="flex h-[80vh] max-h-[620px] w-full max-w-[420px] flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl">
+
           <div className="flex items-center justify-between gap-2 border-b bg-primary px-3 py-2 text-primary-foreground">
             <div className="flex items-center gap-2">
               <img

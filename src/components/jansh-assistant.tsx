@@ -569,8 +569,10 @@ export function JanshAssistant() {
               </PromptInputFooter>
             </PromptInput>
           </div>
+          </div>
         </div>
       )}
+
     </>
   );
 }

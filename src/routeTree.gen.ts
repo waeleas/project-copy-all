@@ -19,6 +19,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TripsNewRouteImport } from './routes/trips.new'
 import { Route as TripsIdRouteImport } from './routes/trips.$id'
+import { Route as ApiTtsRouteImport } from './routes/api/tts'
+import { Route as ApiSttRouteImport } from './routes/api/stt'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 
 const TrustRoute = TrustRouteImport.update({
@@ -71,6 +73,16 @@ const TripsIdRoute = TripsIdRouteImport.update({
   path: '/trips/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTtsRoute = ApiTtsRouteImport.update({
+  id: '/api/tts',
+  path: '/api/tts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSttRoute = ApiSttRouteImport.update({
+  id: '/api/stt',
+  path: '/api/stt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -87,6 +99,8 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/trust': typeof TrustRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/stt': typeof ApiSttRoute
+  '/api/tts': typeof ApiTtsRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
 }
@@ -100,6 +114,8 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/trust': typeof TrustRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/stt': typeof ApiSttRoute
+  '/api/tts': typeof ApiTtsRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
 }
@@ -114,6 +130,8 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/trust': typeof TrustRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/stt': typeof ApiSttRoute
+  '/api/tts': typeof ApiTtsRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
 }
@@ -129,6 +147,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/trust'
     | '/api/chat'
+    | '/api/stt'
+    | '/api/tts'
     | '/trips/$id'
     | '/trips/new'
   fileRoutesByTo: FileRoutesByTo
@@ -142,6 +162,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/trust'
     | '/api/chat'
+    | '/api/stt'
+    | '/api/tts'
     | '/trips/$id'
     | '/trips/new'
   id:
@@ -155,6 +177,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/trust'
     | '/api/chat'
+    | '/api/stt'
+    | '/api/tts'
     | '/trips/$id'
     | '/trips/new'
   fileRoutesById: FileRoutesById
@@ -169,6 +193,8 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   TrustRoute: typeof TrustRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiSttRoute: typeof ApiSttRoute
+  ApiTtsRoute: typeof ApiTtsRoute
   TripsIdRoute: typeof TripsIdRoute
   TripsNewRoute: typeof TripsNewRoute
 }
@@ -245,6 +271,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tts': {
+      id: '/api/tts'
+      path: '/api/tts'
+      fullPath: '/api/tts'
+      preLoaderRoute: typeof ApiTtsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stt': {
+      id: '/api/stt'
+      path: '/api/stt'
+      fullPath: '/api/stt'
+      preLoaderRoute: typeof ApiSttRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -265,6 +305,8 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   TrustRoute: TrustRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiSttRoute: ApiSttRoute,
+  ApiTtsRoute: ApiTtsRoute,
   TripsIdRoute: TripsIdRoute,
   TripsNewRoute: TripsNewRoute,
 }

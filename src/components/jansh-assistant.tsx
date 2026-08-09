@@ -232,49 +232,139 @@ export function JanshAssistant() {
     }
   }
 
-  /* ===== الميكروفون (تحويل الكلام لنص) ===== */
-  function toggleMic() {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return toast.error("المتصفح ده مش بيدعم الميكروفون");
-    if (listening) {
-      recognitionRef.current?.stop();
+  /* ===== الميكروفون: SpeechRecognition لو متاح، وإلا تسجيل + تفريغ على الخادم ===== */
+  const mediaRef = useRef<{ rec: MediaRecorder; chunks: BlobPart[] } | null>(null);
+
+  async function startServerRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+      rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+        mediaRef.current = null;
+        setListening(false);
+        if (blob.size < 1024) return toast.error("التسجيل فاضي، جرّب تاني");
+        const fd = new FormData();
+        fd.append("audio", blob, "recording.webm");
+        try {
+          const res = await fetch("/api/stt", { method: "POST", body: fd });
+          const data = await res.json().catch(() => ({}) as any);
+          if (!res.ok || !data.text) throw new Error(data.error ?? "stt");
+          setText((prev) => (prev ? `${prev} ${data.text}`.trim() : data.text));
+        } catch {
+          toast.error("مش قادر أفهم الصوت، جرّب تاني");
+        }
+      };
+      mediaRef.current = { rec, chunks };
+      rec.start();
+      setListening(true);
+    } catch {
+      toast.error("مش قادر أفتح الميكروفون — اسمح بالإذن وجرّب تاني");
       setListening(false);
-      return;
     }
-    const rec = new SR();
-    rec.lang = "ar-EG";
-    rec.interimResults = true;
-    rec.continuous = false;
-    rec.onresult = (ev: any) => {
-      let out = "";
-      for (let i = ev.resultIndex; i < ev.results.length; i++) out += ev.results[i][0].transcript;
-      setText((prev) => (prev ? `${prev} ${out}`.trim() : out));
-    };
-    rec.onerror = () => setListening(false);
-    rec.onend = () => setListening(false);
-    recognitionRef.current = rec;
-    rec.start();
-    setListening(true);
   }
 
-  /* ===== قراءة الرد بصوت عالي ===== */
-  function speak(id: string, body: string) {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      return toast.error("المتصفح ده مش بيدعم القراءة الصوتية");
-    }
-    if (speakingId === id) {
-      window.speechSynthesis.cancel();
-      setSpeakingId(null);
+  function toggleMic() {
+    if (listening) {
+      if (mediaRef.current) mediaRef.current.rec.stop();
+      else {
+        recognitionRef.current?.stop();
+        setListening(false);
+      }
       return;
     }
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(body);
-    u.lang = "ar-EG";
-    u.rate = 1;
-    u.onend = () => setSpeakingId(null);
-    u.onerror = () => setSpeakingId(null);
-    setSpeakingId(id);
-    window.speechSynthesis.speak(u);
+
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return void startServerRecording();
+
+    try {
+      const rec = new SR();
+      rec.lang = "ar-EG";
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.onresult = (ev: any) => {
+        let out = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) out += ev.results[i][0].transcript;
+        setText((prev) => (prev ? `${prev} ${out}`.trim() : out));
+      };
+      rec.onerror = () => {
+        recognitionRef.current = null;
+        setListening(false);
+        void startServerRecording();
+      };
+      rec.onend = () => setListening(false);
+      recognitionRef.current = rec;
+      rec.start();
+      setListening(true);
+    } catch {
+      void startServerRecording();
+    }
+  }
+
+  /* ===== قراءة الرد بصوت عالي (متصفح أو خادم) ===== */
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  function stopSpeaking() {
+    try {
+      window.speechSynthesis?.cancel();
+    } catch {}
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setSpeakingId(null);
+  }
+
+  async function speakServer(id: string, body: string) {
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: body }),
+      });
+      if (!res.ok) throw new Error("tts");
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        setSpeakingId(null);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setSpeakingId(null);
+      };
+      setSpeakingId(id);
+      await audio.play();
+    } catch {
+      setSpeakingId(null);
+      toast.error("مش قادر أشغّل الصوت دلوقتي");
+    }
+  }
+
+  function speak(id: string, body: string) {
+    if (speakingId === id) return stopSpeaking();
+    stopSpeaking();
+
+    const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
+    const arVoice = synth?.getVoices?.().find((v) => v.lang?.toLowerCase().startsWith("ar"));
+    if (!synth || !arVoice) return void speakServer(id, body);
+
+    try {
+      const u = new SpeechSynthesisUtterance(body);
+      u.lang = "ar-EG";
+      u.voice = arVoice;
+      u.rate = 1;
+      u.onend = () => setSpeakingId(null);
+      u.onerror = () => void speakServer(id, body);
+      setSpeakingId(id);
+      synth.speak(u);
+    } catch {
+      void speakServer(id, body);
+    }
   }
 
   async function clearChat() {
@@ -283,7 +373,6 @@ export function JanshAssistant() {
     if (user?.id) await supabase.from("chat_messages" as any).delete().eq("user_id", user.id);
   }
 
-  const panelLeft = Math.min(Math.max(8, pos.x), Math.max(8, (typeof window !== "undefined" ? window.innerWidth : 400) - 24));
 
   return (
     <>

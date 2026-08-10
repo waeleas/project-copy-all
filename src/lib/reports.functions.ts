@@ -17,6 +17,8 @@ type TripRow = {
   car_type: string | null;
   driver_id: string | null;
   driver_name_rental: string | null;
+  driver_name: string | null;
+  driver_sap: string | null;
   created_by_name: string | null;
   start_odometer: number | null;
   end_odometer: number | null;
@@ -44,7 +46,7 @@ async function fetchAllCompletedTrips(supabase: any, range: ReportRange): Promis
     let q = supabase
       .from("trips")
       .select(
-        "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, created_by_name, start_odometer, end_odometer, start_at, end_at, status, governorate_id, governorate_name",
+        "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, driver_name, driver_sap, created_by_name, start_odometer, end_odometer, start_at, end_at, status, governorate_id, governorate_name",
       )
       .not("end_odometer", "is", null);
     if (range.from) q = q.gte("start_at", `${range.from}T00:00:00.000Z`);
@@ -167,6 +169,9 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
         const d = driverById.get(t.driver_id)!;
         name = d.name;
         sap = d.sap;
+      } else if (t.driver_name) {
+        name = t.driver_name;
+        sap = t.driver_sap ?? null;
       } else if (t.driver_name_rental) {
         name = t.driver_name_rental;
       } else if (t.created_by_name) {
@@ -254,6 +259,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
 
       let driverName = "";
       if (t.driver_id && driverById.has(t.driver_id)) driverName = driverById.get(t.driver_id)!;
+      else if (t.driver_name) driverName = t.driver_name;
       else if (t.driver_name_rental) driverName = t.driver_name_rental;
       else if (t.created_by_name) driverName = t.created_by_name;
       driverName = (driverName ?? "").trim();

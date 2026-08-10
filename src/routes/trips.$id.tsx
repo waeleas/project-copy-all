@@ -187,7 +187,7 @@ function TripDetail() {
           <Info icon={Wrench} label="نوع الخدمة" value={trip.service_type?.name} />
           {!(trip.car_type === "rental" && trip.service_type?.name === "نقل عاملين") && <Info icon={User} label="المدير المسؤول" value={trip.manager?.name} />}
           <Info icon={User} label="متلقي الخدمة أو فنى" value={trip.technician ? `${trip.technician.name} — ${trip.technician.sap_number}` : null} />
-          <Info icon={User} label="السائق" value={trip.driver ? `${trip.driver.name} — ${trip.driver.sap_number}` : (trip.driver_name_rental ?? null)} />
+          <Info icon={User} label="السائق" value={trip.driver ? `${trip.driver.name} — ${trip.driver.sap_number}` : (trip.driver_name ? `${trip.driver_name}${trip.driver_sap ? ` — ${trip.driver_sap}` : ""}` : (trip.driver_name_rental ?? null))} />
           <Info icon={Car} label="كود السيارة" value={trip.car_code} />
           <Info icon={Hash} label="رقم لوحة السيارة" value={trip.car_plate} />
           <Info icon={Car} label="وصف السيارة" value={trip.car_description} />

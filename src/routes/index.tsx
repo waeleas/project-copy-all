@@ -80,7 +80,7 @@ function TripsList() {
           t.office?.name, t.follow_office?.name, t.manager?.name,
           t.service_type?.name,
           t.technician?.name, t.technician?.sap_number,
-          t.driver?.name, t.driver?.sap_number, t.driver_name_rental,
+          t.driver?.name, t.driver?.sap_number, t.driver_name_rental, t.driver_name, t.driver_sap,
           t.created_by_name, t.created_by_email, t.governorate_name,
         ].map((v) => String(v ?? "").toLowerCase()).join(" | ");
         if (!hay.includes(q)) return false;
@@ -162,8 +162,8 @@ function TripsList() {
         "المدير المسؤول": t.manager?.name ?? "",
         "اسم متلقي الخدمة أو فنى": t.technician?.name ?? "",
         "كود ساب متلقي الخدمة أو فنى": t.technician?.sap_number ?? "",
-        "اسم السائق": t.driver?.name ?? t.driver_name_rental ?? "",
-        "كود ساب السائق": t.driver?.sap_number ?? "",
+        "اسم السائق": t.driver?.name ?? t.driver_name ?? t.driver_name_rental ?? "",
+        "كود ساب السائق": t.driver?.sap_number ?? t.driver_sap ?? "",
         "كود السيارة": t.car_code ?? "",
         "رقم لوحة السيارة": t.car_plate ?? "",
         "وصف السيارة": t.car_description ?? "",
@@ -485,7 +485,7 @@ function TripsList() {
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-muted-foreground">السائق: </span>{t.driver?.name ?? t.driver_name_rental ?? "—"}</div>
+                  <div><span className="text-muted-foreground">السائق: </span>{t.driver?.name ?? t.driver_name ?? t.driver_name_rental ?? "—"}</div>
                   <div><span className="text-muted-foreground">متلقي الخدمة أو فنى: </span>{t.technician?.name ?? "—"}</div>
                   <div className="flex items-center gap-1"><Gauge className="size-4 text-muted-foreground" /> بداية: <b>{t.start_odometer}</b></div>
                   {t.end_odometer != null && (

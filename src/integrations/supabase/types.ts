@@ -332,7 +332,9 @@ export type Database = {
           created_by_email: string | null
           created_by_name: string | null
           driver_id: string | null
+          driver_name: string | null
           driver_name_rental: string | null
+          driver_sap: string | null
           end_at: string | null
           end_odometer: number | null
           end_photo_url: string | null
@@ -365,7 +367,9 @@ export type Database = {
           created_by_email?: string | null
           created_by_name?: string | null
           driver_id?: string | null
+          driver_name?: string | null
           driver_name_rental?: string | null
+          driver_sap?: string | null
           end_at?: string | null
           end_odometer?: number | null
           end_photo_url?: string | null
@@ -398,7 +402,9 @@ export type Database = {
           created_by_email?: string | null
           created_by_name?: string | null
           driver_id?: string | null
+          driver_name?: string | null
           driver_name_rental?: string | null
+          driver_sap?: string | null
           end_at?: string | null
           end_odometer?: number | null
           end_photo_url?: string | null

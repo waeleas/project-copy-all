@@ -254,6 +254,7 @@ function ReportsPage() {
                       "اسم السائق": r.driver_name,
                       "رقم الساب": r.sap_number ?? "",
                       "المحافظة": r.governorates ?? "",
+                      "عدد الأيام": r.days_count ?? 0,
                       "عدد الرحلات": r.trips_count,
                       "إجمالي الكيلومترات": Math.round(r.total_km),
                     })),
@@ -274,6 +275,7 @@ function ReportsPage() {
                         <th className="p-2">السائق</th>
                         <th className="p-2">رقم الساب</th>
                         <th className="p-2">المحافظة</th>
+                        <th className="p-2">الأيام</th>
                         <th className="p-2">الرحلات</th>
                         <th className="p-2">إجمالي كم</th>
                       </tr>
@@ -284,12 +286,13 @@ function ReportsPage() {
                           <td className="p-2 font-semibold">{r.driver_name}</td>
                           <td className="p-2">{r.sap_number ?? "-"}</td>
                           <td className="p-2">{r.governorates ?? "-"}</td>
+                          <td className="p-2">{r.days_count ?? 0}</td>
                           <td className="p-2">{r.trips_count}</td>
                           <td className="p-2 font-bold text-primary">{fmt(r.total_km)}</td>
                         </tr>
                       ))}
                       {driversFiltered.length === 0 && (
-                        <tr><td colSpan={5} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={6} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
                     </tbody>
                   </table>

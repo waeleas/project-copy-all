@@ -159,6 +159,7 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
         first_at: string | null;
         last_at: string | null;
         governorates: Set<string>;
+        days: Set<string>;
       }
     >();
 
@@ -184,6 +185,7 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
       const end = Number(t.end_odometer ?? 0);
       const dist = end > start ? end - start : 0;
       const key = `${name}::${sap ?? ""}`;
+      const dayKey = t.start_at ? t.start_at.slice(0, 10) : null;
       const prev = map.get(key);
       if (!prev) {
         map.set(key, {
@@ -194,6 +196,7 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
           first_at: t.start_at,
           last_at: t.end_at,
           governorates: new Set(t.governorate_name ? [t.governorate_name] : []),
+          days: new Set(dayKey ? [dayKey] : []),
         });
       } else {
         prev.trips_count += 1;
@@ -201,11 +204,12 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
         if (t.start_at && (!prev.first_at || t.start_at < prev.first_at)) prev.first_at = t.start_at;
         if (t.end_at && (!prev.last_at || t.end_at > prev.last_at)) prev.last_at = t.end_at;
         if (t.governorate_name) prev.governorates.add(t.governorate_name);
+        if (dayKey) prev.days.add(dayKey);
       }
     }
 
     return Array.from(map.values())
-      .map((r) => ({ ...r, governorates: Array.from(r.governorates).join("، ") }))
+      .map((r) => ({ ...r, governorates: Array.from(r.governorates).join("، "), days_count: r.days.size }))
       .sort((a, b) => b.total_km - a.total_km);
   });
 

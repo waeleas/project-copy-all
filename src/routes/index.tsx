@@ -43,7 +43,7 @@ function TripsList() {
           manager:managers(name),
           technician:technicians(name, sap_number),
           driver:drivers(name, sap_number),
-          service_type:service_types(name)
+          service_type:service_types(name, pmact_type)
         `;
       const CHUNK = 1000;
       const all: any[] = [];
@@ -119,7 +119,28 @@ function TripsList() {
     setTripNoQ(""); setDateFrom(""); setDateTo(""); setStatusFilter("all"); setServiceFilter("all");
   }
 
+  function fmtDate(v: any) {
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-GB");
+  }
+  function fmtTime(v: any) {
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  }
+
   async function exportExcel() {
+    const { data: carsMaster } = await supabase.from("cars" as any).select("plate, code, acty_type");
+    const actyByPlate = new Map<string, string>();
+    const actyByCode = new Map<string, string>();
+    ((carsMaster as any[]) ?? []).forEach((c: any) => {
+      if (c.plate) actyByPlate.set(String(c.plate).trim(), c.acty_type ?? "");
+      if (c.code) actyByCode.set(String(c.code).trim(), c.acty_type ?? "");
+    });
+
     if (!filtered || filtered.length === 0) return toast.error("لا توجد بيانات للتصدير");
     const ids = filtered.map((t: any) => t.id);
     const segsAll: any[] = [];
@@ -159,6 +180,7 @@ function TripsList() {
         "الحالة": t.status === "open" ? "مفتوحة" : "مكتملة",
         "المكتب": t.office?.name ?? "",
         "نوع الخدمة": t.service_type?.name ?? "",
+        "Pmact Taype": t.service_type?.pmact_type ?? "",
         "المدير المسؤول": t.manager?.name ?? "",
         "اسم متلقي الخدمة أو فنى": t.technician?.name ?? "",
         "كود ساب متلقي الخدمة أو فنى": t.technician?.sap_number ?? "",
@@ -167,15 +189,18 @@ function TripsList() {
         "كود السيارة": t.car_code ?? "",
         "رقم لوحة السيارة": t.car_plate ?? "",
         "وصف السيارة": t.car_description ?? "",
+        "Acty type": actyByPlate.get(String(t.car_plate ?? "").trim()) || actyByCode.get(String(t.car_code ?? "").trim()) || "",
         "المحافظة": t.governorate_name ?? "",
         "مكتب المتابعة": t.follow_office?.name ?? "",
         "كود خط السير": t.route_code ?? "",
         "كود الجهاز": t.handheld_code ?? "",
         "خط السير": t.route_start ?? "",
         "قراءة العداد (كم)": t.start_odometer,
-        "وقت التسجيل": new Date(t.start_at).toLocaleString("ar-EG"),
+        "تاريخ التسجيل": fmtDate(t.start_at),
+        "وقت التسجيل": fmtTime(t.start_at),
         "عداد النهاية (كم)": "",
         "المسافة الكلية (كم)": "",
+        "تاريخ النهاية": "",
         "وقت النهاية": "",
         "المدة (دقائق)": "",
         "المدة": "",
@@ -184,8 +209,8 @@ function TripsList() {
         "بريد منشئ الطلب": t.created_by_email ?? "",
         "ملاحظات": "",
         "صورة العداد": t.start_photo_url ?? "",
-        "تم الإنشاء": new Date(t.created_at).toLocaleString("ar-EG"),
-        "آخر تحديث": t.updated_at ? new Date(t.updated_at).toLocaleString("ar-EG") : "",
+        "تم الإنشاء": `${fmtDate(t.created_at)} ${fmtTime(t.created_at)}`.trim(),
+        "آخر تحديث": t.updated_at ? `${fmtDate(t.updated_at)} ${fmtTime(t.updated_at)}`.trim() : "",
       };
       rows.push({ ...baseRow, __kind: "start" });
 
@@ -196,11 +221,12 @@ function TripsList() {
           "ترتيب المسار": s.sequence ?? i + 1,
           "خط السير": s.route ?? "",
           "قراءة العداد (كم)": s.odometer ?? "",
-          "وقت التسجيل": s.created_at ? new Date(s.created_at).toLocaleString("ar-EG") : "",
+          "تاريخ التسجيل": fmtDate(s.created_at),
+          "وقت التسجيل": fmtTime(s.created_at),
           "ملاحظات": s.notes ?? "",
           "صورة العداد": s.photo_url ?? "",
           "تم الإنشاء": "",
-          "آخر تحديث": s.updated_at ? new Date(s.updated_at).toLocaleString("ar-EG") : "",
+          "آخر تحديث": s.updated_at ? `${fmtDate(s.updated_at)} ${fmtTime(s.updated_at)}`.trim() : "",
           __kind: "seg",
         });
       });
@@ -211,10 +237,12 @@ function TripsList() {
           "نوع المسار": "نهاية الرحلة",
           "ترتيب المسار": tSegs.length + 1,
           "قراءة العداد (كم)": t.end_odometer,
-          "وقت التسجيل": t.end_at ? new Date(t.end_at).toLocaleString("ar-EG") : "",
+          "تاريخ التسجيل": fmtDate(t.end_at),
+          "وقت التسجيل": fmtTime(t.end_at),
           "عداد النهاية (كم)": t.end_odometer,
           "المسافة الكلية (كم)": distance ?? "",
-          "وقت النهاية": t.end_at ? new Date(t.end_at).toLocaleString("ar-EG") : "",
+          "تاريخ النهاية": fmtDate(t.end_at),
+          "وقت النهاية": fmtTime(t.end_at),
           "المدة (دقائق)": totalMin,
           "المدة": formatDuration(durMs),
           "ملاحظات": t.notes ?? "",

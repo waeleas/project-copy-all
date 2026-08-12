@@ -853,9 +853,10 @@ function CarsManager() {
       const rowType = t === "rental" || t.includes("إيجار") || t.includes("ايجار") ? "rental" : (t === "company" || t.includes("شركة")) ? "company" : type;
       if (!plate) return null;
       const description = pick(r, "description", "الوصف", "وصف السيارة") || null;
+      const acty_type = pick(r, "acty type", "acty_type", "actytype", "Acty type") || null;
       if (rowType === "company") {
         const code = pick(r, "code", "كود السيارة", "الكود");
-        return { plate, type: "company", code: code || null, description };
+        return { plate, type: "company", code: code || null, description, acty_type };
       }
       const officeName = pick(r, "office", "المكتب", "تابع", "follow_office");
       return {
@@ -866,13 +867,44 @@ function CarsManager() {
         route_description: pick(r, "route_description", "وصف خط السير") || null,
         follow_office_id: officeName ? (officeByName.get(officeName.toLowerCase()) ?? null) : null,
         description,
+        acty_type,
       };
     }).filter(Boolean) as any[];
     if (!payload.length) return toast.error("لا توجد صفوف صالحة");
-    const { error } = await supabase.from("cars" as any).insert(payload);
-    if (error) return toast.error(arabicError(error));
+
+    // تحديث الموجود (بالمطابقة على رقم اللوحة أو الكود) وإضافة الجديد فقط
+    const { data: existing } = await supabase.from("cars" as any).select("id, plate, code");
+    const byPlate = new Map<string, string>();
+    const byCode = new Map<string, string>();
+    ((existing as any[]) ?? []).forEach((c: any) => {
+      if (c.plate) byPlate.set(String(c.plate).trim().toLowerCase(), c.id);
+      if (c.code) byCode.set(String(c.code).trim().toLowerCase(), c.id);
+    });
+
+    let updated = 0;
+    const toInsert: any[] = [];
+    let firstError: any = null;
+    for (const p of payload) {
+      const id =
+        byPlate.get(String(p.plate ?? "").trim().toLowerCase()) ??
+        (p.code ? byCode.get(String(p.code).trim().toLowerCase()) : undefined);
+      if (id) {
+        const { error } = await supabase.from("cars" as any).update(p).eq("id", id);
+        if (error) { firstError = error; break; }
+        updated++;
+      } else {
+        toInsert.push(p);
+      }
+    }
+    if (!firstError && toInsert.length) {
+      for (let i = 0; i < toInsert.length; i += 200) {
+        const { error } = await supabase.from("cars" as any).insert(toInsert.slice(i, i + 200));
+        if (error) { firstError = error; break; }
+      }
+    }
     qc.invalidateQueries({ queryKey: ["cars"] });
-    toast.success(`تم استيراد ${payload.length}`);
+    if (firstError) return toast.error(arabicError(firstError));
+    toast.success(`تم تحديث ${updated} وإضافة ${toInsert.length}`);
   }
 
   const filtered = (data ?? []).filter((c: any) => {

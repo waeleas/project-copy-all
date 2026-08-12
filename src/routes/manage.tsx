@@ -1222,6 +1222,13 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter, withPm
                       <Input value={editing.code ?? ""} onChange={(e) => setEditing({ ...editing, code: e.target.value })} dir="ltr" />
                     </>
                   )}
+                  {withPmact && (
+                    <>
+                      <Label className="text-xs">Pmact Taype</Label>
+                      <Input value={editing.pmact_type ?? ""} onChange={(e) => setEditing({ ...editing, pmact_type: e.target.value })} dir="ltr" />
+                    </>
+                  )}
+
                   <div className="flex gap-2">
                     <Button size="sm" onClick={saveEdit}>حفظ</Button>
                     <Button size="sm" variant="outline" onClick={() => setEditing(null)}>إلغاء</Button>

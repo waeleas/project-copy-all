@@ -769,6 +769,7 @@ function CarsManager() {
   const [routeCode, setRouteCode] = usePersistedState("cars.route_code", "");
   const [routeDescription, setRouteDescription] = usePersistedState("cars.route_description", "");
   const [description, setDescription] = usePersistedState("cars.description", "");
+  const [actyType, setActyType] = usePersistedState("cars.acty_type", "");
   const [followOfficeId, setFollowOfficeId] = usePersistedState("cars.follow_office_id", "");
   const filter = type;
   const [saving, setSaving] = useState(false);

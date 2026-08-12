@@ -22,7 +22,15 @@ export function DataToolbar({ search, onSearch, onExport, onImportRows, placehol
       const buf = await f.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: "" });
+      const matrix = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: "" });
+      // تخطي صفوف العنوان/الملخص: أول صف يحتوي على خليتين أو أكثر يعتبر رأس الجدول
+      const headerIdx = matrix.findIndex(
+        (r) => Array.isArray(r) && r.filter((c) => String(c ?? "").trim() !== "").length >= 2,
+      );
+      const rows =
+        headerIdx <= 0
+          ? XLSX.utils.sheet_to_json<any>(ws, { defval: "" })
+          : XLSX.utils.sheet_to_json<any>(ws, { defval: "", range: headerIdx });
       await onImportRows(rows);
     } finally {
       if (fileRef.current) fileRef.current.value = "";

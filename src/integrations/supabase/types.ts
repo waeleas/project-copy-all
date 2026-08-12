@@ -37,6 +37,7 @@ export type Database = {
       }
       cars: {
         Row: {
+          acty_type: string | null
           code: string | null
           created_at: string
           description: string | null
@@ -49,6 +50,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          acty_type?: string | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -61,6 +63,7 @@ export type Database = {
           type?: string
         }
         Update: {
+          acty_type?: string | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -240,16 +243,19 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          pmact_type: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          pmact_type?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          pmact_type?: string | null
         }
         Relationships: []
       }

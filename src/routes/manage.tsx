@@ -85,7 +85,7 @@ function Manage() {
 
         <TabsContent value="drivers"><DriversManager /></TabsContent>
         <TabsContent value="cars"><CarsManager /></TabsContent>
-        <TabsContent value="services"><LookupManager table="service_types" title="أنواع الخدمة" /></TabsContent>
+        <TabsContent value="services"><LookupManager table="service_types" title="أنواع الخدمة" withPmact /></TabsContent>
         <TabsContent value="governorates"><LookupManager table="governorates" title="المحافظات" withCode /></TabsContent>
       </Tabs>
     </div>
@@ -769,6 +769,7 @@ function CarsManager() {
   const [routeCode, setRouteCode] = usePersistedState("cars.route_code", "");
   const [routeDescription, setRouteDescription] = usePersistedState("cars.route_description", "");
   const [description, setDescription] = usePersistedState("cars.description", "");
+  const [actyType, setActyType] = usePersistedState("cars.acty_type", "");
   const [followOfficeId, setFollowOfficeId] = usePersistedState("cars.follow_office_id", "");
   const filter = type;
   const [saving, setSaving] = useState(false);
@@ -798,7 +799,7 @@ function CarsManager() {
     if (!plate.trim()) return toast.error("رقم اللوحة مطلوب");
     if (type === "company" && !code.trim()) return toast.error("كود السيارة مطلوب لسيارات الشركة");
     setSaving(true);
-    const payload: any = { plate: plate.trim(), type, description: description.trim() || null };
+    const payload: any = { plate: plate.trim(), type, description: description.trim() || null, acty_type: actyType.trim() || null };
     if (type === "company") payload.code = code.trim();
     if (type === "rental") {
       payload.handheld_code = handheldCode.trim() || null;
@@ -809,7 +810,7 @@ function CarsManager() {
     const { error } = await supabase.from("cars" as any).insert(payload);
     setSaving(false);
     if (error) return toast.error(arabicError(error));
-    setCode(""); setPlate(""); setHandheldCode(""); setRouteCode(""); setRouteDescription(""); setDescription(""); setFollowOfficeId("");
+    setCode(""); setPlate(""); setHandheldCode(""); setRouteCode(""); setRouteDescription(""); setDescription(""); setFollowOfficeId(""); setActyType("");
     qc.invalidateQueries({ queryKey: ["cars"] });
     toast.success("تمت الإضافة");
   }
@@ -827,6 +828,7 @@ function CarsManager() {
     const payload: any = {
       plate: (editing.plate ?? "").trim() || null,
       description: (editing.description ?? "").trim() || null,
+      acty_type: (editing.acty_type ?? "").trim() || null,
     };
     if (editing.type === "company") {
       payload.code = (editing.code ?? "").trim() || null;
@@ -852,9 +854,10 @@ function CarsManager() {
       const rowType = t === "rental" || t.includes("إيجار") || t.includes("ايجار") ? "rental" : (t === "company" || t.includes("شركة")) ? "company" : type;
       if (!plate) return null;
       const description = pick(r, "description", "الوصف", "وصف السيارة") || null;
+      const acty_type = pick(r, "acty type", "acty_type", "actytype", "Acty type") || null;
       if (rowType === "company") {
         const code = pick(r, "code", "كود السيارة", "الكود");
-        return { plate, type: "company", code: code || null, description };
+        return { plate, type: "company", code: code || null, description, acty_type };
       }
       const officeName = pick(r, "office", "المكتب", "تابع", "follow_office");
       return {
@@ -865,19 +868,50 @@ function CarsManager() {
         route_description: pick(r, "route_description", "وصف خط السير") || null,
         follow_office_id: officeName ? (officeByName.get(officeName.toLowerCase()) ?? null) : null,
         description,
+        acty_type,
       };
     }).filter(Boolean) as any[];
     if (!payload.length) return toast.error("لا توجد صفوف صالحة");
-    const { error } = await supabase.from("cars" as any).insert(payload);
-    if (error) return toast.error(arabicError(error));
+
+    // تحديث الموجود (بالمطابقة على رقم اللوحة أو الكود) وإضافة الجديد فقط
+    const { data: existing } = await supabase.from("cars" as any).select("id, plate, code");
+    const byPlate = new Map<string, string>();
+    const byCode = new Map<string, string>();
+    ((existing as any[]) ?? []).forEach((c: any) => {
+      if (c.plate) byPlate.set(String(c.plate).trim().toLowerCase(), c.id);
+      if (c.code) byCode.set(String(c.code).trim().toLowerCase(), c.id);
+    });
+
+    let updated = 0;
+    const toInsert: any[] = [];
+    let firstError: any = null;
+    for (const p of payload) {
+      const id =
+        byPlate.get(String(p.plate ?? "").trim().toLowerCase()) ??
+        (p.code ? byCode.get(String(p.code).trim().toLowerCase()) : undefined);
+      if (id) {
+        const { error } = await supabase.from("cars" as any).update(p).eq("id", id);
+        if (error) { firstError = error; break; }
+        updated++;
+      } else {
+        toInsert.push(p);
+      }
+    }
+    if (!firstError && toInsert.length) {
+      for (let i = 0; i < toInsert.length; i += 200) {
+        const { error } = await supabase.from("cars" as any).insert(toInsert.slice(i, i + 200));
+        if (error) { firstError = error; break; }
+      }
+    }
     qc.invalidateQueries({ queryKey: ["cars"] });
-    toast.success(`تم استيراد ${payload.length}`);
+    if (firstError) return toast.error(arabicError(firstError));
+    toast.success(`تم تحديث ${updated} وإضافة ${toInsert.length}`);
   }
 
   const filtered = (data ?? []).filter((c: any) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    return [c.code, c.plate, c.handheld_code, c.route_code, c.route_description, c.description, c.follow_office?.name].some((v) => (v ?? "").toString().toLowerCase().includes(q));
+    return [c.code, c.plate, c.handheld_code, c.route_code, c.route_description, c.description, c.acty_type, c.follow_office?.name].some((v) => (v ?? "").toString().toLowerCase().includes(q));
   });
 
 
@@ -903,6 +937,7 @@ function CarsManager() {
             </Button>
           </div>
           <Input placeholder="وصف السيارة (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Input placeholder="Acty type (اختياري)" value={actyType} onChange={(e) => setActyType(e.target.value)} dir="ltr" />
           {type === "rental" && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Input placeholder="كود خط السير" value={routeCode} onChange={(e) => setRouteCode(e.target.value)} dir="ltr" />
@@ -920,7 +955,7 @@ function CarsManager() {
           search={search}
           onSearch={setSearch}
           onExport={() => exportToXlsx(`cars-${type}.xlsx`, (data ?? []).map((c: any) => ({
-            code: c.code, plate: c.plate, type: c.type, description: c.description ?? "",
+            code: c.code, plate: c.plate, type: c.type, description: c.description ?? "", "Acty type": c.acty_type ?? "",
             handheld_code: c.handheld_code, route_code: c.route_code, route_description: c.route_description,
             office: c.follow_office?.name ?? "",
           })))}
@@ -937,6 +972,7 @@ function CarsManager() {
                 <div className="text-sm min-w-0">
                   <div className="font-medium">{c.code || "—"} {c.plate && <span className="text-muted-foreground">· لوحة: {c.plate}</span>}</div>
                   {c.description && <div className="text-xs text-muted-foreground mt-0.5">الوصف: {c.description}</div>}
+                  {c.acty_type && <div className="text-xs text-muted-foreground mt-0.5" dir="ltr">Acty type: {c.acty_type}</div>}
                   {type === "rental" && (
                     <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
                       {c.handheld_code && <div>كود الهاند هيلد: <span dir="ltr">{c.handheld_code}</span></div>}
@@ -962,6 +998,8 @@ function CarsManager() {
                   <Input placeholder="رقم اللوحة" value={editing.plate ?? ""} onChange={(e) => setEditing({ ...editing, plate: e.target.value })} />
                   <Label className="text-xs">وصف السيارة</Label>
                   <Input placeholder="وصف السيارة" value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
+                  <Label className="text-xs">Acty type</Label>
+                  <Input placeholder="Acty type" value={editing.acty_type ?? ""} onChange={(e) => setEditing({ ...editing, acty_type: e.target.value })} dir="ltr" />
                   {editing.type === "company" ? (
                     <>
                       <Label className="text-xs">كود السيارة</Label>
@@ -996,12 +1034,13 @@ function CarsManager() {
   );
 }
 
-function LookupManager({ table, title, withSap, withCode, withCostCenter }: { table: string; title: string; withSap?: boolean; withCode?: boolean; withCostCenter?: boolean }) {
+function LookupManager({ table, title, withSap, withCode, withCostCenter, withPmact }: { table: string; title: string; withSap?: boolean; withCode?: boolean; withCostCenter?: boolean; withPmact?: boolean }) {
   const qc = useQueryClient();
   const [name, setName] = usePersistedState(`lookup.${table}.name`, "");
   const [sap, setSap] = usePersistedState(`lookup.${table}.sap`, "");
   const [code, setCode] = usePersistedState(`lookup.${table}.code`, "");
   const [costCenter, setCostCenter] = usePersistedState(`lookup.${table}.cost_center`, "");
+  const [pmact, setPmact] = usePersistedState(`lookup.${table}.pmact_type`, "");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [search, setSearch] = useState("");
@@ -1024,10 +1063,11 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
     if (withSap) payload.sap_number = sap.trim();
     if (withCode) payload.code = code.trim() || null;
     if (withCostCenter) payload.cost_center = costCenter.trim() || null;
+    if (withPmact) payload.pmact_type = pmact.trim() || null;
     const { error } = await supabase.from(table as any).insert(payload);
     setSaving(false);
     if (error) return toast.error(arabicError(error));
-    setName(""); setSap(""); setCode(""); setCostCenter("");
+    setName(""); setSap(""); setCode(""); setCostCenter(""); setPmact("");
     qc.invalidateQueries({ queryKey: [table] });
     toast.success("تمت الإضافة");
   }
@@ -1039,6 +1079,7 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
     if (withSap) payload.sap_number = (editing.sap_number ?? "").trim() || null;
     if (withCode) payload.code = (editing.code ?? "").trim() || null;
     if (withCostCenter) payload.cost_center = (editing.cost_center ?? "").trim() || null;
+    if (withPmact) payload.pmact_type = (editing.pmact_type ?? "").trim() || null;
     const { error } = await supabase.from(table as any).update(payload).eq("id", editing.id);
     if (error) return toast.error(arabicError(error));
     setEditing(null);
@@ -1062,6 +1103,7 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
       if (withSap) p.sap_number = pick(r, "sap_number", "sap", "رقم الساب", "ساب") || null;
       if (withCode) p.code = pick(r, "code", "الكود", "كود المكتب") || null;
       if (withCostCenter) p.cost_center = pick(r, "cost_center", "مركز التكلفة") || null;
+      if (withPmact) p.pmact_type = pick(r, "pmact_type", "Pmact Taype", "Pmact Type", "pmact") || null;
       return p;
     }).filter(Boolean) as any[];
     if (!payload.length) return toast.error("لا توجد صفوف صالحة في الملف");
@@ -1102,10 +1144,10 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
   const filtered = (data ?? []).filter((i: any) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    return [i.name, i.sap_number, i.code, i.cost_center].some((v) => (v ?? "").toString().toLowerCase().includes(q));
+    return [i.name, i.sap_number, i.code, i.cost_center, i.pmact_type].some((v) => (v ?? "").toString().toLowerCase().includes(q));
   });
 
-  const extraCol = withSap || withCode || withCostCenter;
+  const extraCol = withSap || withCode || withCostCenter || withPmact;
   return (
     <Card className="mt-4">
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -1116,6 +1158,7 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
             {withSap && <Input placeholder="رقم الساب" value={sap} onChange={(e) => setSap(e.target.value)} dir="ltr" />}
             {withCostCenter && <Input placeholder="مركز التكلفة" value={costCenter} onChange={(e) => setCostCenter(e.target.value)} dir="ltr" />}
             {withCode && <Input placeholder="كود المكتب" value={code} onChange={(e) => setCode(e.target.value)} dir="ltr" />}
+            {withPmact && <Input placeholder="Pmact Taype" value={pmact} onChange={(e) => setPmact(e.target.value)} dir="ltr" />}
             <Button onClick={add} disabled={saving} className="w-full sm:w-auto">
               {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
             </Button>
@@ -1130,6 +1173,7 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
             ...(withSap ? { sap_number: i.sap_number } : {}),
             ...(withCostCenter ? { cost_center: i.cost_center } : {}),
             ...(withCode ? { code: i.code } : {}),
+            ...(withPmact ? { "Pmact Taype": i.pmact_type ?? "" } : {}),
           })))}
           onImportRows={importRows}
           placeholder="بحث..."
@@ -1146,6 +1190,7 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter }: { ta
                   {i.sap_number && <div className="text-xs text-muted-foreground" dir="ltr">SAP: {i.sap_number}</div>}
                   {i.cost_center && <div className="text-xs text-muted-foreground" dir="ltr">مركز التكلفة: {i.cost_center}</div>}
                   {i.code && <div className="text-xs text-muted-foreground" dir="ltr">كود: {i.code}</div>}
+                  {i.pmact_type && <div className="text-xs text-muted-foreground" dir="ltr">Pmact Taype: {i.pmact_type}</div>}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <Button size="sm" variant="outline" onClick={() => setEditing({ ...i })}>تعديل</Button>

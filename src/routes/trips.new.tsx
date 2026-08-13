@@ -176,9 +176,11 @@ function NewTrip() {
     const selectedService = services.data?.find((s) => s.id === form.service_type_id);
     const isWorkerTransport = selectedService?.name === "نقل عاملين";
     const isAfterSales = selectedService?.name === "خدمة ما بعد البيع";
+    const hasTechnician = !!form.technician_id && form.technician_id !== "__none__";
     const needsManager =
       (form.car_type !== "company" && !isWorkerTransport && !!form.service_type_id) ||
-      (form.car_type === "company" && isAfterSales);
+      (form.car_type === "company" && isAfterSales) ||
+      hasTechnician;
     const errs: Record<string, boolean> = {};
     const missing: string[] = [];
     const addMiss = (key: string, label: string) => { errs[key] = true; missing.push(label); };
@@ -420,9 +422,13 @@ function NewTrip() {
           </Field>
 
           {((form.car_type !== "company" && services.data?.find((s) => s.id === form.service_type_id)?.name !== "نقل عاملين") ||
-            (form.car_type === "company" && services.data?.find((s) => s.id === form.service_type_id)?.name === "خدمة ما بعد البيع")) && (
+            (form.car_type === "company" && services.data?.find((s) => s.id === form.service_type_id)?.name === "خدمة ما بعد البيع") ||
+            (!!form.technician_id && form.technician_id !== "__none__")) && (
             <Field label="المدير المسؤول" invalid={errors.manager_id}>
               <LookupSelect items={managers.data} value={form.manager_id} onChange={(v) => set("manager_id", v)} placeholder="اختر المدير" />
+              <p className="mt-1 text-xs text-muted-foreground">
+                يتم اختيار المدير النشط الخاص بمتلقي الخدمة أو الفني. عند اختيار متلقي خدمة أو فني (غير "لا يوجد") يصبح اختيار المدير إلزامياً.
+              </p>
             </Field>
           )}
           {services.data?.find((s) => s.id === form.service_type_id)?.name !== "نقل عاملين" && (

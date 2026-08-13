@@ -114,10 +114,59 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { direction: rtl; }
+  html {
+    direction: rtl;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* داخل WebView (APK) امنع تحديد النص العشوائي مع السماح به في الحقول */
+  button, a, label, [role="button"] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input, textarea, select, [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+    font-size: 16px; /* يمنع التكبير التلقائي عند التركيز في أندرويد */
+  }
+
+  /* ظل أزرق عند الوقوف/التركيز على أي خانة */
+  input:focus,
+  input:focus-visible,
+  textarea:focus,
+  textarea:focus-visible,
+  select:focus,
+  select:focus-visible,
+  [role="combobox"]:focus,
+  [role="combobox"]:focus-visible,
+  [contenteditable="true"]:focus {
+    outline: none !important;
+    border-color: var(--color-primary) !important;
+    box-shadow:
+      0 0 0 3px color-mix(in oklch, var(--color-primary) 35%, transparent),
+      0 4px 14px color-mix(in oklch, var(--color-primary) 30%, transparent) !important;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  input:hover:not(:disabled),
+  textarea:hover:not(:disabled),
+  select:hover:not(:disabled) {
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-primary) 18%, transparent);
+  }
+  /* خلايا الجداول */
+  td:hover, th:hover {
+    box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--color-primary) 25%, transparent);
   }
 }

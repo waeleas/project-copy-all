@@ -136,6 +136,16 @@ function AuthPage() {
                 <Label>كلمة المرور</Label>
                 <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" autoComplete="current-password" />
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(v) => setRememberMe(Boolean(v))}
+                />
+                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                  تذكرني (ابقَ متصلاً حتى الخروج)
+                </Label>
+              </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="ml-2 size-4 animate-spin" />} تسجيل الدخول
               </Button>

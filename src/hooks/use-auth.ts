@@ -17,7 +17,22 @@ export function useAuth() {
       setUser(s?.user ?? null);
       setLoading(false);
     });
-    return () => subscription.unsubscribe();
+
+    // Keep the Supabase session alive in the background so the user stays
+    // logged in until they explicitly press Sign Out.
+    const keepAlive = setInterval(() => {
+      supabase.auth.getSession().then(({ data: { session: s } }) => {
+        if (s) {
+          setSession(s);
+          setUser(s?.user ?? null);
+        }
+      });
+    }, 4 * 60 * 1000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(keepAlive);
+    };
   }, []);
 
   return { session, user, loading };

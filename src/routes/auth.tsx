@@ -1,12 +1,13 @@
 import { arabicError } from "@/lib/errors";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveUsernameToEmail, firstTimeSetPassword } from "@/lib/users.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Car, Loader2 } from "lucide-react";
@@ -23,12 +24,20 @@ function AuthPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
 
   // First-time setup mode
   const [setupMode, setSetupMode] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("auth.rememberMe");
+      if (saved !== null) setRememberMe(saved === "true");
+    } catch {}
+  }, []);
 
   async function handleSignIn(e: FormEvent) {
     e.preventDefault();
@@ -50,6 +59,9 @@ function AuthPage() {
         toast.error("اسم المستخدم أو كلمة المرور غير صحيحة");
         return;
       }
+      try {
+        localStorage.setItem("auth.rememberMe", String(rememberMe));
+      } catch {}
       toast.success("تم تسجيل الدخول");
       navigate({ to: "/" });
     } finally {
@@ -80,6 +92,9 @@ function AuthPage() {
         toast.error("تم تعيين كلمة المرور لكن تعذر تسجيل الدخول");
         return;
       }
+      try {
+        localStorage.setItem("auth.rememberMe", String(rememberMe));
+      } catch {}
       toast.success("تم تعيين كلمة المرور وتسجيل الدخول");
       navigate({ to: "/" });
     } catch (err: any) {
@@ -120,6 +135,16 @@ function AuthPage() {
               <div className="space-y-1.5">
                 <Label>كلمة المرور</Label>
                 <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" autoComplete="current-password" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(v) => setRememberMe(Boolean(v))}
+                />
+                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                  تذكرني (ابقَ متصلاً حتى الخروج)
+                </Label>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="ml-2 size-4 animate-spin" />} تسجيل الدخول

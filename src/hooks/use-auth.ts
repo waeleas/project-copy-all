@@ -17,7 +17,41 @@ export function useAuth() {
       setUser(s?.user ?? null);
       setLoading(false);
     });
-    return () => subscription.unsubscribe();
+
+    // Keep the Supabase session alive in the background so the user stays
+    // logged in until they explicitly press Sign Out.
+    const keepAlive = setInterval(() => {
+      supabase.auth.getSession().then(({ data: { session: s } }) => {
+        if (s) {
+          setSession(s);
+          setUser(s?.user ?? null);
+        }
+      });
+    }, 4 * 60 * 1000);
+
+    // When the app comes back from the background (especially in an APK
+    // WebView), refresh the session immediately so the user is not logged out.
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        supabase.auth.getSession().then(({ data: { session: s } }) => {
+          if (s) {
+            setSession(s);
+            setUser(s?.user ?? null);
+          }
+        });
+      }
+    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisible);
+    }
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(keepAlive);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisible);
+      }
+    };
   }, []);
 
   return { session, user, loading };

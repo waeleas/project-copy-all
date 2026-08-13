@@ -176,9 +176,11 @@ function NewTrip() {
     const selectedService = services.data?.find((s) => s.id === form.service_type_id);
     const isWorkerTransport = selectedService?.name === "نقل عاملين";
     const isAfterSales = selectedService?.name === "خدمة ما بعد البيع";
+    const hasTechnician = !!form.technician_id && form.technician_id !== "__none__";
     const needsManager =
       (form.car_type !== "company" && !isWorkerTransport && !!form.service_type_id) ||
-      (form.car_type === "company" && isAfterSales);
+      (form.car_type === "company" && isAfterSales) ||
+      hasTechnician;
     const errs: Record<string, boolean> = {};
     const missing: string[] = [];
     const addMiss = (key: string, label: string) => { errs[key] = true; missing.push(label); };

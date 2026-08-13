@@ -181,6 +181,9 @@ function NewTrip() {
       (form.car_type !== "company" && !isWorkerTransport && !!form.service_type_id) ||
       (form.car_type === "company" && isAfterSales) ||
       hasTechnician;
+    const selectedManager = managers.data?.find((m) => m.id === form.manager_id);
+    const managerName = (selectedManager?.name ?? "").trim();
+    const managerIsNone = !form.manager_id || managerName === "لا يوجد" || managerName.toLowerCase() === "none";
     const errs: Record<string, boolean> = {};
     const missing: string[] = [];
     const addMiss = (key: string, label: string) => { errs[key] = true; missing.push(label); };
@@ -188,7 +191,7 @@ function NewTrip() {
     if (form.car_type === "rental" && !form.office_id) addMiss("office_id", "المكتب");
     if (!form.service_type_id) addMiss("service_type_id", "نوع الخدمة");
     if (!form.governorate_id) addMiss("governorate_id", "المحافظة");
-    if (needsManager && !form.manager_id) addMiss("manager_id", "المدير المسؤول");
+    if (needsManager && managerIsNone) addMiss("manager_id", "المدير المسؤول");
     if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") addMiss("technician_id", "متلقي الخدمة أو الفني");
     if (form.car_type === "rental" ? !normalizedRentalDriver : !form.driver_id) {
       addMiss(form.car_type === "rental" ? "driver_name_rental" : "driver_id", "السائق");

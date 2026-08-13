@@ -1,12 +1,13 @@
 import { arabicError } from "@/lib/errors";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveUsernameToEmail, firstTimeSetPassword } from "@/lib/users.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Car, Loader2 } from "lucide-react";
@@ -30,6 +31,13 @@ function AuthPage() {
   const [setupMode, setSetupMode] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("auth.rememberMe");
+      if (saved !== null) setRememberMe(saved === "true");
+    } catch {}
+  }, []);
 
   async function handleSignIn(e: FormEvent) {
     e.preventDefault();

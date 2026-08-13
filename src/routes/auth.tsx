@@ -59,6 +59,9 @@ function AuthPage() {
         toast.error("اسم المستخدم أو كلمة المرور غير صحيحة");
         return;
       }
+      try {
+        localStorage.setItem("auth.rememberMe", String(rememberMe));
+      } catch {}
       toast.success("تم تسجيل الدخول");
       navigate({ to: "/" });
     } finally {
@@ -89,6 +92,9 @@ function AuthPage() {
         toast.error("تم تعيين كلمة المرور لكن تعذر تسجيل الدخول");
         return;
       }
+      try {
+        localStorage.setItem("auth.rememberMe", String(rememberMe));
+      } catch {}
       toast.success("تم تعيين كلمة المرور وتسجيل الدخول");
       navigate({ to: "/" });
     } catch (err: any) {

@@ -118,8 +118,7 @@
     direction: rtl;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    overscroll-behavior: none;
-    -webkit-overscroll-behavior: none;
+    overscroll-behavior: auto;
   }
   body {
     background-color: var(--color-background);
@@ -128,9 +127,8 @@
     min-height: 100dvh;
     -webkit-tap-highlight-color: transparent;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: none;
-    -webkit-overscroll-behavior: none;
-    touch-action: pan-y;
+    overscroll-behavior: auto;
+    touch-action: auto;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
   }

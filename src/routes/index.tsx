@@ -411,7 +411,7 @@ function TripsList() {
           <p className="text-sm text-muted-foreground">جميع رحلات خدمة ما بعد البيع</p>
         </div>
         <div className="flex items-center gap-2">
-          <SapT001Export />
+          <SapT001Export trips={filtered} />
           <Button variant="outline" size="sm" onClick={exportExcel}><Download className="size-4 ml-1" /> Excel</Button>
           <Link to="/trips/new">
             <Button><Plus className="size-4 ml-1" /> رحلة جديدة</Button>

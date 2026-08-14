@@ -1,44 +1,35 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { FileSpreadsheet, Code2, Copy, Download } from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/use-is-admin";
-import vbsScript from "@/lib/sap/iw31-t001.vbs.txt?raw";
+import { supabase } from "@/integrations/supabase/client";
 
 const FILE_NAME = "IW31-Creat_Employee_Trip_Order-T001.xlsx";
-const SCRIPT_NAME = "Script1_IW31-Creat_Employee_Trip_Order-T001.vbs";
 
-const SHEETS: { name: string; headers: string[]; widths: number[] }[] = [
-  {
-    name: "T001",
-    headers: [
-      "Order Type",
-      "Equipment",
-      "Order Description",
-      "Planner Grp",
-      "Mn.wk.ctr",
-      "Person Respons",
-      "PMActType",
-      "Bsc Start",
-      "Basic Fin.",
-      "Operation Short Text",
-      "Mn.wk.ctr/Plnt",
-      "Acty Type",
-      "Work durtn",
-      "Unit for work",
-      "Number",
-      "duration/unit",
-      "Sort Field",
-    ],
-    widths: [6.7, 10.3, 20.9, 7.7, 9.9, 9.6, 13, 9.9, 13, 21.9, 10.9, 9, 6.9, 7.4, 7.9, 9, 11.4],
-  },
+const HEADERS = [
+  "Order Type",
+  "Equipment",
+  "Order Description",
+  "Planner Grp",
+  "Mn.wk.ctr",
+  "Person Respons",
+  "PMActType",
+  "Bsc Start",
+  "Basic Fin.",
+  "Operation Short Text",
+  "Mn.wk.ctr/Plnt",
+  "Acty Type",
+  "Work durtn",
+  "Unit for work",
+  "Number",
+  "duration/unit",
+  "Sort Field",
+];
+
+const WIDTHS = [6.7, 10.3, 20.9, 7.7, 9.9, 9.6, 13, 9.9, 13, 21.9, 10.9, 9, 6.9, 7.4, 7.9, 9, 11.4];
+
+const SHEETS = [
+  { name: "T001", headers: HEADERS, widths: WIDTHS },
   {
     name: "تجهيز",
     headers: [
@@ -64,16 +55,78 @@ const SHEETS: { name: string; headers: string[]; widths: number[] }[] = [
   },
 ];
 
-async function downloadEmptyTemplate() {
+function sapDate(v: any) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`;
+}
+
+async function buildRows(trips: any[]) {
+  const { data: carsMaster } = await supabase.from("cars" as any).select("plate, code, acty_type");
+  const byPlate = new Map<string, string>();
+  const byCode = new Map<string, string>();
+  ((carsMaster as any[]) ?? []).forEach((c: any) => {
+    if (c.plate) byPlate.set(String(c.plate).trim(), c.acty_type ?? "");
+    if (c.code) byCode.set(String(c.code).trim(), c.acty_type ?? "");
+  });
+
+  const ids = trips.map((t) => t.id);
+  const segsAll: any[] = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data } = await supabase
+      .from("trip_segments" as any)
+      .select("trip_id, route, sequence")
+      .in("trip_id", ids.slice(i, i + 100));
+    segsAll.push(...((data as any[]) ?? []));
+  }
+  const segsByTrip: Record<string, any[]> = {};
+  segsAll
+    .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+    .forEach((s) => {
+      (segsByTrip[s.trip_id] ||= []).push(s);
+    });
+
+  return trips.map((t) => {
+    const segs = segsByTrip[t.id] ?? [];
+    const routes = [t.route_start, ...segs.map((s) => s.route)]
+      .map((r) => String(r ?? "").trim())
+      .filter(Boolean)
+      .join(" - ");
+    const km = t.end_odometer != null && t.start_odometer != null ? t.end_odometer - t.start_odometer : "";
+    return [
+      "", // Order Type
+      t.car_code ?? "", // Equipment
+      t.governorate_name ?? "", // Order Description
+      "FP1", // Planner Grp
+      "", // Mn.wk.ctr
+      t.technician?.sap_number ?? "", // Person Respons
+      t.service_type?.pmact_type ?? "", // PMActType
+      sapDate(t.start_at), // Bsc Start
+      sapDate(t.end_at ?? t.start_at), // Basic Fin.
+      routes.slice(0, 40), // Operation Short Text
+      t.driver?.sap_number ?? t.driver_sap ?? "", // Mn.wk.ctr/Plnt
+      byPlate.get(String(t.car_plate ?? "").trim()) || byCode.get(String(t.car_code ?? "").trim()) || "", // Acty Type
+      km, // Work durtn
+      "", // Unit for work
+      1, // Number
+      "", // duration/unit
+      t.trip_no ?? "", // Sort Field
+    ];
+  });
+}
+
+async function downloadTemplate(trips: any[]) {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = "خطوط السير";
   wb.created = new Date();
 
+  const dataRows = trips.length ? await buildRows(trips) : [];
+
   for (const s of SHEETS) {
-    const ws = wb.addWorksheet(s.name, {
-      views: [{ state: "frozen", ySplit: 1 }],
-    });
+    const ws = wb.addWorksheet(s.name, { views: [{ state: "frozen", ySplit: 1 }] });
     const row = ws.getRow(1);
     s.headers.forEach((h, i) => {
       const c = row.getCell(i + 1);
@@ -90,6 +143,16 @@ async function downloadEmptyTemplate() {
     });
     row.height = 30;
     ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: s.headers.length } };
+
+    if (s.name === "T001") {
+      dataRows.forEach((r) => {
+        const added = ws.addRow(r);
+        added.eachCell((c) => {
+          c.font = { name: "Calibri", size: 11 };
+          c.alignment = { horizontal: "center", vertical: "middle" };
+        });
+      });
+    }
   }
 
   const buf = await wb.xlsx.writeBuffer();
@@ -104,65 +167,16 @@ async function downloadEmptyTemplate() {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  toast.success("تم تنزيل الشيت الفارغ");
+  toast.success(dataRows.length ? `تم تنزيل شيت SAP (${dataRows.length} طلب)` : "تم تنزيل الشيت الفارغ");
 }
 
-function downloadScript() {
-  const blob = new Blob(["\ufeff" + vbsScript], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = SCRIPT_NAME;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-export function SapT001Export() {
+export function SapT001Export({ trips = [] }: { trips?: any[] }) {
   const { isAdmin } = useIsAdmin();
-  const [open, setOpen] = useState(false);
   if (!isAdmin) return null;
 
   return (
-    <>
-      <Button variant="outline" size="sm" onClick={downloadEmptyTemplate} className="gap-1">
-        <FileSpreadsheet className="size-4" /> SAP T001
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1">
-            <Code2 className="size-4" /> السكربت
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{SCRIPT_NAME}</DialogTitle>
-          </DialogHeader>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1"
-              onClick={() => {
-                navigator.clipboard.writeText(vbsScript);
-                toast.success("تم نسخ السكربت");
-              }}
-            >
-              <Copy className="size-4" /> نسخ
-            </Button>
-            <Button size="sm" variant="outline" className="gap-1" onClick={downloadScript}>
-              <Download className="size-4" /> تنزيل
-            </Button>
-          </div>
-          <pre
-            dir="ltr"
-            className="max-h-[60vh] overflow-auto rounded-md bg-muted p-3 text-left text-xs leading-relaxed"
-          >
-            {vbsScript}
-          </pre>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Button variant="outline" size="sm" onClick={() => downloadTemplate(trips)} className="gap-1">
+      <FileSpreadsheet className="size-4" /> SAP T001
+    </Button>
   );
 }

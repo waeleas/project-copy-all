@@ -124,6 +124,25 @@ export const getCarKmReport = createServerFn({ method: "GET" })
       }
     }
 
+    // إدراج كل السيارات الموجودة في قاعدة البيانات حتى لو لم تعمل أي رحلة
+    for (const c of carsData ?? []) {
+      const plate = String(c.plate ?? "").trim();
+      if (!plate || map.has(plate)) continue;
+      map.set(plate, {
+        car_plate: plate,
+        car_code: c.code ?? null,
+        car_description: c.description ?? null,
+        car_type: c.type ?? null,
+        trips_count: 0,
+        total_km: 0,
+        min_start: 0,
+        max_end: 0,
+        first_at: null,
+        last_at: null,
+        governorates: new Set<string>(),
+      });
+    }
+
     return Array.from(map.values())
       .map((r) => ({
         ...r,
@@ -132,6 +151,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
         governorates: Array.from(r.governorates).join("، "),
       }))
       .sort((a, b) => b.total_km - a.total_km);
+
   });
 
 export const getDriverKmReport = createServerFn({ method: "GET" })

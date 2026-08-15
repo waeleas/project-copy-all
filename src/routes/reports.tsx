@@ -184,9 +184,7 @@ function ReportsPage() {
                       "المحافظة": r.governorates ?? "",
                       "عدد الرحلات": r.trips_count,
                       "إجمالي الكيلومترات": Math.round(r.total_km),
-                      "أول عداد": Math.round(r.min_start),
-                      "آخر عداد": Math.round(r.max_end),
-                      "الفرق (آخر − أول)": Math.round(r.span_km),
+
                     })),
                   )
                 }
@@ -209,8 +207,6 @@ function ReportsPage() {
                         <th className="p-2">المحافظة</th>
                         <th className="p-2">الرحلات</th>
                         <th className="p-2">إجمالي كم</th>
-                        <th className="p-2">أول عداد</th>
-                        <th className="p-2">آخر عداد</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -223,13 +219,12 @@ function ReportsPage() {
                           <td className="p-2">{r.governorates ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
                           <td className="p-2 font-bold text-primary">{fmt(r.total_km)}</td>
-                          <td className="p-2">{fmt(r.min_start)}</td>
-                          <td className="p-2">{fmt(r.max_end)}</td>
                         </tr>
                       ))}
                       {carsFiltered.length === 0 && (
-                        <tr><td colSpan={9} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={7} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
+
                     </tbody>
                   </table>
                 </div>

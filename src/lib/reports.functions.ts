@@ -124,6 +124,25 @@ export const getCarKmReport = createServerFn({ method: "GET" })
       }
     }
 
+    // إدراج كل السيارات الموجودة في قاعدة البيانات حتى لو لم تعمل أي رحلة
+    for (const c of carsData ?? []) {
+      const plate = String(c.plate ?? "").trim();
+      if (!plate || map.has(plate)) continue;
+      map.set(plate, {
+        car_plate: plate,
+        car_code: c.code ?? null,
+        car_description: c.description ?? null,
+        car_type: c.type ?? null,
+        trips_count: 0,
+        total_km: 0,
+        min_start: 0,
+        max_end: 0,
+        first_at: null,
+        last_at: null,
+        governorates: new Set<string>(),
+      });
+    }
+
     return Array.from(map.values())
       .map((r) => ({
         ...r,
@@ -132,6 +151,7 @@ export const getCarKmReport = createServerFn({ method: "GET" })
         governorates: Array.from(r.governorates).join("، "),
       }))
       .sort((a, b) => b.total_km - a.total_km);
+
   });
 
 export const getDriverKmReport = createServerFn({ method: "GET" })
@@ -145,9 +165,26 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
     // Resolve driver names
     const { data: driversData } = await context.supabase.from("drivers").select("id, name, sap_number");
     const driverById = new Map<string, { name: string; sap: string | null }>();
-    (driversData ?? []).forEach((d: any) =>
-      driverById.set(d.id, { name: d.name, sap: d.sap_number ?? null }),
-    );
+    const sapByName = new Map<string, string>();
+    const normName = (s: string) => String(s ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+    (driversData ?? []).forEach((d: any) => {
+      driverById.set(d.id, { name: d.name, sap: d.sap_number ?? null });
+      const sap = String(d.sap_number ?? "").trim();
+      if (sap && !sapByName.has(normName(d.name))) sapByName.set(normName(d.name), sap);
+    });
+
+    // أرقام الساب للفنيين والمديرين كبديل عند عدم وجودها في السائقين
+    const { data: techData } = await context.supabase.from("technicians").select("name, sap_number");
+    (techData ?? []).forEach((d: any) => {
+      const sap = String(d.sap_number ?? "").trim();
+      if (sap && !sapByName.has(normName(d.name))) sapByName.set(normName(d.name), sap);
+    });
+    const { data: mgrData } = await context.supabase.from("managers").select("name, sap_number");
+    (mgrData ?? []).forEach((d: any) => {
+      const sap = String(d.sap_number ?? "").trim();
+      if (sap && !sapByName.has(normName(d.name))) sapByName.set(normName(d.name), sap);
+    });
+
 
     const map = new Map<
       string,
@@ -180,6 +217,8 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
       }
       name = (name ?? "").trim();
       if (!name) continue;
+      if (!sap || !String(sap).trim()) sap = sapByName.get(normName(name)) ?? null;
+
 
       const start = Number(t.start_odometer ?? 0);
       const end = Number(t.end_odometer ?? 0);

@@ -184,9 +184,7 @@ function ReportsPage() {
                       "المحافظة": r.governorates ?? "",
                       "عدد الرحلات": r.trips_count,
                       "إجمالي الكيلومترات": Math.round(r.total_km),
-                      "أول عداد": Math.round(r.min_start),
-                      "آخر عداد": Math.round(r.max_end),
-                      "الفرق (آخر − أول)": Math.round(r.span_km),
+
                     })),
                   )
                 }

@@ -96,11 +96,11 @@ async function buildRows(trips: any[]) {
       .join(" - ");
     const km = t.end_odometer != null && t.start_odometer != null ? t.end_odometer - t.start_odometer : "";
     return [
-      "", // Order Type
+      "T001", // Order Type
       t.car_code ?? "", // Equipment
       t.governorate_name ?? "", // Order Description
       "FP1", // Planner Grp
-      "", // Mn.wk.ctr
+      "50004669", // Mn.wk.ctr
       t.technician?.sap_number ?? "", // Person Respons
       t.service_type?.pmact_type ?? "", // PMActType
       sapDate(t.start_at), // Bsc Start
@@ -109,9 +109,9 @@ async function buildRows(trips: any[]) {
       t.driver?.sap_number ?? t.driver_sap ?? "", // Mn.wk.ctr/Plnt
       byPlate.get(String(t.car_plate ?? "").trim()) || byCode.get(String(t.car_code ?? "").trim()) || "", // Acty Type
       km, // Work durtn
-      "", // Unit for work
+      "TPC", // Unit for work
       1, // Number
-      "", // duration/unit
+      "TPC", // duration/unit
       t.trip_no ?? "", // Sort Field
     ];
   });

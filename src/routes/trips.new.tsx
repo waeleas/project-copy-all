@@ -933,41 +933,48 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       )}
       <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
         <CameraCapture onCapture={(f) => handle(f)} />
-        {/* label أصلي يحتوي الحقل — أعلى موثوقية على الجوال */}
-        <label
-          htmlFor={galleryId}
+        {/* زر واحد يفتح المعرض مباشرة — بدون تكرار فتح المنتقي */}
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
           className="h-auto min-h-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center gap-1 text-sm cursor-pointer hover:bg-accent/30 active:bg-accent/50 select-none"
         >
           <span className="text-xl">🖼️</span>
           <span>من المعرض</span>
-          <input
-            id={galleryId}
-            ref={fileRef}
-            type="file"
-            accept="image/*,.heic,.heif"
-            className="sr-only"
-            onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
-            onChange={(e) => handle(e.target.files?.[0] ?? null)}
-            onInput={(e) => handle((e.target as HTMLInputElement).files?.[0] ?? null)}
-          />
-        </label>
+        </button>
+        <input
+          id={galleryId}
+          ref={fileRef}
+          type="file"
+          accept="image/*,.heic,.heif"
+          className="sr-only"
+          onChange={(e) => {
+            const f = e.target.files?.[0] ?? null;
+            lastFileRef.current = "";
+            handle(f);
+            e.target.value = "";
+          }}
+        />
         {/* بديل: بدون تقييد النوع — يعمل حتى لو مُنع إذن الصور */}
-        <label
-          htmlFor={anyFileId}
+        <button
+          type="button"
           className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-2"
-          onClick={() => { const el = anyRef.current; if (el) watchForFile(el); }}
+          onClick={() => { const el = anyRef.current; if (el) { watchForFile(el); el.click(); } }}
         >
           لم يفتح المعرض؟ اختر ملفاً من الجهاز
-          <input
-            id={anyFileId}
-            ref={anyRef}
-            type="file"
-            className="sr-only"
-            onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ""; }}
-            onChange={(e) => handle(e.target.files?.[0] ?? null)}
-            onInput={(e) => handle((e.target as HTMLInputElement).files?.[0] ?? null)}
-          />
-        </label>
+        </button>
+        <input
+          id={anyFileId}
+          ref={anyRef}
+          type="file"
+          className="sr-only"
+          onChange={(e) => {
+            const f = e.target.files?.[0] ?? null;
+            lastFileRef.current = "";
+            handle(f);
+            e.target.value = "";
+          }}
+        />
       </div>
 
 

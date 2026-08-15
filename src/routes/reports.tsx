@@ -219,13 +219,12 @@ function ReportsPage() {
                           <td className="p-2">{r.governorates ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
                           <td className="p-2 font-bold text-primary">{fmt(r.total_km)}</td>
-                          <td className="p-2">{fmt(r.min_start)}</td>
-                          <td className="p-2">{fmt(r.max_end)}</td>
                         </tr>
                       ))}
                       {carsFiltered.length === 0 && (
-                        <tr><td colSpan={9} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={7} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
+
                     </tbody>
                   </table>
                 </div>

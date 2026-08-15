@@ -843,10 +843,12 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
   const galleryId = `ph-${uid}-gallery`;
   const anyFileId = `ph-${uid}-anyfile`;
   const lastFileRef = useRef<string>("");
+  const previewRequestRef = useRef(0);
   function handle(f: File | null) {
     const sig = f ? `${f.name}|${f.size}|${f.lastModified}` : "";
     if (f && sig === lastFileRef.current) return;
     lastFileRef.current = sig;
+    const requestId = ++previewRequestRef.current;
     setPreviewFailed(false);
     setPickError("");
     setDataPreview("");
@@ -869,9 +871,12 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         return;
       }
       setInfo({ name: f.name || "photo", size: f.size });
+      // سجّل الملف فوراً قبل إنشاء المعاينة؛ بعض WebView يتأخر في قراءة الصورة.
+      onFile(f);
       // مصغّرة مضمونة العرض (تعمل مع heic/avif وغيرها) مع بديل data URL
       (async () => {
         const thumb = await makeThumbnail(f);
+        if (requestId !== previewRequestRef.current) return;
         if (thumb) {
           setDataPreview(thumb);
           setPreviewFailed(false);
@@ -879,17 +884,21 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         }
         try {
           const reader = new FileReader();
-          reader.onload = () => setDataPreview(String(reader.result || ""));
-          reader.onerror = () => setPreviewFailed(true);
+          reader.onload = () => {
+            if (requestId === previewRequestRef.current) setDataPreview(String(reader.result || ""));
+          };
+          reader.onerror = () => {
+            if (requestId === previewRequestRef.current) setPreviewFailed(true);
+          };
           reader.readAsDataURL(f);
         } catch {
-          setPreviewFailed(true);
+          if (requestId === previewRequestRef.current) setPreviewFailed(true);
         }
       })();
     } else {
       setInfo(null);
+      onFile(null);
     }
-    onFile(f);
   }
   // فتح منتقي الملفات برمجياً + خطة بديلة: بعض متصفحات الأندرويد لا تُطلق حدث change
   function watchForFile(el: HTMLInputElement) {
@@ -904,6 +913,15 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         window.clearInterval(timer);
       }
     }, 300);
+  }
+
+  function openPicker(el: HTMLInputElement | null) {
+    if (!el) return;
+    // التفريغ قبل الفتح يسمح باختيار نفس الصورة مجدداً دون إلغاء الملف بعد الاختيار.
+    el.value = "";
+    lastFileRef.current = "";
+    watchForFile(el);
+    el.click();
   }
 
   const previewSrc = dataPreview || (previewFailed ? "" : preview);
@@ -936,7 +954,7 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         {/* زر واحد يفتح المعرض مباشرة — بدون تكرار فتح المنتقي */}
         <button
           type="button"
-          onClick={() => fileRef.current?.click()}
+          onClick={() => openPicker(fileRef.current)}
           className="h-auto min-h-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center gap-1 text-sm cursor-pointer hover:bg-accent/30 active:bg-accent/50 select-none"
         >
           <span className="text-xl">🖼️</span>
@@ -950,16 +968,14 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
           className="sr-only"
           onChange={(e) => {
             const f = e.target.files?.[0] ?? null;
-            lastFileRef.current = "";
             handle(f);
-            e.target.value = "";
           }}
         />
         {/* بديل: بدون تقييد النوع — يعمل حتى لو مُنع إذن الصور */}
         <button
           type="button"
           className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-2"
-          onClick={() => { const el = anyRef.current; if (el) { watchForFile(el); el.click(); } }}
+          onClick={() => openPicker(anyRef.current)}
         >
           لم يفتح المعرض؟ اختر ملفاً من الجهاز
         </button>
@@ -970,9 +986,7 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
           className="sr-only"
           onChange={(e) => {
             const f = e.target.files?.[0] ?? null;
-            lastFileRef.current = "";
             handle(f);
-            e.target.value = "";
           }}
         />
       </div>

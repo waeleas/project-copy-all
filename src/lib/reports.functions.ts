@@ -165,9 +165,26 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
     // Resolve driver names
     const { data: driversData } = await context.supabase.from("drivers").select("id, name, sap_number");
     const driverById = new Map<string, { name: string; sap: string | null }>();
-    (driversData ?? []).forEach((d: any) =>
-      driverById.set(d.id, { name: d.name, sap: d.sap_number ?? null }),
-    );
+    const sapByName = new Map<string, string>();
+    const normName = (s: string) => String(s ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+    (driversData ?? []).forEach((d: any) => {
+      driverById.set(d.id, { name: d.name, sap: d.sap_number ?? null });
+      const sap = String(d.sap_number ?? "").trim();
+      if (sap && !sapByName.has(normName(d.name))) sapByName.set(normName(d.name), sap);
+    });
+
+    // أرقام الساب للفنيين والمديرين كبديل عند عدم وجودها في السائقين
+    const { data: techData } = await context.supabase.from("technicians").select("name, sap_number");
+    (techData ?? []).forEach((d: any) => {
+      const sap = String(d.sap_number ?? "").trim();
+      if (sap && !sapByName.has(normName(d.name))) sapByName.set(normName(d.name), sap);
+    });
+    const { data: mgrData } = await context.supabase.from("managers").select("name, sap_number");
+    (mgrData ?? []).forEach((d: any) => {
+      const sap = String(d.sap_number ?? "").trim();
+      if (sap && !sapByName.has(normName(d.name))) sapByName.set(normName(d.name), sap);
+    });
+
 
     const map = new Map<
       string,

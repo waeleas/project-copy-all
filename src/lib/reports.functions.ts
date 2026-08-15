@@ -217,6 +217,8 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
       }
       name = (name ?? "").trim();
       if (!name) continue;
+      if (!sap || !String(sap).trim()) sap = sapByName.get(normName(name)) ?? null;
+
 
       const start = Number(t.start_odometer ?? 0);
       const end = Number(t.end_odometer ?? 0);

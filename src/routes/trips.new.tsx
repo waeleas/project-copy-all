@@ -901,18 +901,42 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
     }
   }
   // فتح منتقي الملفات برمجياً + خطة بديلة: بعض متصفحات الأندرويد لا تُطلق حدث change
+  // ويستمر الترقّب حتى بعد العودة من تطبيق آخر (الكاميرا/المعرض) في الخلفية.
   function watchForFile(el: HTMLInputElement) {
-    let tries = 0;
-    const timer = window.setInterval(() => {
-      tries++;
+    let elapsed = 0;
+    let cleaned = false;
+    const check = () => {
       const f = el.files?.[0] ?? null;
       if (f) {
-        window.clearInterval(timer);
+        cleanup();
         handle(f);
-      } else if (tries > 40) {
-        window.clearInterval(timer);
+        return true;
       }
+      return false;
+    };
+    const timer = window.setInterval(() => {
+      elapsed += 300;
+      // مهلة طويلة: المستخدم قد يبقى في تطبيق الكاميرا عدة دقائق
+      if (check()) return;
+      if (elapsed > 300_000) cleanup();
     }, 300);
+    const onBack = () => {
+      if (document.visibilityState === "visible") {
+        // بعد العودة من التطبيق الخلفي قد يتأخر النظام في تسليم الملف
+        [0, 150, 400, 800, 1500, 2500].forEach((d) => window.setTimeout(check, d));
+      }
+    };
+    function cleanup() {
+      if (cleaned) return;
+      cleaned = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onBack);
+      window.removeEventListener("focus", onBack);
+      window.removeEventListener("pageshow", onBack);
+    }
+    document.addEventListener("visibilitychange", onBack);
+    window.addEventListener("focus", onBack);
+    window.addEventListener("pageshow", onBack);
   }
 
   function openPicker(el: HTMLInputElement | null) {
@@ -923,6 +947,7 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
     watchForFile(el);
     el.click();
   }
+
 
   const previewSrc = dataPreview || (previewFailed ? "" : preview);
 

@@ -19,15 +19,34 @@ export function CameraCapture({ onCapture, trigger }: Props) {
   useEffect(() => {
     if (!open || shot) return;
     let cancelled = false;
-    (async () => {
+    const start = async () => {
       try {
         if (!navigator.mediaDevices?.getUserMedia) {
           throw new Error("المتصفح لا يدعم الكاميرا");
         }
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-          audio: false,
-        });
+        // أولوية أولى للكاميرا: إن كانت مشغولة بتطبيق آخر في الخلفية نعيد المحاولة
+        let stream: MediaStream | null = null;
+        let lastErr: any = null;
+        for (let attempt = 0; attempt < 5 && !cancelled; attempt++) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+              audio: false,
+            });
+            break;
+          } catch (err: any) {
+            lastErr = err;
+            const name = String(err?.name || "");
+            if (name.includes("NotReadable") || name.includes("AbortError") || name.includes("TrackStart")) {
+              streamRef.current?.getTracks().forEach((t) => t.stop());
+              streamRef.current = null;
+              await new Promise((r) => setTimeout(r, 600));
+              continue;
+            }
+            throw err;
+          }
+        }
+        if (!stream) throw lastErr ?? new Error("NotReadableError");
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -42,16 +61,34 @@ export function CameraCapture({ onCapture, trigger }: Props) {
         let m = "تعذر فتح الكاميرا";
         if (msg.includes("NotAllowed") || msg.includes("Permission")) m = "تم رفض إذن الكاميرا. فعّل الإذن من إعدادات المتصفح";
         else if (msg.includes("NotFound") || msg.includes("DevicesNotFound")) m = "لا توجد كاميرا متاحة على هذا الجهاز";
-        else if (msg.includes("NotReadable")) m = "الكاميرا قيد الاستخدام من تطبيق آخر";
+        else if (msg.includes("NotReadable")) m = "الكاميرا قيد الاستخدام من تطبيق آخر، أغلق التطبيق الآخر ثم أعد المحاولة";
         else if (msg.includes("Secure") || location.protocol !== "https:" && location.hostname !== "localhost") m = "الكاميرا تتطلب اتصال آمن (HTTPS)";
         toast.error(m);
         setOpen(false);
       }
-    })();
+    };
+    void start();
+    // استئناف الكاميرا فوراً عند العودة من تطبيق آخر كان يعمل في الخلفية
+    const onVisible = () => {
+      if (document.visibilityState !== "visible" || cancelled) return;
+      const live = streamRef.current?.getVideoTracks().some((t) => t.readyState === "live");
+      if (!live) {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        void start();
+      } else {
+        videoRef.current?.play().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
     };
   }, [open, shot]);
+
 
   function stopStream() {
     streamRef.current?.getTracks().forEach((t) => t.stop());

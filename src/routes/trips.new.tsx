@@ -836,14 +836,13 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
   const [previewFailed, setPreviewFailed] = useState(false);
   const [dataPreview, setDataPreview] = useState("");
   const [pickError, setPickError] = useState("");
-  const fileRef = useRef<HTMLInputElement | null>(null);
-  const anyRef = useRef<HTMLInputElement | null>(null);
   // معرّفات ASCII فقط (useId قد يُرجع رموزاً غير قياسية تكسر ربط label بالحقل)
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const galleryId = `ph-${uid}-gallery`;
   const anyFileId = `ph-${uid}-anyfile`;
   const lastFileRef = useRef<string>("");
   const previewRequestRef = useRef(0);
+  const pickerCleanupRef = useRef<(() => void) | null>(null);
   function handle(f: File | null) {
     const sig = f ? `${f.name}|${f.size}|${f.lastModified}` : "";
     if (f && sig === lastFileRef.current) return;
@@ -903,6 +902,7 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
   // فتح منتقي الملفات برمجياً + خطة بديلة: بعض متصفحات الأندرويد لا تُطلق حدث change
   // ويستمر الترقّب حتى بعد العودة من تطبيق آخر (الكاميرا/المعرض) في الخلفية.
   function watchForFile(el: HTMLInputElement) {
+    pickerCleanupRef.current?.();
     let elapsed = 0;
     let cleaned = false;
     const check = () => {
@@ -924,6 +924,10 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       if (document.visibilityState === "visible") {
         // بعد العودة من التطبيق الخلفي قد يتأخر النظام في تسليم الملف
         [0, 150, 400, 800, 1500, 2500].forEach((d) => window.setTimeout(check, d));
+        // إذا عاد المستخدم دون اختيار صورة، أنهِ جلسة المنتقي القديمة حتى يمكن فتحه مجدداً.
+        window.setTimeout(() => {
+          if (!el.files?.length) cleanup();
+        }, 3000);
       }
     };
     function cleanup() {
@@ -933,20 +937,22 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       document.removeEventListener("visibilitychange", onBack);
       window.removeEventListener("focus", onBack);
       window.removeEventListener("pageshow", onBack);
+      if (pickerCleanupRef.current === cleanup) pickerCleanupRef.current = null;
     }
+    pickerCleanupRef.current = cleanup;
     document.addEventListener("visibilitychange", onBack);
     window.addEventListener("focus", onBack);
     window.addEventListener("pageshow", onBack);
   }
 
-  function openPicker(el: HTMLInputElement | null) {
-    if (!el) return;
-    // التفريغ قبل الفتح يسمح باختيار نفس الصورة مجدداً دون إلغاء الملف بعد الاختيار.
+  function preparePicker(el: HTMLInputElement) {
+    // يبدأ فتح الحقل من نقرة المستخدم الأصلية عبر label، وهو الأكثر ثباتاً داخل WebView.
     el.value = "";
     lastFileRef.current = "";
     watchForFile(el);
-    el.click();
   }
+
+  useEffect(() => () => pickerCleanupRef.current?.(), []);
 
 
   const previewSrc = dataPreview || (previewFailed ? "" : preview);
@@ -977,38 +983,36 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
         <CameraCapture onCapture={(f) => handle(f)} />
         {/* زر واحد يفتح المعرض مباشرة — بدون تكرار فتح المنتقي */}
-        <button
-          type="button"
-          onClick={() => openPicker(fileRef.current)}
+        <label
+          htmlFor={galleryId}
           className="h-auto min-h-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center gap-1 text-sm cursor-pointer hover:bg-accent/30 active:bg-accent/50 select-none"
         >
           <span className="text-xl">🖼️</span>
           <span>من المعرض</span>
-        </button>
+        </label>
         <input
           id={galleryId}
-          ref={fileRef}
           type="file"
           accept="image/*,.heic,.heif"
           className="sr-only"
+          onClick={(e) => preparePicker(e.currentTarget)}
           onChange={(e) => {
             const f = e.target.files?.[0] ?? null;
             handle(f);
           }}
         />
         {/* بديل: بدون تقييد النوع — يعمل حتى لو مُنع إذن الصور */}
-        <button
-          type="button"
+        <label
+          htmlFor={anyFileId}
           className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-2"
-          onClick={() => openPicker(anyRef.current)}
         >
           لم يفتح المعرض؟ اختر ملفاً من الجهاز
-        </button>
+        </label>
         <input
           id={anyFileId}
-          ref={anyRef}
           type="file"
           className="sr-only"
+          onClick={(e) => preparePicker(e.currentTarget)}
           onChange={(e) => {
             const f = e.target.files?.[0] ?? null;
             handle(f);

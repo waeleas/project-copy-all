@@ -836,8 +836,6 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
   const [previewFailed, setPreviewFailed] = useState(false);
   const [dataPreview, setDataPreview] = useState("");
   const [pickError, setPickError] = useState("");
-  const fileRef = useRef<HTMLInputElement | null>(null);
-  const anyRef = useRef<HTMLInputElement | null>(null);
   // معرّفات ASCII فقط (useId قد يُرجع رموزاً غير قياسية تكسر ربط label بالحقل)
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const galleryId = `ph-${uid}-gallery`;
@@ -994,7 +992,6 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         </label>
         <input
           id={galleryId}
-          ref={fileRef}
           type="file"
           accept="image/*,.heic,.heif"
           className="sr-only"
@@ -1013,7 +1010,6 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         </label>
         <input
           id={anyFileId}
-          ref={anyRef}
           type="file"
           className="sr-only"
           onClick={(e) => preparePicker(e.currentTarget)}

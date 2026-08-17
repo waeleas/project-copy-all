@@ -193,6 +193,7 @@ function NewTrip() {
     if (!form.governorate_id) addMiss("governorate_id", "المحافظة");
     if (needsManager && managerIsNone) addMiss("manager_id", "المدير المسؤول");
     if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") addMiss("technician_id", "متلقي الخدمة أو الفني");
+    if (!managerIsNone && !hasTechnician) addMiss("technician_id", "متلقي الخدمة أو الفني (إلزامي عند اختيار مدير مسؤول)");
     if (form.car_type === "rental" ? !normalizedRentalDriver : !form.driver_id) {
       addMiss(form.car_type === "rental" ? "driver_name_rental" : "driver_id", "السائق");
     }
@@ -430,7 +431,7 @@ function NewTrip() {
             <Field label="المدير المسؤول" invalid={errors.manager_id}>
               <LookupSelect items={managers.data} value={form.manager_id} onChange={(v) => set("manager_id", v)} placeholder="اختر المدير" />
               <p className="mt-1 text-xs text-muted-foreground">
-                يتم اختيار المدير النشط الخاص بمتلقي الخدمة أو الفني. عند اختيار متلقي خدمة أو فني (غير "لا يوجد") يصبح اختيار المدير إلزامياً، ولا يُعتبر "لا يوجد" خياراً صالحاً للمدير في هذه الحالة.
+                يتم اختيار المدير النشط الخاص بمتلقي الخدمة أو الفني. عند اختيار متلقي خدمة أو فني (غير "لا يوجد") يصبح اختيار المدير إلزامياً، وكذلك عند اختيار مدير مسؤول يجب اختيار متلقي خدمة أو فني (لا يُقبل "لا يوجد").
               </p>
             </Field>
           )}

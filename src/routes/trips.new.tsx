@@ -193,6 +193,7 @@ function NewTrip() {
     if (!form.governorate_id) addMiss("governorate_id", "المحافظة");
     if (needsManager && managerIsNone) addMiss("manager_id", "المدير المسؤول");
     if (!isWorkerTransport && !form.technician_id && form.technician_id !== "__none__") addMiss("technician_id", "متلقي الخدمة أو الفني");
+    if (!managerIsNone && !hasTechnician) addMiss("technician_id", "متلقي الخدمة أو الفني (إلزامي عند اختيار مدير مسؤول)");
     if (form.car_type === "rental" ? !normalizedRentalDriver : !form.driver_id) {
       addMiss(form.car_type === "rental" ? "driver_name_rental" : "driver_id", "السائق");
     }

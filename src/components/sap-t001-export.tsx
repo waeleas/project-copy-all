@@ -173,9 +173,12 @@ export function SapT001Export({ trips = [] }: { trips?: any[] }) {
   const { isAdmin } = useIsAdmin();
   if (!isAdmin) return null;
 
+  const pending = trips.filter((t) => !t.sap_order_no);
+
   return (
-    <Button variant="outline" size="sm" onClick={() => downloadTemplate(trips)} className="gap-1">
+    <Button variant="outline" size="sm" onClick={() => downloadTemplate(pending)} className="gap-1">
       <FileSpreadsheet className="size-4" /> SAP T001
     </Button>
   );
 }
+

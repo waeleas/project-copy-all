@@ -55,14 +55,15 @@ export function SapOrdersImport({ onDone }: { onDone?: () => void }) {
       let ok = 0;
       let failed = 0;
       for (const p of pairs) {
-        const { error, count } = await supabase
+        const { data, error } = await supabase
           .from("trips" as any)
-          .update({ sap_order_no: p.order, sap_uploaded_at: stamp } as any, { count: "exact" })
+          .update({ sap_order_no: p.order, sap_uploaded_at: stamp } as any)
           .eq("trip_no", p.trip_no)
-          .select("id", { count: "exact", head: true });
-        if (error || !count) failed++;
+          .select("id");
+        if (error || !data || data.length === 0) failed++;
         else ok++;
       }
+
       toast.success(`تم تمييز ${ok} طلب كمرفوع على الساب${failed ? ` — تعذّر ${failed}` : ""}`);
       onDone?.();
     } catch (err: any) {

@@ -90,10 +90,8 @@ async function buildRows(trips: any[]) {
 
   return trips.map((t) => {
     const segs = segsByTrip[t.id] ?? [];
-    const routes = [t.route_start, ...segs.map((s) => s.route)]
-      .map((r) => String(r ?? "").trim())
-      .filter(Boolean)
-      .join(" - ");
+    const extraRoutesCount = segs.length;
+    const operationShortText = `${extraRoutesCount} ${String(t.route_start ?? "").trim()}`.slice(0, 40);
     const km = t.end_odometer != null && t.start_odometer != null ? t.end_odometer - t.start_odometer : "";
     return [
       "T001", // Order Type
@@ -105,7 +103,7 @@ async function buildRows(trips: any[]) {
       t.service_type?.pmact_type ?? "", // PMActType
       sapDate(t.start_at), // Bsc Start
       sapDate(t.end_at ?? t.start_at), // Basic Fin.
-      routes.slice(0, 40), // Operation Short Text
+      operationShortText, // Operation Short Text
       t.driver?.sap_number ?? t.driver_sap ?? "", // Mn.wk.ctr/Plnt
       byPlate.get(String(t.car_plate ?? "").trim()) || byCode.get(String(t.car_code ?? "").trim()) || "", // Acty Type
       km, // Work durtn

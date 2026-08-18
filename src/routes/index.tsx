@@ -36,8 +36,9 @@ function TripsList() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 100;
 
-  const { data: trips, isLoading } = useQuery({
+  const { data: trips, isLoading, refetch } = useQuery({
     queryKey: ["trips"],
+
     queryFn: async () => {
       const SELECT = `
           *,

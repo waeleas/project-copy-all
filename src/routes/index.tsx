@@ -85,7 +85,7 @@ function TripsList() {
           t.service_type?.name,
           t.technician?.name, t.technician?.sap_number,
           t.driver?.name, t.driver?.sap_number, t.driver_name_rental, t.driver_name, t.driver_sap,
-          t.created_by_name, t.created_by_email, t.governorate_name,
+          t.created_by_name, t.created_by_email, t.governorate_name, t.sap_order_no,
         ].map((v) => String(v ?? "").toLowerCase()).join(" | ");
         if (!hay.includes(q)) return false;
       }

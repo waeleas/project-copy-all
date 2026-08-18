@@ -506,6 +506,12 @@ function TripsList() {
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="font-mono">#{t.trip_no}</Badge>
                       <span className="text-xs text-muted-foreground">{t.car_type === "rental" ? "إيجار" : "شركة"}</span>
+                      {t.sap_order_no && (
+                        <Badge className="bg-primary text-primary-foreground font-mono">
+                          ساب: {t.sap_order_no}
+                        </Badge>
+                      )}
+
                     </div>
                     <div className="font-bold mt-1">{t.service_type?.name ?? "بدون نوع"}</div>
                     <div className="text-sm text-muted-foreground">{t.office?.name ?? (t.car_type === "company" ? "سيارة شركة" : "—")}</div>

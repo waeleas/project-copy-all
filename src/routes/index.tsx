@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Plus, Clock, CheckCircle2, Car, Gauge, Timer, Download, Search, X } from "lucide-react";
 import { formatDuration, tripDurationMs } from "@/lib/duration";
 import { SapT001Export } from "@/components/sap-t001-export";
+import { SapOrdersImport } from "@/components/sap-orders-import";
+
 
 import { toast } from "sonner";
 
@@ -34,8 +36,9 @@ function TripsList() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 100;
 
-  const { data: trips, isLoading } = useQuery({
+  const { data: trips, isLoading, refetch } = useQuery({
     queryKey: ["trips"],
+
     queryFn: async () => {
       const SELECT = `
           *,
@@ -82,7 +85,7 @@ function TripsList() {
           t.service_type?.name,
           t.technician?.name, t.technician?.sap_number,
           t.driver?.name, t.driver?.sap_number, t.driver_name_rental, t.driver_name, t.driver_sap,
-          t.created_by_name, t.created_by_email, t.governorate_name,
+          t.created_by_name, t.created_by_email, t.governorate_name, t.sap_order_no,
         ].map((v) => String(v ?? "").toLowerCase()).join(" | ");
         if (!hay.includes(q)) return false;
       }
@@ -411,7 +414,9 @@ function TripsList() {
           <p className="text-sm text-muted-foreground">جميع رحلات خدمة ما بعد البيع</p>
         </div>
         <div className="flex items-center gap-2">
+          <SapOrdersImport onDone={() => refetch()} />
           <SapT001Export trips={filtered} />
+
           <Button variant="outline" size="sm" onClick={exportExcel}><Download className="size-4 ml-1" /> Excel</Button>
           <Link to="/trips/new">
             <Button><Plus className="size-4 ml-1" /> رحلة جديدة</Button>
@@ -501,6 +506,12 @@ function TripsList() {
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="font-mono">#{t.trip_no}</Badge>
                       <span className="text-xs text-muted-foreground">{t.car_type === "rental" ? "إيجار" : "شركة"}</span>
+                      {t.sap_order_no && (
+                        <Badge className="bg-primary text-primary-foreground font-mono">
+                          ساب: {t.sap_order_no}
+                        </Badge>
+                      )}
+
                     </div>
                     <div className="font-bold mt-1">{t.service_type?.name ?? "بدون نوع"}</div>
                     <div className="text-sm text-muted-foreground">{t.office?.name ?? (t.car_type === "company" ? "سيارة شركة" : "—")}</div>

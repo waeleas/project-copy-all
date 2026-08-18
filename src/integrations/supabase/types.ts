@@ -354,6 +354,8 @@ export type Database = {
           office_id: string | null
           route_code: string | null
           route_start: string
+          sap_order_no: string | null
+          sap_uploaded_at: string | null
           service_type_id: string | null
           start_at: string
           start_odometer: number
@@ -389,6 +391,8 @@ export type Database = {
           office_id?: string | null
           route_code?: string | null
           route_start: string
+          sap_order_no?: string | null
+          sap_uploaded_at?: string | null
           service_type_id?: string | null
           start_at?: string
           start_odometer: number
@@ -424,6 +428,8 @@ export type Database = {
           office_id?: string | null
           route_code?: string | null
           route_start?: string
+          sap_order_no?: string | null
+          sap_uploaded_at?: string | null
           service_type_id?: string | null
           start_at?: string
           start_odometer?: number

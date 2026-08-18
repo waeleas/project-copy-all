@@ -1,0 +1,2 @@
+ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS sap_order_no text, ADD COLUMN IF NOT EXISTS sap_uploaded_at timestamp with time zone;
+CREATE INDEX IF NOT EXISTS trips_sap_order_no_idx ON public.trips (sap_order_no);

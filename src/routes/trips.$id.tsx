@@ -840,7 +840,16 @@ function SegmentsCard({
         {canManage && (
           <form onSubmit={add} className="space-y-2 border-t pt-3">
             <Label>اسم المسار الجديد</Label>
-            <Input value={route} maxLength={40} onChange={(e) => setRoute(e.target.value.slice(0, 40))} placeholder="مثال: من العميل إلى المخزن..." />
+            <Input
+              value={route}
+              maxLength={40}
+              onChange={(e) => {
+                const v = e.target.value.slice(0, 40);
+                setRoute(v);
+                if (warning && v.trim()) onWarningDismiss?.();
+              }}
+              placeholder="مثال: من العميل إلى المخزن..."
+            />
             <div className="text-xs text-muted-foreground text-left">{route.length}/40</div>
             <Button type="submit" variant="outline" className="w-full" disabled={saving}>
               {saving && <Loader2 className="ml-2 size-4 animate-spin" />} + إضافة مسار جديد

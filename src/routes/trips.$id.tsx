@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowRight, CheckCircle2, Clock, Gauge, Loader2, Building2, User, Wrench, MapPin, Car, Hash, Trash2, Timer, Mail, Pencil } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, Gauge, Loader2, Building2, User, Wrench, MapPin, Car, Hash, Trash2, Timer, Mail, Pencil, AlertTriangle } from "lucide-react";
 import { formatDuration, tripDurationMs } from "@/lib/duration";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useIsViewer } from "@/hooks/use-is-viewer";
@@ -83,6 +83,8 @@ function TripDetail() {
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [segmentsWarning, setSegmentsWarning] = useState(false);
+  const segmentsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (trip?.status !== "open") return;
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -102,7 +104,14 @@ function TripDetail() {
 
   async function closeTrip(e: FormEvent) {
     e.preventDefault();
-    if ((segments?.length ?? 0) < 1) return toast.error("يجب إضافة مسار إضافي واحد على الأقل قبل إنهاء الرحلة");
+    if ((segments?.length ?? 0) < 1) {
+      setSegmentsWarning(true);
+      setTimeout(() => {
+        segmentsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
+      return;
+    }
+    setSegmentsWarning(false);
     if (!endPhoto) return toast.error("يجب تصوير العداد عند نهاية الرحلة");
 
     const endVal = parseInt(endKm, 10);
@@ -261,25 +270,25 @@ function TripDetail() {
         </Card>
       )}
 
-      <SegmentsCard
-        tripId={id}
-        canManage={canEdit}
-        startOdometer={trip.start_odometer}
-        segments={segments ?? []}
-        onChanged={() => {
-          qc.invalidateQueries({ queryKey: ["trip-segments", id] });
-        }}
-      />
+      <div ref={segmentsRef}>
+        <SegmentsCard
+          tripId={id}
+          canManage={canEdit}
+          startOdometer={trip.start_odometer}
+          segments={segments ?? []}
+          warning={segmentsWarning}
+          onWarningDismiss={() => setSegmentsWarning(false)}
+          onChanged={() => {
+            qc.invalidateQueries({ queryKey: ["trip-segments", id] });
+          }}
+        />
+      </div>
 
       {canClose && (
         <Card className="border-primary/50">
           <CardHeader><CardTitle className="text-base">إنهاء الرحلة</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={closeTrip} className="space-y-3">
-              {(segments?.length ?? 0) < 1 && (
-                <p className="text-xs text-destructive">يجب إضافة مسار إضافي واحد على الأقل قبل إنهاء الرحلة</p>
-              )}
-
               <div className="space-y-1.5">
                 <Label>قراءة العداد عند النهاية (كم)</Label>
                 <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value))} dir="ltr" />
@@ -686,12 +695,16 @@ function SegmentsCard({
   canManage,
   startOdometer,
   segments,
+  warning,
+  onWarningDismiss,
   onChanged,
 }: {
   tripId: string;
   canManage: boolean;
   startOdometer: number;
   segments: any[];
+  warning?: boolean;
+  onWarningDismiss?: () => void;
   onChanged: () => void;
 }) {
   const [route, setRoute] = useState("");
@@ -719,6 +732,7 @@ function SegmentsCard({
       if (error) throw error;
       toast.success("تم إضافة المسار");
       setRoute("");
+      onWarningDismiss?.();
       onChanged();
     } catch (err: any) {
       toast.error(arabicError(err, "فشل"));
@@ -759,13 +773,21 @@ function SegmentsCard({
   if (!canManage && segments.length === 0) return null;
 
   return (
-    <Card>
+    <Card className={warning ? "ring-2 ring-warning ring-offset-1 ring-offset-background transition-shadow" : undefined}>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <MapPin className="size-4" /> مسارات إضافية ({segments.length})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {warning && (
+          <div className="rounded-md bg-warning/10 border border-warning p-3 flex items-start gap-2 animate-pulse">
+            <AlertTriangle className="size-5 text-warning shrink-0 mt-0.5" />
+            <div className="text-sm text-warning-foreground">
+              يجب إضافة مسار إضافي واحد على الأقل قبل إنهاء الرحلة.
+            </div>
+          </div>
+        )}
         {segments.map((s, idx) => (
           <div key={s.id} className="flex items-start justify-between gap-2 border rounded-md p-3 bg-muted/30">
             {editingId === s.id ? (
@@ -814,7 +836,16 @@ function SegmentsCard({
         {canManage && (
           <form onSubmit={add} className="space-y-2 border-t pt-3">
             <Label>اسم المسار الجديد</Label>
-            <Input value={route} maxLength={40} onChange={(e) => setRoute(e.target.value.slice(0, 40))} placeholder="مثال: من العميل إلى المخزن..." />
+            <Input
+              value={route}
+              maxLength={40}
+              onChange={(e) => {
+                const v = e.target.value.slice(0, 40);
+                setRoute(v);
+                if (warning && v.trim()) onWarningDismiss?.();
+              }}
+              placeholder="مثال: من العميل إلى المخزن..."
+            />
             <div className="text-xs text-muted-foreground text-left">{route.length}/40</div>
             <Button type="submit" variant="outline" className="w-full" disabled={saving}>
               {saving && <Loader2 className="ml-2 size-4 animate-spin" />} + إضافة مسار جديد

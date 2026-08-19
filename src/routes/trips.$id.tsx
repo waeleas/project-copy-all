@@ -270,15 +270,19 @@ function TripDetail() {
         </Card>
       )}
 
-      <SegmentsCard
-        tripId={id}
-        canManage={canEdit}
-        startOdometer={trip.start_odometer}
-        segments={segments ?? []}
-        onChanged={() => {
-          qc.invalidateQueries({ queryKey: ["trip-segments", id] });
-        }}
-      />
+      <div ref={segmentsRef}>
+        <SegmentsCard
+          tripId={id}
+          canManage={canEdit}
+          startOdometer={trip.start_odometer}
+          segments={segments ?? []}
+          warning={segmentsWarning}
+          onWarningDismiss={() => setSegmentsWarning(false)}
+          onChanged={() => {
+            qc.invalidateQueries({ queryKey: ["trip-segments", id] });
+          }}
+        />
+      </div>
 
       {canClose && (
         <Card className="border-primary/50">

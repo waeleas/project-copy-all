@@ -699,12 +699,16 @@ function SegmentsCard({
   canManage,
   startOdometer,
   segments,
+  warning,
+  onWarningDismiss,
   onChanged,
 }: {
   tripId: string;
   canManage: boolean;
   startOdometer: number;
   segments: any[];
+  warning?: boolean;
+  onWarningDismiss?: () => void;
   onChanged: () => void;
 }) {
   const [route, setRoute] = useState("");

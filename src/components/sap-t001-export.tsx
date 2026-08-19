@@ -91,8 +91,9 @@ async function buildRows(trips: any[]) {
   return trips.map((t) => {
     const segs = segsByTrip[t.id] ?? [];
     const extraRoutes = segs.map((s) => String(s.route ?? "").trim()).filter(Boolean);
-    const joinedRoutes = extraRoutes.join(", ");
-    const operationShortText = joinedRoutes.slice(0, 40);
+    const normalizedExtraRoutes = extraRoutes.map((r) => r.replace(/من|إلى|الي|الى/g, "-"));
+    const joinedRoutes = normalizedExtraRoutes.join(", ");
+    const operationShortText = (joinedRoutes || String(t.route_start ?? "").trim()).slice(0, 40);
     const km = t.end_odometer != null && t.start_odometer != null ? t.end_odometer - t.start_odometer : "";
     return [
       "T001", // Order Type

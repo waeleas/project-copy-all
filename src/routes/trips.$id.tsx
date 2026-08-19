@@ -102,7 +102,9 @@ function TripDetail() {
 
   async function closeTrip(e: FormEvent) {
     e.preventDefault();
+    if ((segments?.length ?? 0) < 1) return toast.error("يجب إضافة مسار إضافي واحد على الأقل قبل إنهاء الرحلة");
     if (!endPhoto) return toast.error("يجب تصوير العداد عند نهاية الرحلة");
+
     const endVal = parseInt(endKm, 10);
     if (isNaN(endVal)) return toast.error("أدخل قراءة العداد");
     if (endVal <= lastOdometer) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");

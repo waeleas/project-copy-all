@@ -736,6 +736,7 @@ function SegmentsCard({
       if (error) throw error;
       toast.success("تم إضافة المسار");
       setRoute("");
+      onWarningDismiss?.();
       onChanged();
     } catch (err: any) {
       toast.error(arabicError(err, "فشل"));

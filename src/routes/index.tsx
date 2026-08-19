@@ -408,21 +408,21 @@ function TripsList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:flex sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold">الرحلات</h1>
-          <p className="text-sm text-muted-foreground">جميع رحلات خدمة ما بعد البيع</p>
+          <p className="text-sm text-muted-foreground truncate">جميع رحلات خدمة ما بعد البيع</p>
         </div>
-        <div className="flex items-center gap-2">
+        <Link to="/trips/new" className="shrink-0 sm:order-last">
+          <Button size="sm"><Plus className="size-4 ml-1" /> رحلة جديدة</Button>
+        </Link>
+        <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-auto sm:flex-nowrap">
           <SapOrdersImport onDone={() => refetch()} />
           <SapT001Export trips={filtered} />
-
           <Button variant="outline" size="sm" onClick={exportExcel}><Download className="size-4 ml-1" /> Excel</Button>
-          <Link to="/trips/new">
-            <Button><Plus className="size-4 ml-1" /> رحلة جديدة</Button>
-          </Link>
         </div>
       </div>
+
 
       <Card>
         <CardContent className="py-3 space-y-2">

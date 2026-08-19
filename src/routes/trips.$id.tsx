@@ -102,7 +102,9 @@ function TripDetail() {
 
   async function closeTrip(e: FormEvent) {
     e.preventDefault();
+    if ((segments?.length ?? 0) < 1) return toast.error("يجب إضافة مسار إضافي واحد على الأقل قبل إنهاء الرحلة");
     if (!endPhoto) return toast.error("يجب تصوير العداد عند نهاية الرحلة");
+
     const endVal = parseInt(endKm, 10);
     if (isNaN(endVal)) return toast.error("أدخل قراءة العداد");
     if (endVal <= lastOdometer) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
@@ -274,6 +276,10 @@ function TripDetail() {
           <CardHeader><CardTitle className="text-base">إنهاء الرحلة</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={closeTrip} className="space-y-3">
+              {(segments?.length ?? 0) < 1 && (
+                <p className="text-xs text-destructive">يجب إضافة مسار إضافي واحد على الأقل قبل إنهاء الرحلة</p>
+              )}
+
               <div className="space-y-1.5">
                 <Label>قراءة العداد عند النهاية (كم)</Label>
                 <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value))} dir="ltr" />

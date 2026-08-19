@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowRight, CheckCircle2, Clock, Gauge, Loader2, Building2, User, Wrench, MapPin, Car, Hash, Trash2, Timer, Mail, Pencil } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, Gauge, Loader2, Building2, User, Wrench, MapPin, Car, Hash, Trash2, Timer, Mail, Pencil, AlertTriangle } from "lucide-react";
 import { formatDuration, tripDurationMs } from "@/lib/duration";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useIsViewer } from "@/hooks/use-is-viewer";

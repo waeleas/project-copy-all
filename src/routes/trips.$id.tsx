@@ -777,13 +777,21 @@ function SegmentsCard({
   if (!canManage && segments.length === 0) return null;
 
   return (
-    <Card>
+    <Card className={warning ? "ring-2 ring-warning ring-offset-1 ring-offset-background transition-shadow" : undefined}>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <MapPin className="size-4" /> مسارات إضافية ({segments.length})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {warning && (
+          <div className="rounded-md bg-warning/10 border border-warning p-3 flex items-start gap-2 animate-pulse">
+            <AlertTriangle className="size-5 text-warning shrink-0 mt-0.5" />
+            <div className="text-sm text-warning-foreground">
+              يجب إضافة مسار إضافي واحد على الأقل قبل إنهاء الرحلة.
+            </div>
+          </div>
+        )}
         {segments.map((s, idx) => (
           <div key={s.id} className="flex items-start justify-between gap-2 border rounded-md p-3 bg-muted/30">
             {editingId === s.id ? (

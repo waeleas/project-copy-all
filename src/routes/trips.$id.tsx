@@ -276,6 +276,10 @@ function TripDetail() {
           <CardHeader><CardTitle className="text-base">إنهاء الرحلة</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={closeTrip} className="space-y-3">
+              {(segments?.length ?? 0) < 1 && (
+                <p className="text-xs text-destructive">يجب إضافة مسار إضافي واحد على الأقل قبل إنهاء الرحلة</p>
+              )}
+
               <div className="space-y-1.5">
                 <Label>قراءة العداد عند النهاية (كم)</Label>
                 <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value))} dir="ltr" />

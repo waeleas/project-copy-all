@@ -104,7 +104,14 @@ function TripDetail() {
 
   async function closeTrip(e: FormEvent) {
     e.preventDefault();
-    if ((segments?.length ?? 0) < 1) return toast.error("يجب إضافة مسار إضافي واحد على الأقل قبل إنهاء الرحلة");
+    if ((segments?.length ?? 0) < 1) {
+      setSegmentsWarning(true);
+      setTimeout(() => {
+        segmentsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
+      return;
+    }
+    setSegmentsWarning(false);
     if (!endPhoto) return toast.error("يجب تصوير العداد عند نهاية الرحلة");
 
     const endVal = parseInt(endKm, 10);

@@ -83,6 +83,8 @@ function TripDetail() {
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [segmentsWarning, setSegmentsWarning] = useState(false);
+  const segmentsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (trip?.status !== "open") return;
     const t = setInterval(() => setNow(Date.now()), 1000);

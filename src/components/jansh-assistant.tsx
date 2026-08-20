@@ -453,6 +453,19 @@ export function JanshAssistant() {
                 size="icon-sm"
                 variant="ghost"
                 className="text-primary-foreground hover:bg-primary-foreground/15"
+                aria-label={autoSpeak ? "إيقاف القراءة التلقائية" : "تشغيل القراءة التلقائية"}
+                title={autoSpeak ? "القراءة التلقائية شغالة" : "القراءة التلقائية متوقفة"}
+                onClick={() => {
+                  if (autoSpeak) stopSpeaking();
+                  setAutoSpeak((v) => !v);
+                }}
+              >
+                {autoSpeak ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="text-primary-foreground hover:bg-primary-foreground/15"
                 aria-label="محادثة جديدة"
                 onClick={clearChat}
               >

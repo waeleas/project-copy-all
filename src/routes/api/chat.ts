@@ -87,7 +87,18 @@ export const Route = createFileRoute("/api/chat")({
 
         return result.toUIMessageStreamResponse({
           originalMessages: body.messages as UIMessage[],
+          onError: (error) => {
+            const status = (error as { statusCode?: number } | undefined)?.statusCode;
+            if (status === 402) {
+              return "يا ريس، رصيد المساعد الذكي خلص دلوقتي. بلّغ الإدارة تشحن الرصيد وهرجع أشتغل على طول.";
+            }
+            if (status === 429) {
+              return "في ضغط على المساعد دلوقتي، استنى شوية وجرب تاني.";
+            }
+            return "حصل خطأ مؤقت في المساعد، جرّب تبعت رسالتك تاني.";
+          },
         });
+
       },
     },
   },

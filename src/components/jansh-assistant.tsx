@@ -380,6 +380,22 @@ export function JanshAssistant() {
     }
   }
 
+  /* ===== تشغيل الصوت تلقائيًا بعد ما جنش يخلص كلامه ===== */
+  const speakRef = useRef(speak);
+  speakRef.current = speak;
+  const lastSpokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!autoSpeak || status !== "ready") return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return;
+    if (lastSpokenRef.current === last.id) return;
+    const body = textOf(last as UIMessage).trim();
+    if (!body) return;
+    lastSpokenRef.current = last.id;
+    speakRef.current(last.id, body);
+  }, [messages, status, autoSpeak]);
+
   async function clearChat() {
     setMessages([]);
     setInitial([]);

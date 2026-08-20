@@ -69,6 +69,7 @@ export function JanshAssistant() {
   const [image, setImage] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [autoSpeak, setAutoSpeak] = useState(true);
   const [ready, setReady] = useState(false);
   const [initial, setInitial] = useState<UIMessage[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);

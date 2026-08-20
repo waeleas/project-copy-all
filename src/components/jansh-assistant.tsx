@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useQuery } from "@tanstack/react-query";
-import { X, RotateCcw, ImagePlus, Camera, Mic, MicOff, Volume2, Square, GripVertical } from "lucide-react";
+import { X, RotateCcw, ImagePlus, Camera, Mic, MicOff, Volume2, VolumeX, Square, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,7 @@ export function JanshAssistant() {
   const [image, setImage] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [autoSpeak, setAutoSpeak] = useState(true);
   const [ready, setReady] = useState(false);
   const [initial, setInitial] = useState<UIMessage[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -380,6 +381,22 @@ export function JanshAssistant() {
     }
   }
 
+  /* ===== تشغيل الصوت تلقائيًا بعد ما جنش يخلص كلامه ===== */
+  const speakRef = useRef(speak);
+  speakRef.current = speak;
+  const lastSpokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!autoSpeak || status !== "ready") return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return;
+    if (lastSpokenRef.current === last.id) return;
+    const body = textOf(last as UIMessage).trim();
+    if (!body) return;
+    lastSpokenRef.current = last.id;
+    speakRef.current(last.id, body);
+  }, [messages, status, autoSpeak]);
+
   async function clearChat() {
     setMessages([]);
     setInitial([]);
@@ -432,6 +449,19 @@ export function JanshAssistant() {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="text-primary-foreground hover:bg-primary-foreground/15"
+                aria-label={autoSpeak ? "إيقاف القراءة التلقائية" : "تشغيل القراءة التلقائية"}
+                title={autoSpeak ? "القراءة التلقائية شغالة" : "القراءة التلقائية متوقفة"}
+                onClick={() => {
+                  if (autoSpeak) stopSpeaking();
+                  setAutoSpeak((v) => !v);
+                }}
+              >
+                {autoSpeak ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+              </Button>
               <Button
                 size="icon-sm"
                 variant="ghost"

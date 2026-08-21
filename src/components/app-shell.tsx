@@ -10,7 +10,6 @@ import { Car, ListChecks, Plus, Settings, LogOut, Loader2, User, Mail, BarChart3
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NetworkBanner } from "@/components/network-banner";
-import { JanshAssistant } from "@/components/jansh-assistant";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();

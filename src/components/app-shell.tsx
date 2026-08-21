@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="max-w-5xl mx-auto px-4 py-5 pb-24">{children}</main>
 
-      <JanshAssistant />
+
 
 
       <nav className="fixed bottom-0 inset-x-0 bg-card border-t z-30">

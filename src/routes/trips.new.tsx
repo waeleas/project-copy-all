@@ -666,8 +666,8 @@ function NewTrip() {
         </CardContent>
       </Card>
 
-      <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
-        {loading && <Loader2 className="ml-2 size-4 animate-spin" />} {loading ? (submitStep || "جارٍ إنشاء الرحلة...") : "بدء الرحلة"}
+      <Button type="submit" className="w-full h-14 text-lg font-bold rounded-2xl shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all" disabled={loading}>
+        {loading && <Loader2 className="ml-2 size-5 animate-spin" />} {loading ? (submitStep || "جارٍ إنشاء الرحلة...") : "بدء الرحلة"}
       </Button>
     </form>
   );

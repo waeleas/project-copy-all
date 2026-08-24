@@ -322,7 +322,7 @@ function ReportsPage() {
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-sm text-muted-foreground">الفرق</div>
-                <div className={`text-xl font-bold ${totalDiffKm > 0 ? "text-destructive" : "text-muted-foreground"}`}>{fmt(totalDiffKm)} كم</div>
+                <div className={`text-3xl font-bold ${totalDiffKm > 0 ? "text-destructive" : "text-muted-foreground"}`}>{fmt(totalDiffKm)} كم</div>
               </CardContent>
             </Card>
           </div>
@@ -404,7 +404,7 @@ function ReportsPage() {
                           <td className="p-2 font-bold text-primary">{fmt(r.car_span_km ?? 0)}</td>
                           <td className="p-2">{fmt(r.car_total_km)}</td>
                           <td className="p-2 font-bold">{fmt(r.drivers_total_km)}</td>
-                          <td className={`p-2 font-bold ${r.diff_km !== 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                          <td className={`p-2 text-lg font-bold ${r.diff_km !== 0 ? "text-destructive" : "text-muted-foreground"}`}>
                             {fmt(r.diff_km)}
                           </td>
 

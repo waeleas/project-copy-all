@@ -1019,15 +1019,17 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
           {pickError}
         </div>
       )}
-      <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
+      <div className={`grid grid-cols-2 gap-3 ${invalid ? "rounded-xl ring-2 ring-destructive ring-offset-2 ring-offset-background p-2" : ""}`}>
         <CameraCapture onCapture={(f) => handle(f)} />
         {/* زر واحد يفتح المعرض مباشرة — بدون تكرار فتح المنتقي */}
         <label
           htmlFor={galleryId}
-          className="h-auto min-h-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center gap-1 text-sm cursor-pointer hover:bg-accent/30 active:bg-accent/50 select-none"
+          className="h-auto min-h-28 border-2 border-dashed border-muted-foreground/30 rounded-xl flex flex-col items-center justify-center gap-2 text-sm cursor-pointer bg-muted/20 hover:bg-primary/5 hover:border-primary/40 active:bg-primary/10 transition-all select-none"
         >
-          <span className="text-xl">🖼️</span>
-          <span>من المعرض</span>
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <ImageIcon className="size-5 text-primary" />
+          </div>
+          <span className="font-semibold text-foreground">من المعرض</span>
         </label>
         <input
           id={galleryId}
@@ -1043,7 +1045,7 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         {/* بديل: بدون تقييد النوع — يعمل حتى لو مُنع إذن الصور */}
         <label
           htmlFor={anyFileId}
-          className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-2"
+          className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-2 hover:text-primary transition-colors"
         >
           لم يفتح المعرض؟ اختر ملفاً من الجهاز
         </label>

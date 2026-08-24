@@ -424,9 +424,16 @@ function NewTrip() {
       )}
 
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">بيانات الرحلة</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
+      <Card className="rounded-2xl border-l-4 border-l-blue-500 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <ClipboardListIcon className="size-4 text-blue-500" />
+            </div>
+            بيانات الرحلة
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {form.car_type === "rental" && (
             <Field label="المكتب (مطلوب)" invalid={errors.office_id}>
               <LookupSelect items={offices.data} value={form.office_id} onChange={(v) => set("office_id", v)} placeholder="اختر المكتب" />

@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, MapPin, Gauge, Car as CarIcon, ClipboardList as ClipboardListIcon, User as UserIcon } from "lucide-react";
+import { Loader2, MapPin, Gauge, Car as CarIcon, ClipboardList as ClipboardListIcon, User as UserIcon, Image as ImageIcon } from "lucide-react";
 import { MAX_ODOMETER_PHOTO_BYTES, makeThumbnail, uploadOdometerPhoto } from "@/lib/storage";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";

@@ -477,9 +477,14 @@ function NewTrip() {
             <Field label="السائق (رقم الساب)" invalid={errors.driver_id}>
               <SapSelect items={drivers.data?.filter((d) => d.type !== "rental")} value={form.driver_id} onChange={(v) => set("driver_id", v)} placeholder="اختر رقم الساب" />
               {selectedDriver && (
-                <div className="mt-2 p-2 rounded-md bg-primary/10 border border-primary/30">
-                  <div className="text-xs text-muted-foreground">الاسم</div>
-                  <div className="text-lg font-bold text-primary">{selectedDriver.name}</div>
+                <div className="mt-2 p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <UserIcon className="size-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">الاسم</div>
+                    <div className="text-lg font-bold text-primary">{selectedDriver.name}</div>
+                  </div>
                 </div>
               )}
             </Field>

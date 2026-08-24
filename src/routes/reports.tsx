@@ -322,7 +322,7 @@ function ReportsPage() {
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-sm text-muted-foreground">الفرق</div>
-                <div className={`text-xl font-bold ${totalDiffKm > 0 ? "text-destructive" : "text-muted-foreground"}`}>{fmt(totalDiffKm)} كم</div>
+                <div className={`text-3xl font-bold ${totalDiffKm > 0 ? "text-destructive" : "text-muted-foreground"}`}>{fmt(totalDiffKm)} كم</div>
               </CardContent>
             </Card>
           </div>

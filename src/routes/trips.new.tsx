@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, MapPin, Gauge } from "lucide-react";
+import { Loader2, MapPin, Gauge, Car as CarIcon, ClipboardList as ClipboardListIcon, User as UserIcon, Image as ImageIcon } from "lucide-react";
 import { MAX_ODOMETER_PHOTO_BYTES, makeThumbnail, uploadOdometerPhoto } from "@/lib/storage";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";
@@ -385,24 +385,38 @@ function NewTrip() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">رحلة جديدة</h1>
-        <p className="text-sm text-muted-foreground">سجّل بداية خط السير وصورة العداد</p>
+    <form onSubmit={handleSubmit} className="space-y-5 max-w-3xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">رحلة جديدة</h1>
+          <p className="text-sm text-muted-foreground mt-1">سجّل بداية خط السير وصورة العداد</p>
+        </div>
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-lg shadow-sm">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <Gauge className="size-5" />
+          <span>طلب جديد</span>
+        </div>
       </div>
 
       {canSeeRentals && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">نوع السيارة</CardTitle></CardHeader>
+        <Card className="rounded-2xl border-l-4 border-l-primary shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <CarIcon className="size-4 text-primary" />
+              </div>
+              نوع السيارة
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <RadioGroup value={form.car_type} onValueChange={(v) => set("car_type", v)} className="grid grid-cols-2 gap-3">
-              <label className={`border-2 rounded-lg p-3 cursor-pointer flex items-center gap-2 ${form.car_type === "company" ? "border-primary bg-primary/5" : "border-border"}`}>
+              <label className={`border-2 rounded-xl p-4 cursor-pointer flex items-center gap-2 transition-all ${form.car_type === "company" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:bg-muted/30"}`}>
                 <RadioGroupItem value="company" />
-                <span className="font-medium">سيارة شركة</span>
+                <span className="font-semibold">سيارة شركة</span>
               </label>
-              <label className={`border-2 rounded-lg p-3 cursor-pointer flex items-center gap-2 ${form.car_type === "rental" ? "border-primary bg-primary/5" : "border-border"}`}>
+              <label className={`border-2 rounded-xl p-4 cursor-pointer flex items-center gap-2 transition-all ${form.car_type === "rental" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:bg-muted/30"}`}>
                 <RadioGroupItem value="rental" />
-                <span className="font-medium">سيارات إيجار</span>
+                <span className="font-semibold">سيارات إيجار</span>
               </label>
             </RadioGroup>
           </CardContent>
@@ -410,9 +424,16 @@ function NewTrip() {
       )}
 
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">بيانات الرحلة</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
+      <Card className="rounded-2xl border-l-4 border-l-blue-500 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <ClipboardListIcon className="size-4 text-blue-500" />
+            </div>
+            بيانات الرحلة
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {form.car_type === "rental" && (
             <Field label="المكتب (مطلوب)" invalid={errors.office_id}>
               <LookupSelect items={offices.data} value={form.office_id} onChange={(v) => set("office_id", v)} placeholder="اختر المكتب" />
@@ -440,9 +461,14 @@ function NewTrip() {
               <SapSelect items={technicians.data} value={form.technician_id} onChange={(v) => set("technician_id", v)} placeholder="اختر رقم الساب أو اكتب: لا يوجد" allowNone noneLabel="لا يوجد متلقى خدمة أو فنى" />
 
               {selectedTech && (
-                <div className="mt-2 p-2 rounded-md bg-primary/10 border border-primary/30">
-                  <div className="text-xs text-muted-foreground">الاسم</div>
-                  <div className="text-lg font-bold text-primary">{selectedTech.name}</div>
+                <div className="mt-2 p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <UserIcon className="size-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">الاسم</div>
+                    <div className="text-lg font-bold text-primary">{selectedTech.name}</div>
+                  </div>
                 </div>
               )}
             </Field>
@@ -451,9 +477,14 @@ function NewTrip() {
             <Field label="السائق (رقم الساب)" invalid={errors.driver_id}>
               <SapSelect items={drivers.data?.filter((d) => d.type !== "rental")} value={form.driver_id} onChange={(v) => set("driver_id", v)} placeholder="اختر رقم الساب" />
               {selectedDriver && (
-                <div className="mt-2 p-2 rounded-md bg-primary/10 border border-primary/30">
-                  <div className="text-xs text-muted-foreground">الاسم</div>
-                  <div className="text-lg font-bold text-primary">{selectedDriver.name}</div>
+                <div className="mt-2 p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <UserIcon className="size-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">الاسم</div>
+                    <div className="text-lg font-bold text-primary">{selectedDriver.name}</div>
+                  </div>
                 </div>
               )}
             </Field>
@@ -601,9 +632,16 @@ function NewTrip() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="size-4" /> بداية خط السير</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
+      <Card className="rounded-2xl border-l-4 border-l-emerald-500 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <MapPin className="size-4 text-emerald-500" />
+            </div>
+            بداية خط السير
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <Field label="بداية خط السير" invalid={errors.route_start}>
             <Textarea ref={routeStartRef} value={form.route_start} maxLength={40} onChange={(e) => set("route_start", e.target.value.slice(0, 40))} placeholder="مثال: من مكتب المنصورة إلى العميل..." rows={2} />
             <div className="text-xs text-muted-foreground text-left">{form.route_start.length}/40</div>
@@ -638,8 +676,8 @@ function NewTrip() {
         </CardContent>
       </Card>
 
-      <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
-        {loading && <Loader2 className="ml-2 size-4 animate-spin" />} {loading ? (submitStep || "جارٍ إنشاء الرحلة...") : "بدء الرحلة"}
+      <Button type="submit" className="w-full h-14 text-lg font-bold rounded-2xl shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all" disabled={loading}>
+        {loading && <Loader2 className="ml-2 size-5 animate-spin" />} {loading ? (submitStep || "جارٍ إنشاء الرحلة...") : "بدء الرحلة"}
       </Button>
     </form>
   );
@@ -647,9 +685,9 @@ function NewTrip() {
 
 function Field({ label, children, invalid }: { label: string; children: React.ReactNode; invalid?: boolean }) {
   return (
-    <div className="space-y-1.5" data-invalid={invalid ? "true" : undefined}>
-      <Label className={invalid ? "text-destructive" : undefined}>{label}</Label>
-      <div className={invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background" : undefined}>
+    <div className="space-y-2" data-invalid={invalid ? "true" : undefined}>
+      <Label className={`text-sm font-semibold ${invalid ? "text-destructive" : "text-foreground"}`}>{label}</Label>
+      <div className={invalid ? "rounded-xl ring-2 ring-destructive ring-offset-2 ring-offset-background" : undefined}>
         {children}
       </div>
     </div>
@@ -981,15 +1019,17 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
           {pickError}
         </div>
       )}
-      <div className={`grid grid-cols-2 gap-2 ${invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background p-1" : ""}`}>
+      <div className={`grid grid-cols-2 gap-3 ${invalid ? "rounded-xl ring-2 ring-destructive ring-offset-2 ring-offset-background p-2" : ""}`}>
         <CameraCapture onCapture={(f) => handle(f)} />
         {/* زر واحد يفتح المعرض مباشرة — بدون تكرار فتح المنتقي */}
         <label
           htmlFor={galleryId}
-          className="h-auto min-h-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center gap-1 text-sm cursor-pointer hover:bg-accent/30 active:bg-accent/50 select-none"
+          className="h-auto min-h-28 border-2 border-dashed border-muted-foreground/30 rounded-xl flex flex-col items-center justify-center gap-2 text-sm cursor-pointer bg-muted/20 hover:bg-primary/5 hover:border-primary/40 active:bg-primary/10 transition-all select-none"
         >
-          <span className="text-xl">🖼️</span>
-          <span>من المعرض</span>
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <ImageIcon className="size-5 text-primary" />
+          </div>
+          <span className="font-semibold text-foreground">من المعرض</span>
         </label>
         <input
           id={galleryId}
@@ -1005,7 +1045,7 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
         {/* بديل: بدون تقييد النوع — يعمل حتى لو مُنع إذن الصور */}
         <label
           htmlFor={anyFileId}
-          className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-2"
+          className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-2 hover:text-primary transition-colors"
         >
           لم يفتح المعرض؟ اختر ملفاً من الجهاز
         </label>

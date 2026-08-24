@@ -622,9 +622,16 @@ function NewTrip() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="size-4" /> بداية خط السير</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
+      <Card className="rounded-2xl border-l-4 border-l-emerald-500 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <MapPin className="size-4 text-emerald-500" />
+            </div>
+            بداية خط السير
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <Field label="بداية خط السير" invalid={errors.route_start}>
             <Textarea ref={routeStartRef} value={form.route_start} maxLength={40} onChange={(e) => set("route_start", e.target.value.slice(0, 40))} placeholder="مثال: من مكتب المنصورة إلى العميل..." rows={2} />
             <div className="text-xs text-muted-foreground text-left">{form.route_start.length}/40</div>

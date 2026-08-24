@@ -385,10 +385,17 @@ function NewTrip() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">رحلة جديدة</h1>
-        <p className="text-sm text-muted-foreground">سجّل بداية خط السير وصورة العداد</p>
+    <form onSubmit={handleSubmit} className="space-y-5 max-w-3xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">رحلة جديدة</h1>
+          <p className="text-sm text-muted-foreground mt-1">سجّل بداية خط السير وصورة العداد</p>
+        </div>
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-lg shadow-sm">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <Gauge className="size-5" />
+          <span>طلب جديد</span>
+        </div>
       </div>
 
       {canSeeRentals && (

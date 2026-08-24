@@ -399,17 +399,24 @@ function NewTrip() {
       </div>
 
       {canSeeRentals && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">نوع السيارة</CardTitle></CardHeader>
+        <Card className="rounded-2xl border-l-4 border-l-primary shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <CarIcon className="size-4 text-primary" />
+              </div>
+              نوع السيارة
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <RadioGroup value={form.car_type} onValueChange={(v) => set("car_type", v)} className="grid grid-cols-2 gap-3">
-              <label className={`border-2 rounded-lg p-3 cursor-pointer flex items-center gap-2 ${form.car_type === "company" ? "border-primary bg-primary/5" : "border-border"}`}>
+              <label className={`border-2 rounded-xl p-4 cursor-pointer flex items-center gap-2 transition-all ${form.car_type === "company" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:bg-muted/30"}`}>
                 <RadioGroupItem value="company" />
-                <span className="font-medium">سيارة شركة</span>
+                <span className="font-semibold">سيارة شركة</span>
               </label>
-              <label className={`border-2 rounded-lg p-3 cursor-pointer flex items-center gap-2 ${form.car_type === "rental" ? "border-primary bg-primary/5" : "border-border"}`}>
+              <label className={`border-2 rounded-xl p-4 cursor-pointer flex items-center gap-2 transition-all ${form.car_type === "rental" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:bg-muted/30"}`}>
                 <RadioGroupItem value="rental" />
-                <span className="font-medium">سيارات إيجار</span>
+                <span className="font-semibold">سيارات إيجار</span>
               </label>
             </RadioGroup>
           </CardContent>

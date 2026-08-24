@@ -461,9 +461,14 @@ function NewTrip() {
               <SapSelect items={technicians.data} value={form.technician_id} onChange={(v) => set("technician_id", v)} placeholder="اختر رقم الساب أو اكتب: لا يوجد" allowNone noneLabel="لا يوجد متلقى خدمة أو فنى" />
 
               {selectedTech && (
-                <div className="mt-2 p-2 rounded-md bg-primary/10 border border-primary/30">
-                  <div className="text-xs text-muted-foreground">الاسم</div>
-                  <div className="text-lg font-bold text-primary">{selectedTech.name}</div>
+                <div className="mt-2 p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <UserIcon className="size-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">الاسم</div>
+                    <div className="text-lg font-bold text-primary">{selectedTech.name}</div>
+                  </div>
                 </div>
               )}
             </Field>

@@ -685,9 +685,9 @@ function NewTrip() {
 
 function Field({ label, children, invalid }: { label: string; children: React.ReactNode; invalid?: boolean }) {
   return (
-    <div className="space-y-1.5" data-invalid={invalid ? "true" : undefined}>
-      <Label className={invalid ? "text-destructive" : undefined}>{label}</Label>
-      <div className={invalid ? "rounded-md ring-2 ring-destructive ring-offset-1 ring-offset-background" : undefined}>
+    <div className="space-y-2" data-invalid={invalid ? "true" : undefined}>
+      <Label className={`text-sm font-semibold ${invalid ? "text-destructive" : "text-foreground"}`}>{label}</Label>
+      <div className={invalid ? "rounded-xl ring-2 ring-destructive ring-offset-2 ring-offset-background" : undefined}>
         {children}
       </div>
     </div>

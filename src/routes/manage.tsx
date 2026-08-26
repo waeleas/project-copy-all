@@ -823,12 +823,21 @@ function CarsManager() {
     toast.success("تم الحذف");
   }
 
+  async function toggleBrokenOdometer(c: any) {
+    const next = !c.odometer_broken;
+    const { error } = await supabase.from("cars" as any).update({ odometer_broken: next }).eq("id", c.id);
+    if (error) return toast.error(arabicError(error));
+    qc.invalidateQueries({ queryKey: ["cars"] });
+    toast.success(next ? `تم تعليم السيارة ${c.code ?? c.plate} — عداد تالف` : "تم إلغاء تعليم العداد التالف");
+  }
+
   async function saveEdit() {
     if (!editing) return;
     const payload: any = {
       plate: (editing.plate ?? "").trim() || null,
       description: (editing.description ?? "").trim() || null,
       acty_type: (editing.acty_type ?? "").trim() || null,
+      odometer_broken: !!editing.odometer_broken,
     };
     if (editing.type === "company") {
       payload.code = (editing.code ?? "").trim() || null;
@@ -983,6 +992,14 @@ function CarsManager() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    size="sm"
+                    variant={c.odometer_broken ? "destructive" : "outline"}
+                    onClick={() => toggleBrokenOdometer(c)}
+                    title="تعليم السيارة: عداد تالف"
+                  >
+                    {c.odometer_broken ? "🟠 عداد تالف" : "عداد تالف"}
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => setEditing({ ...c })}>تعديل</Button>
                   <Button size="sm" variant="ghost" onClick={() => remove(c.id)}>
                     <Trash2 className="size-4 text-destructive" />
@@ -1000,6 +1017,10 @@ function CarsManager() {
                   <Input placeholder="وصف السيارة" value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
                   <Label className="text-xs">Acty type</Label>
                   <Input placeholder="Acty type" value={editing.acty_type ?? ""} onChange={(e) => setEditing({ ...editing, acty_type: e.target.value })} dir="ltr" />
+                  <label className="flex items-center gap-2 text-sm font-semibold text-orange-600 cursor-pointer">
+                    <input type="checkbox" className="size-4 accent-orange-500" checked={!!editing.odometer_broken} onChange={(e) => setEditing({ ...editing, odometer_broken: e.target.checked })} />
+                    عداد هذه السيارة تالف
+                  </label>
                   {editing.type === "company" ? (
                     <>
                       <Label className="text-xs">كود السيارة</Label>

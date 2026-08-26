@@ -183,6 +183,11 @@ function TripDetail() {
           ) : (
             <Badge className="bg-success text-success-foreground"><CheckCircle2 className="size-3 ml-1" /> مكتملة</Badge>
           )}
+          {trip.odometer_broken && (
+            <Badge className="bg-orange-500 text-white">
+              🟠 عداد تالف{trip.odometer_review === "approved" ? " — تمت المراجعة" : " — بانتظار المراجعة"}
+            </Badge>
+          )}
           {canEdit && (
             <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil className="size-4 ml-1" /> تعديل

@@ -523,16 +523,11 @@ function TripsList() {
                       <b>{t.car_plate ?? "—"}</b>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {t.status === "open" ? (
-                      <Badge className="bg-warning text-warning-foreground"><Clock className="size-3 ml-1" /> مفتوحة</Badge>
-                    ) : (
-                      <Badge className="bg-success text-success-foreground"><CheckCircle2 className="size-3 ml-1" /> مكتملة</Badge>
-                    )}
-                    {t.odometer_broken && (
-                      <Badge className="bg-orange-500 text-white">🟠 عداد تالف{t.odometer_review === "approved" ? "" : " — بانتظار المراجعة"}</Badge>
-                    )}
-                  </div>
+                  {t.status === "open" ? (
+                    <Badge className="bg-warning text-warning-foreground"><Clock className="size-3 ml-1" /> مفتوحة</Badge>
+                  ) : (
+                    <Badge className="bg-success text-success-foreground"><CheckCircle2 className="size-3 ml-1" /> مكتملة</Badge>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div><span className="text-muted-foreground">السائق: </span>{t.driver?.name ?? t.driver_name ?? t.driver_name_rental ?? "—"}</div>

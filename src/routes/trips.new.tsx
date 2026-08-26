@@ -94,20 +94,6 @@ function NewTrip() {
   const [loading, setLoading] = useState(false);
   const [submitStep, setSubmitStep] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
-  const [odometerBroken, setOdometerBroken] = useState(false);
-  const [estimatedKm, setEstimatedKm] = useState("");
-  const [odometerNote, setOdometerNote] = useState("");
-
-  // السيارة المختارة حالياً (شركة أو إيجار)
-  const selectedCar = form.car_type === "rental"
-    ? cars.data?.find((c) => c.type === "rental" && (c.handheld_code === form.handheld_code || c.plate === form.car_plate))
-    : cars.data?.find((c) => c.code === toEnglishDigits(form.car_code).trim());
-  const carMarkedBroken = !!selectedCar?.odometer_broken;
-
-  // لو السيارة معلّمة "عداد تالف" في الإدارة، فعّل الخيار تلقائياً
-  useEffect(() => {
-    if (carMarkedBroken) setOdometerBroken(true);
-  }, [carMarkedBroken]);
 
   const handheldRef = useRef<HTMLInputElement | null>(null);
   const routeStartRef = useRef<HTMLTextAreaElement | null>(null);
@@ -214,17 +200,7 @@ function NewTrip() {
     if (form.car_type === "company" && !normalizedCarCode) addMiss("car_code", "كود السيارة");
     if (form.car_type === "rental" && !form.car_plate.trim()) addMiss("car_plate", "رقم لوحة السيارة");
     if (!normalizedRouteStart) addMiss("route_start", "بداية خط السير");
-    if (!odometerBroken && !normalizedStartOdometer) addMiss("start_odometer", "قراءة العداد");
-    if (odometerBroken) {
-      const est = parseInt(toEnglishDigits(estimatedKm).trim(), 10);
-      if (!estimatedKm.trim() || isNaN(est) || est <= 0) addMiss("estimated_km", "المسافة التقديرية");
-      else if (est > 1000) {
-        setErrors({ ...errs, estimated_km: true });
-        toast.error("المسافة التقديرية: لا يمكن أن تتجاوز 1000 كم", { duration: 6000 });
-        return;
-      }
-      if (!odometerNote.trim()) addMiss("odometer_note", "سبب عطل العداد / ملاحظة");
-    }
+    if (!normalizedStartOdometer) addMiss("start_odometer", "قراءة العداد");
     if (!photo) addMiss("photo", "صورة العداد");
 
     if (normalizedRouteStart.length > 40) {
@@ -235,7 +211,7 @@ function NewTrip() {
       }, 0);
       return;
     }
-    if (!odometerBroken && normalizedStartOdometer && (isNaN(parseInt(normalizedStartOdometer, 10)) || parseInt(normalizedStartOdometer, 10) < 0)) {
+    if (normalizedStartOdometer && (isNaN(parseInt(normalizedStartOdometer, 10)) || parseInt(normalizedStartOdometer, 10) < 0)) {
       setErrors({ ...errs, start_odometer: true });
       toast.error("قراءة العداد: يجب أن تكون رقماً صحيحاً موجباً", { duration: 6000 });
       return;
@@ -332,13 +308,7 @@ function NewTrip() {
         governorate_id: form.governorate_id || null,
         governorate_name: governorates.data?.find((g) => g.id === form.governorate_id)?.name ?? null,
         route_start: normalizedRouteStart,
-        start_odometer: odometerBroken
-          ? (normalizedStartOdometer ? parseInt(normalizedStartOdometer, 10) : (lastReading.data?.reading ?? 0))
-          : parseInt(normalizedStartOdometer, 10),
-        odometer_broken: odometerBroken,
-        estimated_km: odometerBroken ? parseInt(toEnglishDigits(estimatedKm).trim(), 10) : null,
-        odometer_note: odometerBroken ? odometerNote.trim() : null,
-        odometer_review: odometerBroken ? "pending" : "none",
+        start_odometer: parseInt(normalizedStartOdometer, 10),
         start_photo_url: path,
         car_code: normalizedCarCode || null,
         car_plate: form.car_plate.trim() || null,
@@ -676,33 +646,7 @@ function NewTrip() {
             <Textarea ref={routeStartRef} value={form.route_start} maxLength={40} onChange={(e) => set("route_start", e.target.value.slice(0, 40))} placeholder="مثال: من مكتب المنصورة إلى العميل..." rows={2} />
             <div className="text-xs text-muted-foreground text-left">{form.route_start.length}/40</div>
           </Field>
-          {carMarkedBroken && (
-            <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-3 text-sm font-semibold text-destructive flex items-center gap-2">
-              <Gauge className="size-5 shrink-0" />
-              عداد هذه السيارة تالف — سيتم تسجيل المسافة تقديريًا
-            </div>
-          )}
-          <label className={`flex items-center gap-3 rounded-xl border-2 p-3 cursor-pointer transition-all ${odometerBroken ? "border-orange-400 bg-orange-50 dark:bg-orange-950/30" : "border-border hover:bg-muted/30"}`}>
-            <input
-              type="checkbox"
-              checked={odometerBroken}
-              onChange={(e) => setOdometerBroken(e.target.checked)}
-              className="size-5 accent-orange-500"
-            />
-            <span className="font-semibold text-sm">العداد تالف / قراءة غير مضبوطة</span>
-          </label>
-          {odometerBroken && (
-            <div className="space-y-4 rounded-xl border border-orange-300 bg-orange-50/50 dark:bg-orange-950/20 p-3">
-              <Field label="المسافة التقديرية (كم) — إلزامي" invalid={errors.estimated_km}>
-                <Input type="text" inputMode="numeric" value={estimatedKm} onChange={(e) => setEstimatedKm(toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} placeholder="مثال: 120" dir="ltr" />
-              </Field>
-              <Field label="سبب العطل / ملاحظة — إلزامي" invalid={errors.odometer_note}>
-                <Textarea value={odometerNote} onChange={(e) => setOdometerNote(e.target.value)} rows={2} maxLength={200} placeholder="مثال: العداد لا يعمل منذ أمس..." />
-              </Field>
-              <p className="text-xs text-muted-foreground">صورة العداد تظل إلزامية كدليل على العطل. ستظهر الرحلة للأدمن بانتظار المراجعة.</p>
-            </div>
-          )}
-          <Field label={odometerBroken ? "قراءة العداد (كم) — اختياري عند تلف العداد" : "قراءة العداد (كم)"} invalid={errors.start_odometer}>
+          <Field label="قراءة العداد (كم)" invalid={errors.start_odometer}>
             <div className="relative">
               <Gauge className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input type="text" inputMode="numeric" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} className="pr-10" dir="ltr" />

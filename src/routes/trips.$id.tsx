@@ -85,11 +85,6 @@ function TripDetail() {
   const [now, setNow] = useState(Date.now());
   const [segmentsWarning, setSegmentsWarning] = useState(false);
   const segmentsRef = useRef<HTMLDivElement>(null);
-  const [reviewKm, setReviewKm] = useState("");
-  const [reviewSaving, setReviewSaving] = useState(false);
-  useEffect(() => {
-    if (trip?.estimated_km != null && !reviewKm) setReviewKm(String(trip.estimated_km));
-  }, [trip?.estimated_km]);
   useEffect(() => {
     if (trip?.status !== "open") return;
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -119,20 +114,15 @@ function TripDetail() {
     setSegmentsWarning(false);
     if (!endPhoto) return toast.error("يجب تصوير العداد عند نهاية الرحلة");
 
-    const broken = !!trip.odometer_broken;
     const endVal = parseInt(endKm, 10);
-    if (!broken) {
-      if (isNaN(endVal)) return toast.error("أدخل قراءة العداد");
-      if (endVal <= lastOdometer) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
-      if (endVal - lastOdometer > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
-    } else if (endKm.trim() && isNaN(endVal)) {
-      return toast.error("قراءة العداد يجب أن تكون رقماً صحيحاً");
-    }
+    if (isNaN(endVal)) return toast.error("أدخل قراءة العداد");
+    if (endVal <= lastOdometer) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
+    if (endVal - lastOdometer > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     setSaving(true);
     try {
       const path = await uploadOdometerPhoto(endPhoto, "end");
       const { error } = await supabase.from("trips").update({
-        end_odometer: broken ? (isNaN(endVal) ? null : endVal) : endVal,
+        end_odometer: endVal,
         end_photo_url: path,
         end_at: new Date().toISOString(),
         status: "closed",
@@ -188,11 +178,6 @@ function TripDetail() {
           ) : (
             <Badge className="bg-success text-success-foreground"><CheckCircle2 className="size-3 ml-1" /> مكتملة</Badge>
           )}
-          {trip.odometer_broken && (
-            <Badge className="bg-orange-500 text-white">
-              🟠 عداد تالف{trip.odometer_review === "approved" ? " — تمت المراجعة" : " — بانتظار المراجعة"}
-            </Badge>
-          )}
           {canEdit && (
             <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil className="size-4 ml-1" /> تعديل
@@ -222,11 +207,8 @@ function TripDetail() {
           <Info icon={MapPin} label="بداية خط السير" value={trip.route_start} full />
           <Info icon={User} label="منشئ الطلب" value={trip.created_by_name ?? trip.created_by_email} />
           <Info icon={Timer} label={trip.status === "open" ? "المدة حتى الآن" : "إجمالى مدة الرحلة"} value={formatDuration(tripDurationMs(trip, now))} full />
-          {distance != null && !trip.odometer_broken && (
+          {distance != null && (
             <Info icon={Gauge} label="فرق الكيلومتر" value={`${distance} كم`} full />
-          )}
-          {trip.odometer_broken && (
-            <Info icon={Gauge} label="مسافة تقديرية (عداد تالف)" value={`${trip.estimated_km ?? "—"} كم — ${trip.odometer_note ?? ""}`} full />
           )}
         </CardContent>
       </Card>
@@ -288,38 +270,6 @@ function TripDetail() {
         </Card>
       )}
 
-      {isAdmin && trip.odometer_broken && trip.odometer_review !== "approved" && (
-        <Card className="border-orange-400 border-2">
-          <CardHeader><CardTitle className="text-base text-orange-600">🟠 مراجعة مسافة تقديرية (عداد تالف)</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm">المسافة التقديرية المسجلة: <b>{trip.estimated_km ?? "—"} كم</b> — السبب: {trip.odometer_note ?? "—"}</p>
-            <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1">
-                <Label>تعديل المسافة قبل الاعتماد (كم)</Label>
-                <Input type="text" inputMode="numeric" value={reviewKm} onChange={(e) => setReviewKm(toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} dir="ltr" />
-              </div>
-              <Button
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-                disabled={reviewSaving}
-                onClick={async () => {
-                  const v = parseInt(reviewKm, 10);
-                  if (isNaN(v) || v <= 0) return toast.error("أدخل مسافة صحيحة قبل الاعتماد");
-                  setReviewSaving(true);
-                  const { error } = await supabase.from("trips").update({ estimated_km: v, odometer_review: "approved" } as any).eq("id", id);
-                  setReviewSaving(false);
-                  if (error) return toast.error(arabicError(error));
-                  toast.success("تم اعتماد المسافة التقديرية");
-                  qc.invalidateQueries({ queryKey: ["trip", id] });
-                  qc.invalidateQueries({ queryKey: ["trips"] });
-                }}
-              >
-                {reviewSaving && <Loader2 className="ml-2 size-4 animate-spin" />} اعتماد المسافة
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <div ref={segmentsRef}>
         <SegmentsCard
           tripId={id}
@@ -340,12 +290,9 @@ function TripDetail() {
           <CardContent>
             <form onSubmit={closeTrip} className="space-y-3">
               <div className="space-y-1.5">
-                <Label>قراءة العداد عند النهاية (كم){trip.odometer_broken ? " — اختياري (عداد تالف)" : ""}</Label>
-                <Input type="number" min={lastOdometer} required={!trip.odometer_broken} value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value))} dir="ltr" />
+                <Label>قراءة العداد عند النهاية (كم)</Label>
+                <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value))} dir="ltr" />
                 <p className="text-xs text-muted-foreground">آخر قراءة مسجلة: {lastOdometer} كم</p>
-                {trip.odometer_broken && (
-                  <p className="text-xs font-semibold text-orange-600">عداد تالف: سيتم اعتماد المسافة التقديرية ({trip.estimated_km ?? "—"} كم) — السبب: {trip.odometer_note ?? "—"}</p>
-                )}
               </div>
               <div className="space-y-1.5">
                 <Label>ملاحظات (اختياري)</Label>

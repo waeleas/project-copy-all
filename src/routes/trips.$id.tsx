@@ -217,8 +217,11 @@ function TripDetail() {
           <Info icon={MapPin} label="بداية خط السير" value={trip.route_start} full />
           <Info icon={User} label="منشئ الطلب" value={trip.created_by_name ?? trip.created_by_email} />
           <Info icon={Timer} label={trip.status === "open" ? "المدة حتى الآن" : "إجمالى مدة الرحلة"} value={formatDuration(tripDurationMs(trip, now))} full />
-          {distance != null && (
+          {distance != null && !trip.odometer_broken && (
             <Info icon={Gauge} label="فرق الكيلومتر" value={`${distance} كم`} full />
+          )}
+          {trip.odometer_broken && (
+            <Info icon={Gauge} label="مسافة تقديرية (عداد تالف)" value={`${trip.estimated_km ?? "—"} كم — ${trip.odometer_note ?? ""}`} full />
           )}
         </CardContent>
       </Card>

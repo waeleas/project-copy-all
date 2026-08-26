@@ -94,6 +94,20 @@ function NewTrip() {
   const [loading, setLoading] = useState(false);
   const [submitStep, setSubmitStep] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [odometerBroken, setOdometerBroken] = useState(false);
+  const [estimatedKm, setEstimatedKm] = useState("");
+  const [odometerNote, setOdometerNote] = useState("");
+
+  // السيارة المختارة حالياً (شركة أو إيجار)
+  const selectedCar = form.car_type === "rental"
+    ? cars.data?.find((c) => c.type === "rental" && (c.handheld_code === form.handheld_code || c.plate === form.car_plate))
+    : cars.data?.find((c) => c.code === toEnglishDigits(form.car_code).trim());
+  const carMarkedBroken = !!selectedCar?.odometer_broken;
+
+  // لو السيارة معلّمة "عداد تالف" في الإدارة، فعّل الخيار تلقائياً
+  useEffect(() => {
+    if (carMarkedBroken) setOdometerBroken(true);
+  }, [carMarkedBroken]);
 
   const handheldRef = useRef<HTMLInputElement | null>(null);
   const routeStartRef = useRef<HTMLTextAreaElement | null>(null);

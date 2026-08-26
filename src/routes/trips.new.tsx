@@ -676,7 +676,33 @@ function NewTrip() {
             <Textarea ref={routeStartRef} value={form.route_start} maxLength={40} onChange={(e) => set("route_start", e.target.value.slice(0, 40))} placeholder="مثال: من مكتب المنصورة إلى العميل..." rows={2} />
             <div className="text-xs text-muted-foreground text-left">{form.route_start.length}/40</div>
           </Field>
-          <Field label="قراءة العداد (كم)" invalid={errors.start_odometer}>
+          {carMarkedBroken && (
+            <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-3 text-sm font-semibold text-destructive flex items-center gap-2">
+              <Gauge className="size-5 shrink-0" />
+              عداد هذه السيارة تالف — سيتم تسجيل المسافة تقديريًا
+            </div>
+          )}
+          <label className={`flex items-center gap-3 rounded-xl border-2 p-3 cursor-pointer transition-all ${odometerBroken ? "border-orange-400 bg-orange-50 dark:bg-orange-950/30" : "border-border hover:bg-muted/30"}`}>
+            <input
+              type="checkbox"
+              checked={odometerBroken}
+              onChange={(e) => setOdometerBroken(e.target.checked)}
+              className="size-5 accent-orange-500"
+            />
+            <span className="font-semibold text-sm">العداد تالف / قراءة غير مضبوطة</span>
+          </label>
+          {odometerBroken && (
+            <div className="space-y-4 rounded-xl border border-orange-300 bg-orange-50/50 dark:bg-orange-950/20 p-3">
+              <Field label="المسافة التقديرية (كم) — إلزامي" invalid={errors.estimated_km}>
+                <Input type="text" inputMode="numeric" value={estimatedKm} onChange={(e) => setEstimatedKm(toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} placeholder="مثال: 120" dir="ltr" />
+              </Field>
+              <Field label="سبب العطل / ملاحظة — إلزامي" invalid={errors.odometer_note}>
+                <Textarea value={odometerNote} onChange={(e) => setOdometerNote(e.target.value)} rows={2} maxLength={200} placeholder="مثال: العداد لا يعمل منذ أمس..." />
+              </Field>
+              <p className="text-xs text-muted-foreground">صورة العداد تظل إلزامية كدليل على العطل. ستظهر الرحلة للأدمن بانتظار المراجعة.</p>
+            </div>
+          )}
+          <Field label={odometerBroken ? "قراءة العداد (كم) — اختياري عند تلف العداد" : "قراءة العداد (كم)"} invalid={errors.start_odometer}>
             <div className="relative">
               <Gauge className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input type="text" inputMode="numeric" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} className="pr-10" dir="ltr" />

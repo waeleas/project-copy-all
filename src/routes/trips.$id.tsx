@@ -85,6 +85,11 @@ function TripDetail() {
   const [now, setNow] = useState(Date.now());
   const [segmentsWarning, setSegmentsWarning] = useState(false);
   const segmentsRef = useRef<HTMLDivElement>(null);
+  const [reviewKm, setReviewKm] = useState("");
+  const [reviewSaving, setReviewSaving] = useState(false);
+  useEffect(() => {
+    if (trip?.estimated_km != null && !reviewKm) setReviewKm(String(trip.estimated_km));
+  }, [trip?.estimated_km]);
   useEffect(() => {
     if (trip?.status !== "open") return;
     const t = setInterval(() => setNow(Date.now()), 1000);

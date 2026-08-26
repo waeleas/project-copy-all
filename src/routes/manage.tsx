@@ -1017,6 +1017,10 @@ function CarsManager() {
                   <Input placeholder="وصف السيارة" value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
                   <Label className="text-xs">Acty type</Label>
                   <Input placeholder="Acty type" value={editing.acty_type ?? ""} onChange={(e) => setEditing({ ...editing, acty_type: e.target.value })} dir="ltr" />
+                  <label className="flex items-center gap-2 text-sm font-semibold text-orange-600 cursor-pointer">
+                    <input type="checkbox" className="size-4 accent-orange-500" checked={!!editing.odometer_broken} onChange={(e) => setEditing({ ...editing, odometer_broken: e.target.checked })} />
+                    عداد هذه السيارة تالف
+                  </label>
                   {editing.type === "company" ? (
                     <>
                       <Label className="text-xs">كود السيارة</Label>

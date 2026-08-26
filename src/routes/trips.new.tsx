@@ -235,7 +235,7 @@ function NewTrip() {
       }, 0);
       return;
     }
-    if (normalizedStartOdometer && (isNaN(parseInt(normalizedStartOdometer, 10)) || parseInt(normalizedStartOdometer, 10) < 0)) {
+    if (!odometerBroken && normalizedStartOdometer && (isNaN(parseInt(normalizedStartOdometer, 10)) || parseInt(normalizedStartOdometer, 10) < 0)) {
       setErrors({ ...errs, start_odometer: true });
       toast.error("قراءة العداد: يجب أن تكون رقماً صحيحاً موجباً", { duration: 6000 });
       return;

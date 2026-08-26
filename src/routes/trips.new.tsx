@@ -214,7 +214,17 @@ function NewTrip() {
     if (form.car_type === "company" && !normalizedCarCode) addMiss("car_code", "كود السيارة");
     if (form.car_type === "rental" && !form.car_plate.trim()) addMiss("car_plate", "رقم لوحة السيارة");
     if (!normalizedRouteStart) addMiss("route_start", "بداية خط السير");
-    if (!normalizedStartOdometer) addMiss("start_odometer", "قراءة العداد");
+    if (!odometerBroken && !normalizedStartOdometer) addMiss("start_odometer", "قراءة العداد");
+    if (odometerBroken) {
+      const est = parseInt(toEnglishDigits(estimatedKm).trim(), 10);
+      if (!estimatedKm.trim() || isNaN(est) || est <= 0) addMiss("estimated_km", "المسافة التقديرية");
+      else if (est > 1000) {
+        setErrors({ ...errs, estimated_km: true });
+        toast.error("المسافة التقديرية: لا يمكن أن تتجاوز 1000 كم", { duration: 6000 });
+        return;
+      }
+      if (!odometerNote.trim()) addMiss("odometer_note", "سبب عطل العداد / ملاحظة");
+    }
     if (!photo) addMiss("photo", "صورة العداد");
 
     if (normalizedRouteStart.length > 40) {

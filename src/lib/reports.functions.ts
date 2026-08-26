@@ -27,7 +27,26 @@ type TripRow = {
   status: string | null;
   governorate_id: string | null;
   governorate_name: string | null;
+  odometer_broken: boolean | null;
+  estimated_km: number | null;
+  odometer_review: string | null;
 };
+
+/**
+ * يُرجع مسافة الرحلة المستخدمة في التقارير:
+ * - رحلة عداد تالف "بانتظار المراجعة" → null (تُستبعد من التقارير)
+ * - رحلة عداد تالف "معتمدة" → المسافة التقديرية المعتمدة
+ * - رحلة عادية → الفرق بين العدادين
+ */
+function tripDist(t: TripRow): number | null {
+  if (t.odometer_broken) {
+    if (t.odometer_review !== "approved") return null;
+    return Math.max(0, Number(t.estimated_km ?? 0));
+  }
+  const start = Number(t.start_odometer ?? 0);
+  const end = Number(t.end_odometer ?? 0);
+  return end > start ? end - start : 0;
+}
 
 export type ReportRange = { from?: string | null; to?: string | null };
 
@@ -46,9 +65,9 @@ async function fetchAllCompletedTrips(supabase: any, range: ReportRange): Promis
     let q = supabase
       .from("trips")
       .select(
-        "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, driver_name, driver_sap, created_by_name, start_odometer, end_odometer, start_at, end_at, status, governorate_id, governorate_name",
+        "car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, driver_name, driver_sap, created_by_name, start_odometer, end_odometer, start_at, end_at, status, governorate_id, governorate_name, odometer_broken, estimated_km, odometer_review",
       )
-      .not("end_odometer", "is", null);
+      .or("end_odometer.not.is.null,and(odometer_broken.eq.true,odometer_review.eq.approved)");
     if (range.from) q = q.gte("start_at", `${range.from}T00:00:00.000Z`);
     if (range.to) q = q.lte("start_at", `${range.to}T23:59:59.999Z`);
     const { data, error } = await q.range(from, from + PAGE - 1);

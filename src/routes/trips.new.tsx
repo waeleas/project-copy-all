@@ -332,7 +332,13 @@ function NewTrip() {
         governorate_id: form.governorate_id || null,
         governorate_name: governorates.data?.find((g) => g.id === form.governorate_id)?.name ?? null,
         route_start: normalizedRouteStart,
-        start_odometer: parseInt(normalizedStartOdometer, 10),
+        start_odometer: odometerBroken
+          ? (normalizedStartOdometer ? parseInt(normalizedStartOdometer, 10) : (lastReading.data?.reading ?? 0))
+          : parseInt(normalizedStartOdometer, 10),
+        odometer_broken: odometerBroken,
+        estimated_km: odometerBroken ? parseInt(toEnglishDigits(estimatedKm).trim(), 10) : null,
+        odometer_note: odometerBroken ? odometerNote.trim() : null,
+        odometer_review: odometerBroken ? "pending" : "none",
         start_photo_url: path,
         car_code: normalizedCarCode || null,
         car_plate: form.car_plate.trim() || null,

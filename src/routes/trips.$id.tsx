@@ -283,6 +283,38 @@ function TripDetail() {
         </Card>
       )}
 
+      {isAdmin && trip.odometer_broken && trip.odometer_review !== "approved" && (
+        <Card className="border-orange-400 border-2">
+          <CardHeader><CardTitle className="text-base text-orange-600">🟠 مراجعة مسافة تقديرية (عداد تالف)</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm">المسافة التقديرية المسجلة: <b>{trip.estimated_km ?? "—"} كم</b> — السبب: {trip.odometer_note ?? "—"}</p>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1">
+                <Label>تعديل المسافة قبل الاعتماد (كم)</Label>
+                <Input type="text" inputMode="numeric" value={reviewKm} onChange={(e) => setReviewKm(toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} dir="ltr" />
+              </div>
+              <Button
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+                disabled={reviewSaving}
+                onClick={async () => {
+                  const v = parseInt(reviewKm, 10);
+                  if (isNaN(v) || v <= 0) return toast.error("أدخل مسافة صحيحة قبل الاعتماد");
+                  setReviewSaving(true);
+                  const { error } = await supabase.from("trips").update({ estimated_km: v, odometer_review: "approved" } as any).eq("id", id);
+                  setReviewSaving(false);
+                  if (error) return toast.error(arabicError(error));
+                  toast.success("تم اعتماد المسافة التقديرية");
+                  qc.invalidateQueries({ queryKey: ["trip", id] });
+                  qc.invalidateQueries({ queryKey: ["trips"] });
+                }}
+              >
+                {reviewSaving && <Loader2 className="ml-2 size-4 animate-spin" />} اعتماد المسافة
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div ref={segmentsRef}>
         <SegmentsCard
           tripId={id}

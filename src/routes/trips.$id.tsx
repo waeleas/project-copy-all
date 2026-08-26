@@ -114,15 +114,20 @@ function TripDetail() {
     setSegmentsWarning(false);
     if (!endPhoto) return toast.error("يجب تصوير العداد عند نهاية الرحلة");
 
+    const broken = !!trip.odometer_broken;
     const endVal = parseInt(endKm, 10);
-    if (isNaN(endVal)) return toast.error("أدخل قراءة العداد");
-    if (endVal <= lastOdometer) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
-    if (endVal - lastOdometer > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
+    if (!broken) {
+      if (isNaN(endVal)) return toast.error("أدخل قراءة العداد");
+      if (endVal <= lastOdometer) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
+      if (endVal - lastOdometer > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
+    } else if (endKm.trim() && isNaN(endVal)) {
+      return toast.error("قراءة العداد يجب أن تكون رقماً صحيحاً");
+    }
     setSaving(true);
     try {
       const path = await uploadOdometerPhoto(endPhoto, "end");
       const { error } = await supabase.from("trips").update({
-        end_odometer: endVal,
+        end_odometer: broken ? (isNaN(endVal) ? null : endVal) : endVal,
         end_photo_url: path,
         end_at: new Date().toISOString(),
         status: "closed",

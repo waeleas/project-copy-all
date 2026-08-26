@@ -300,9 +300,12 @@ function TripDetail() {
           <CardContent>
             <form onSubmit={closeTrip} className="space-y-3">
               <div className="space-y-1.5">
-                <Label>قراءة العداد عند النهاية (كم)</Label>
-                <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value))} dir="ltr" />
+                <Label>قراءة العداد عند النهاية (كم){trip.odometer_broken ? " — اختياري (عداد تالف)" : ""}</Label>
+                <Input type="number" min={lastOdometer} required={!trip.odometer_broken} value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value))} dir="ltr" />
                 <p className="text-xs text-muted-foreground">آخر قراءة مسجلة: {lastOdometer} كم</p>
+                {trip.odometer_broken && (
+                  <p className="text-xs font-semibold text-orange-600">عداد تالف: سيتم اعتماد المسافة التقديرية ({trip.estimated_km ?? "—"} كم) — السبب: {trip.odometer_note ?? "—"}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>ملاحظات (اختياري)</Label>

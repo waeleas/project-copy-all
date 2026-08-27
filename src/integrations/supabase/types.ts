@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -44,6 +44,7 @@ export type Database = {
           follow_office_id: string | null
           handheld_code: string | null
           id: string
+          odometer_broken: boolean
           plate: string
           route_code: string | null
           route_description: string | null
@@ -57,6 +58,7 @@ export type Database = {
           follow_office_id?: string | null
           handheld_code?: string | null
           id?: string
+          odometer_broken?: boolean
           plate: string
           route_code?: string | null
           route_description?: string | null
@@ -70,6 +72,7 @@ export type Database = {
           follow_office_id?: string | null
           handheld_code?: string | null
           id?: string
+          odometer_broken?: boolean
           plate?: string
           route_code?: string | null
           route_description?: string | null
@@ -344,6 +347,7 @@ export type Database = {
           end_at: string | null
           end_odometer: number | null
           end_photo_url: string | null
+          estimated_km: number | null
           follow_office_id: string | null
           governorate_id: string | null
           governorate_name: string | null
@@ -351,6 +355,9 @@ export type Database = {
           id: string
           manager_id: string | null
           notes: string | null
+          odometer_broken: boolean
+          odometer_note: string | null
+          odometer_review: string
           office_id: string | null
           route_code: string | null
           route_start: string
@@ -381,6 +388,7 @@ export type Database = {
           end_at?: string | null
           end_odometer?: number | null
           end_photo_url?: string | null
+          estimated_km?: number | null
           follow_office_id?: string | null
           governorate_id?: string | null
           governorate_name?: string | null
@@ -388,6 +396,9 @@ export type Database = {
           id?: string
           manager_id?: string | null
           notes?: string | null
+          odometer_broken?: boolean
+          odometer_note?: string | null
+          odometer_review?: string
           office_id?: string | null
           route_code?: string | null
           route_start: string
@@ -418,6 +429,7 @@ export type Database = {
           end_at?: string | null
           end_odometer?: number | null
           end_photo_url?: string | null
+          estimated_km?: number | null
           follow_office_id?: string | null
           governorate_id?: string | null
           governorate_name?: string | null
@@ -425,6 +437,9 @@ export type Database = {
           id?: string
           manager_id?: string | null
           notes?: string | null
+          odometer_broken?: boolean
+          odometer_note?: string | null
+          odometer_review?: string
           office_id?: string | null
           route_code?: string | null
           route_start?: string

@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const TABLE_ORDER = [
+export const TABLE_ORDER = [
   "app_settings",
   "offices",
   "managers",
@@ -18,13 +18,18 @@ const TABLE_ORDER = [
 ] as const;
 
 const schema = z.object({
-  data: z.record(z.string(), z.array(z.record(z.string(), z.any()))),
+  table: z.string(),
+  rows: z.array(z.record(z.string(), z.any())).max(500),
 });
 
-export const restoreBackup = createServerFn({ method: "POST" })
+export const restoreChunk = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => schema.parse(d))
   .handler(async ({ data, context }) => {
+    if (!(TABLE_ORDER as readonly string[]).includes(data.table)) {
+      throw new Error("Unknown table");
+    }
+
     const { data: adminCheck } = await context.supabase
       .from("user_roles")
       .select("role")
@@ -35,42 +40,32 @@ export const restoreBackup = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const report: Record<string, { inserted: number; skipped: number; errors: string[] }> = {};
+    let inserted = 0;
+    let skipped = 0;
+    const errors: string[] = [];
 
-    for (const table of TABLE_ORDER) {
-      const rows = data.data[table];
-      if (!Array.isArray(rows) || rows.length === 0) {
-        report[table] = { inserted: 0, skipped: 0, errors: [] };
-        continue;
-      }
-      let inserted = 0;
-      let skipped = 0;
-      const errors: string[] = [];
-      const CHUNK = 200;
-      for (let i = 0; i < rows.length; i += CHUNK) {
-        const chunk = rows.slice(i, i + CHUNK);
-        const { error } = await (supabaseAdmin as any)
-          .from(table)
-          .upsert(chunk, { onConflict: "id", ignoreDuplicates: false });
-        if (error) {
-          // fallback: try one-by-one to skip bad rows (e.g. FK failures)
-          for (const row of chunk) {
-            const { error: e2 } = await (supabaseAdmin as any)
-              .from(table)
-              .upsert(row, { onConflict: "id", ignoreDuplicates: false });
-            if (e2) {
-              skipped++;
-              if (errors.length < 5) errors.push(e2.message);
-            } else {
-              inserted++;
-            }
-          }
+    if (data.rows.length === 0) return { inserted, skipped, errors };
+
+    const { error } = await (supabaseAdmin as any)
+      .from(data.table)
+      .upsert(data.rows, { onConflict: "id", ignoreDuplicates: false });
+
+    if (error) {
+      // fallback: row-by-row so a single bad row (e.g. FK failure) doesn't drop the chunk
+      for (const row of data.rows) {
+        const { error: e2 } = await (supabaseAdmin as any)
+          .from(data.table)
+          .upsert(row, { onConflict: "id", ignoreDuplicates: false });
+        if (e2) {
+          skipped++;
+          if (errors.length < 5) errors.push(e2.message);
         } else {
-          inserted += chunk.length;
+          inserted++;
         }
       }
-      report[table] = { inserted, skipped, errors };
+    } else {
+      inserted += data.rows.length;
     }
 
-    return { ok: true, report };
+    return { inserted, skipped, errors };
   });

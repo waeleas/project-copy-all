@@ -3,13 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { restoreBackup } from "@/lib/backup.functions";
+import { restoreChunk, TABLE_ORDER } from "@/lib/backup.functions";
 import { arabicError } from "@/lib/errors";
+
+const CHUNK = 200;
 
 export function RestoreButton() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
-  const restore = useServerFn(restoreBackup);
+  const [progress, setProgress] = useState<string | null>(null);
+  const restore = useServerFn(restoreChunk);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -20,21 +23,51 @@ export function RestoreButton() {
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
-      // strip meta and keep only known tables
+
       const data: Record<string, any[]> = {};
       for (const [k, v] of Object.entries(parsed)) {
         if (k.startsWith("__")) continue;
         if (Array.isArray(v)) data[k] = v as any[];
       }
-      const res = await restore({ data: { data } });
-      const lines = Object.entries(res.report)
-        .filter(([, r]: any) => r.inserted || r.skipped)
-        .map(([t, r]: any) => `${t}: ${r.inserted} ✓${r.skipped ? ` / ${r.skipped} ✗` : ""}`)
+
+      const total = TABLE_ORDER.reduce((s, t) => s + (data[t]?.length ?? 0), 0);
+      let done = 0;
+      const report: Record<string, { inserted: number; skipped: number }> = {};
+
+      for (const table of TABLE_ORDER) {
+        const rows = data[table];
+        if (!Array.isArray(rows) || rows.length === 0) continue;
+        report[table] = { inserted: 0, skipped: 0 };
+
+        for (let i = 0; i < rows.length; i += CHUNK) {
+          const chunk = rows.slice(i, i + CHUNK);
+          let attempt = 0;
+          // retry transient network/timeouts
+          while (true) {
+            try {
+              const res = await restore({ data: { table, rows: chunk } });
+              report[table].inserted += res.inserted;
+              report[table].skipped += res.skipped;
+              break;
+            } catch (err) {
+              attempt++;
+              if (attempt >= 3) throw err;
+              await new Promise((r) => setTimeout(r, 800 * attempt));
+            }
+          }
+          done += chunk.length;
+          setProgress(`${Math.round((done / Math.max(total, 1)) * 100)}%`);
+        }
+      }
+
+      const lines = Object.entries(report)
+        .map(([t, r]) => `${t}: ${r.inserted} ✓${r.skipped ? ` / ${r.skipped} ✗` : ""}`)
         .join("\n");
       toast.success("تمت الاستعادة\n" + lines, { duration: 10000 });
     } catch (e: any) {
       toast.error(arabicError(e) ?? "فشل استعادة النسخة الاحتياطية");
     } finally {
+      setProgress(null);
       setLoading(false);
     }
   }
@@ -55,7 +88,7 @@ export function RestoreButton() {
         className="gap-2"
       >
         {loading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
-        استعادة نسخة
+        {loading ? `استعادة… ${progress ?? ""}` : "استعادة نسخة"}
       </Button>
     </>
   );

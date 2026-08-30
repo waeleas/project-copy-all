@@ -183,6 +183,9 @@ function ReportsPage() {
                       "النوع": r.car_type === "rental" ? "إيجار" : "شركة",
                       "المحافظة": r.governorates ?? "",
                       "عدد الرحلات": r.trips_count,
+                      "أول العداد": Math.round(r.min_start ?? 0),
+                      "آخر العداد": Math.round(r.max_end ?? 0),
+                      "الفرق بين أول وآخر العداد": Math.round(r.max_end ?? 0) - Math.round(r.min_start ?? 0),
                       "إجمالي الكيلومترات": Math.round(r.total_km),
 
                     })),
@@ -206,6 +209,9 @@ function ReportsPage() {
                         <th className="p-2">النوع</th>
                         <th className="p-2">المحافظة</th>
                         <th className="p-2">الرحلات</th>
+                        <th className="p-2">أول العداد</th>
+                        <th className="p-2">آخر العداد</th>
+                        <th className="p-2">الفرق</th>
                         <th className="p-2">إجمالي كم</th>
                       </tr>
                     </thead>
@@ -218,6 +224,9 @@ function ReportsPage() {
                           <td className="p-2">{r.car_type === "rental" ? "إيجار" : "شركة"}</td>
                           <td className="p-2">{r.governorates ?? "-"}</td>
                           <td className="p-2">{r.trips_count}</td>
+                          <td className="p-2">{r.trips_count > 0 ? fmt(r.min_start) : "-"}</td>
+                          <td className="p-2">{r.trips_count > 0 ? fmt(r.max_end) : "-"}</td>
+                          <td className="p-2">{r.trips_count > 0 ? fmt((r.max_end ?? 0) - (r.min_start ?? 0)) : "-"}</td>
                           <td className="p-2 font-bold text-primary">{fmt(r.total_km)}</td>
                         </tr>
                       ))}

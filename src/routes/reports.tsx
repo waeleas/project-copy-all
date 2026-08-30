@@ -231,7 +231,7 @@ function ReportsPage() {
                         </tr>
                       ))}
                       {carsFiltered.length === 0 && (
-                        <tr><td colSpan={7} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
+                        <tr><td colSpan={10} className="text-center p-4 text-muted-foreground">لا توجد بيانات</td></tr>
                       )}
 
                     </tbody>

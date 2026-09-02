@@ -107,8 +107,8 @@ async function buildRows(trips: any[]) {
       t.governorate_name ?? "", // Order Description
       "FP1", // Planner Grp
       "50004669", // Mn.wk.ctr
-      t.technician?.sap_number ?? "", // Person Respons
-      t.service_type?.pmact_type ?? "", // PMActType
+      personRespons, // Person Respons
+      pmActType, // PMActType
       sapDate(t.start_at), // Bsc Start
       sapDate(t.end_at ?? t.start_at), // Basic Fin.
       operationShortText, // Operation Short Text

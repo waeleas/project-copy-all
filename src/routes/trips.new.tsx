@@ -199,6 +199,20 @@ function NewTrip() {
     }
     if (form.car_type === "company" && !normalizedCarCode) addMiss("car_code", "كود السيارة");
     if (form.car_type === "rental" && !form.car_plate.trim()) addMiss("car_plate", "رقم لوحة السيارة");
+    const selectedCar =
+      cars.data?.find((c: any) =>
+        form.car_type === "rental"
+          ? c.type === "rental" && String(c.plate ?? "").trim() === form.car_plate.trim()
+          : String(c.code ?? "").trim() === normalizedCarCode,
+      ) ?? null;
+    if ((selectedCar as any)?.blocked) {
+      setErrors({ ...errs, [form.car_type === "rental" ? "car_plate" : "car_code"]: true });
+      toast.error("هذه السيارة ممنوعة من التسجيل، برجاء اختيار سيارة أخرى", { duration: 6000 });
+      setTimeout(() => {
+        document.querySelector('[data-invalid="true"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
+      return;
+    }
     if (!normalizedRouteStart) addMiss("route_start", "بداية خط السير");
     if (!normalizedStartOdometer) addMiss("start_odometer", "قراءة العداد");
     if (!photo) addMiss("photo", "صورة العداد");

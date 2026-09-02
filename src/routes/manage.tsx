@@ -829,6 +829,7 @@ function CarsManager() {
       plate: (editing.plate ?? "").trim() || null,
       description: (editing.description ?? "").trim() || null,
       acty_type: (editing.acty_type ?? "").trim() || null,
+      blocked: !!editing.blocked,
     };
     if (editing.type === "company") {
       payload.code = (editing.code ?? "").trim() || null;

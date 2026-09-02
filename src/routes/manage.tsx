@@ -829,6 +829,7 @@ function CarsManager() {
       plate: (editing.plate ?? "").trim() || null,
       description: (editing.description ?? "").trim() || null,
       acty_type: (editing.acty_type ?? "").trim() || null,
+      blocked: !!editing.blocked,
     };
     if (editing.type === "company") {
       payload.code = (editing.code ?? "").trim() || null;
@@ -973,6 +974,7 @@ function CarsManager() {
                   <div className="font-medium">{c.code || "—"} {c.plate && <span className="text-muted-foreground">· لوحة: {c.plate}</span>}</div>
                   {c.description && <div className="text-xs text-muted-foreground mt-0.5">الوصف: {c.description}</div>}
                   {c.acty_type && <div className="text-xs text-muted-foreground mt-0.5" dir="ltr">Acty type: {c.acty_type}</div>}
+                  {c.blocked && <div className="text-xs font-medium text-destructive mt-0.5">ممنوعة من التسجيل</div>}
                   {type === "rental" && (
                     <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
                       {c.handheld_code && <div>كود الهاند هيلد: <span dir="ltr">{c.handheld_code}</span></div>}
@@ -1000,6 +1002,15 @@ function CarsManager() {
                   <Input placeholder="وصف السيارة" value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
                   <Label className="text-xs">Acty type</Label>
                   <Input placeholder="Acty type" value={editing.acty_type ?? ""} onChange={(e) => setEditing({ ...editing, acty_type: e.target.value })} dir="ltr" />
+                  <label className="flex items-center gap-2 text-sm pt-1">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-destructive"
+                      checked={!!editing.blocked}
+                      onChange={(e) => setEditing({ ...editing, blocked: e.target.checked })}
+                    />
+                    منع هذه السيارة من التسجيل
+                  </label>
                   {editing.type === "company" ? (
                     <>
                       <Label className="text-xs">كود السيارة</Label>

@@ -38,6 +38,7 @@ export type Database = {
       cars: {
         Row: {
           acty_type: string | null
+          blocked: boolean
           code: string | null
           created_at: string
           description: string | null
@@ -52,6 +53,7 @@ export type Database = {
         }
         Insert: {
           acty_type?: string | null
+          blocked?: boolean
           code?: string | null
           created_at?: string
           description?: string | null
@@ -66,6 +68,7 @@ export type Database = {
         }
         Update: {
           acty_type?: string | null
+          blocked?: boolean
           code?: string | null
           created_at?: string
           description?: string | null

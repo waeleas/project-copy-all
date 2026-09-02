@@ -1002,6 +1002,15 @@ function CarsManager() {
                   <Input placeholder="وصف السيارة" value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
                   <Label className="text-xs">Acty type</Label>
                   <Input placeholder="Acty type" value={editing.acty_type ?? ""} onChange={(e) => setEditing({ ...editing, acty_type: e.target.value })} dir="ltr" />
+                  <label className="flex items-center gap-2 text-sm pt-1">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-destructive"
+                      checked={!!editing.blocked}
+                      onChange={(e) => setEditing({ ...editing, blocked: e.target.checked })}
+                    />
+                    منع هذه السيارة من التسجيل
+                  </label>
                   {editing.type === "company" ? (
                     <>
                       <Label className="text-xs">كود السيارة</Label>

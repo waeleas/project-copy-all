@@ -95,6 +95,12 @@ async function buildRows(trips: any[]) {
     const joinedRoutes = normalizedExtraRoutes.join(", ");
     const operationShortText = (joinedRoutes || String(t.route_start ?? "").trim()).slice(0, 40);
     const km = t.end_odometer != null && t.start_odometer != null ? t.end_odometer - t.start_odometer : "";
+    const pmActType = t.service_type?.pmact_type ?? "";
+    const driverSap = t.driver?.sap_number ?? t.driver_sap ?? "";
+    let personRespons = t.technician?.sap_number ?? "";
+    if (!String(personRespons).trim() && String(pmActType).trim().toUpperCase() === "FB5") {
+      personRespons = driverSap;
+    }
     return [
       "T001", // Order Type
       t.car_code ?? "", // Equipment

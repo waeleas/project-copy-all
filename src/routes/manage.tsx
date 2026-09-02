@@ -974,6 +974,7 @@ function CarsManager() {
                   <div className="font-medium">{c.code || "—"} {c.plate && <span className="text-muted-foreground">· لوحة: {c.plate}</span>}</div>
                   {c.description && <div className="text-xs text-muted-foreground mt-0.5">الوصف: {c.description}</div>}
                   {c.acty_type && <div className="text-xs text-muted-foreground mt-0.5" dir="ltr">Acty type: {c.acty_type}</div>}
+                  {c.blocked && <div className="text-xs font-medium text-destructive mt-0.5">ممنوعة من التسجيل</div>}
                   {type === "rental" && (
                     <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
                       {c.handheld_code && <div>كود الهاند هيلد: <span dir="ltr">{c.handheld_code}</span></div>}

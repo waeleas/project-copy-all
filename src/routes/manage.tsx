@@ -60,6 +60,7 @@ function Manage() {
         <div className="flex items-center gap-2 flex-wrap">
           <BackupButton />
           <RestoreButton />
+          <TripsPhotosBackup />
         </div>
       </div>
 

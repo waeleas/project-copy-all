@@ -23,6 +23,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { BackupButton } from "@/components/backup-button";
 import { RestoreButton } from "@/components/restore-button";
 import { MessagesManager } from "@/components/messages-manager";
+import { TripsPhotosBackup } from "@/components/trips-photos-backup";
 
 
 export const Route = createFileRoute("/manage")({
@@ -59,6 +60,7 @@ function Manage() {
         <div className="flex items-center gap-2 flex-wrap">
           <BackupButton />
           <RestoreButton />
+          <TripsPhotosBackup />
         </div>
       </div>
 

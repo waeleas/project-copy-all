@@ -162,18 +162,30 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
     await ensureAdminOrViewer(context.supabase, context.userId);
     const trips = await fetchAllCompletedTrips(context.supabase, data);
 
-    // عدد المسارات الإضافية لكل رحلة
-    const tripIds = trips.map((t) => t.id);
+    // عدد المسارات الإضافية لكل رحلة (على دفعات لتجنب حدود الاستعلام)
+    const tripIds = trips.map((t) => t.id).filter(Boolean);
     const segmentCounts = new Map<string, number>();
-    if (tripIds.length > 0) {
-      const { data: segs } = await context.supabase
-        .from("trip_segments")
-        .select("trip_id")
-        .in("trip_id", tripIds);
-      (segs ?? []).forEach((s: any) => {
-        segmentCounts.set(s.trip_id, (segmentCounts.get(s.trip_id) ?? 0) + 1);
-      });
+    const CHUNK = 100;
+    for (let i = 0; i < tripIds.length; i += CHUNK) {
+      const chunk = tripIds.slice(i, i + CHUNK);
+      let offset = 0;
+      const PAGE = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data: segs, error } = await context.supabase
+          .from("trip_segments")
+          .select("trip_id")
+          .in("trip_id", chunk)
+          .range(offset, offset + PAGE - 1);
+        if (error) throw error;
+        (segs ?? []).forEach((s: any) => {
+          segmentCounts.set(s.trip_id, (segmentCounts.get(s.trip_id) ?? 0) + 1);
+        });
+        if (!segs || segs.length < PAGE) break;
+        offset += PAGE;
+      }
     }
+
 
     // Resolve driver names
     const { data: driversData } = await context.supabase.from("drivers").select("id, name, sap_number");

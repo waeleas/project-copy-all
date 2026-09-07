@@ -11,6 +11,7 @@ async function ensureAdminOrViewer(supabase: any, userId: string) {
 }
 
 type TripRow = {
+  id: string;
   car_plate: string | null;
   car_code: string | null;
   car_description: string | null;

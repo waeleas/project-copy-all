@@ -162,6 +162,18 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
     await ensureAdminOrViewer(context.supabase, context.userId);
     const trips = await fetchAllCompletedTrips(context.supabase, data);
 
+    // عدد المسارات الإضافية لكل رحلة
+    const tripIds = trips.map((t) => t.id);
+    const segmentCounts = new Map<string, number>();
+    if (tripIds.length > 0) {
+      const { data: segs } = await context.supabase
+        .from("trip_segments")
+        .select("trip_id")
+        .in("trip_id", tripIds);
+      (segs ?? []).forEach((s: any) => {
+        segmentCounts.set(s.trip_id, (segmentCounts.get(s.trip_id) ?? 0) + 1);
+      });
+    }
 
     // Resolve driver names
     const { data: driversData } = await context.supabase.from("drivers").select("id, name, sap_number");
@@ -193,6 +205,7 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
         driver_name: string;
         sap_number: string | null;
         trips_count: number;
+        segments_count: number;
         total_km: number;
         first_at: string | null;
         last_at: string | null;
@@ -226,12 +239,14 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
       const dist = end > start ? end - start : 0;
       const key = `${name}::${sap ?? ""}`;
       const dayKey = t.start_at ? t.start_at.slice(0, 10) : null;
+      const segCount = segmentCounts.get(t.id) ?? 0;
       const prev = map.get(key);
       if (!prev) {
         map.set(key, {
           driver_name: name,
           sap_number: sap,
           trips_count: 1,
+          segments_count: segCount,
           total_km: dist,
           first_at: t.start_at,
           last_at: t.end_at,
@@ -240,6 +255,7 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
         });
       } else {
         prev.trips_count += 1;
+        prev.segments_count += segCount;
         prev.total_km += dist;
         if (t.start_at && (!prev.first_at || t.start_at < prev.first_at)) prev.first_at = t.start_at;
         if (t.end_at && (!prev.last_at || t.end_at > prev.last_at)) prev.last_at = t.end_at;

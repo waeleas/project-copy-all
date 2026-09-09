@@ -121,10 +121,16 @@ function TripDetail() {
     setSaving(true);
     try {
       const path = await uploadOdometerPhoto(endPhoto, "end");
+      // تاريخ الإنهاء يكون بنفس يوم تسجيل الطلب (مع الاحتفاظ بوقت الإنهاء الفعلي)
+      const startDate = new Date(trip.start_at);
+      const nowT = new Date();
+      const endDate = new Date(startDate);
+      endDate.setHours(nowT.getHours(), nowT.getMinutes(), nowT.getSeconds(), 0);
+      if (endDate.getTime() < startDate.getTime()) endDate.setTime(startDate.getTime());
       const { error } = await supabase.from("trips").update({
         end_odometer: endVal,
         end_photo_url: path,
-        end_at: new Date().toISOString(),
+        end_at: endDate.toISOString(),
         status: "closed",
         notes: endNotes || null,
       }).eq("id", id);

@@ -128,6 +128,22 @@ function NewTrip() {
     }
   }, [form.car_type, form.handheld_code, services.data, form.service_type_id]);
 
+  // التحقق من أن كود السيارة مسجل في قاعدة البيانات
+  useEffect(() => {
+    if (form.car_type !== "company") return;
+    const code = toEnglishDigits(form.car_code).trim();
+    if (!code) {
+      setErrors((e) => (e.car_code ? { ...e, car_code: false } : e));
+      return;
+    }
+    const match = cars.data?.find((c: any) => c.code === code);
+    if (code.length === 4 && !match) {
+      setErrors((e) => ({ ...e, car_code: true }));
+    } else if (match) {
+      setErrors((e) => (e.car_code ? { ...e, car_code: false } : e));
+    }
+  }, [form.car_code, form.car_type, cars.data]);
+
   // تعبئة السائق تلقائياً من رقم الساب لليوزر المسجل دخوله (فقط إذا كان اليوزر أرقام)
   useEffect(() => {
     if (form.car_type !== "company") return;

@@ -221,6 +221,9 @@ function NewTrip() {
           ? c.type === "rental" && String(c.plate ?? "").trim() === form.car_plate.trim()
           : String(c.code ?? "").trim() === normalizedCarCode,
       ) ?? null;
+    if (form.car_type === "company" && !selectedCar) {
+      addMiss("car_code", "كود السيارة غير مسجل في قاعدة البيانات");
+    }
     if ((selectedCar as any)?.blocked) {
       setErrors({ ...errs, [form.car_type === "rental" ? "car_plate" : "car_code"]: true });
       toast.error("هذه السيارة ممنوعة من التسجيل، برجاء اختيار سيارة أخرى", { duration: 6000 });

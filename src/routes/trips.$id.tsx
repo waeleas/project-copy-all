@@ -219,6 +219,19 @@ function TripDetail() {
           {distance != null && (
             <Info icon={Gauge} label="فرق الكيلومتر" value={`${distance} كم`} full />
           )}
+          <Info icon={Hash} label="رقم أمر SAP" value={trip.sap_order_no ?? "غير مسجل"} full />
+          {isAdmin && (
+            <div className="sm:col-span-2 flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => { setSapValue(trip.sap_order_no ?? ""); setSapOpen(true); }}>
+                <Pencil className="size-4 ml-1" /> تعديل رقم SAP
+              </Button>
+              {trip.sap_order_no && (
+                <Button size="sm" variant="outline" onClick={clearSapOrder} disabled={sapSaving}>
+                  <Trash2 className="size-4 ml-1 text-destructive" /> حذف رقم SAP
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

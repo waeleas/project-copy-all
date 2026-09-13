@@ -150,6 +150,46 @@ function TripDetail() {
   }
 
 
+  async function saveSapOrder() {
+    const value = toEnglishDigits(sapValue).trim();
+    if (!value) return toast.error("اكتب رقم أمر SAP أولًا");
+    setSapSaving(true);
+    try {
+      const { error } = await supabase.from("trips").update({
+        sap_order_no: value,
+        sap_uploaded_at: new Date().toISOString(),
+      } as any).eq("id", id);
+      if (error) throw error;
+      toast.success("تم حفظ رقم أمر SAP");
+      setSapOpen(false);
+      qc.invalidateQueries({ queryKey: ["trip", id] });
+      qc.invalidateQueries({ queryKey: ["trips"] });
+    } catch (err: any) {
+      toast.error(arabicError(err, "فشل حفظ رقم SAP"));
+    } finally {
+      setSapSaving(false);
+    }
+  }
+
+  async function clearSapOrder() {
+    if (!confirm("هل أنت متأكد من حذف رقم أمر SAP من هذا الطلب؟")) return;
+    setSapSaving(true);
+    try {
+      const { error } = await supabase.from("trips").update({
+        sap_order_no: null,
+        sap_uploaded_at: null,
+      } as any).eq("id", id);
+      if (error) throw error;
+      toast.success("تم حذف رقم أمر SAP");
+      qc.invalidateQueries({ queryKey: ["trip", id] });
+      qc.invalidateQueries({ queryKey: ["trips"] });
+    } catch (err: any) {
+      toast.error(arabicError(err, "فشل حذف رقم SAP"));
+    } finally {
+      setSapSaving(false);
+    }
+  }
+
   async function deleteTrip() {
     if (!confirm("هل أنت متأكد من حذف هذه الرحلة؟ لا يمكن التراجع.")) return;
     const { data, error } = await supabase.from("trips").delete().eq("id", id).select("id");

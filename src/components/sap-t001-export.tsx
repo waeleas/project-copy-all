@@ -98,7 +98,8 @@ async function buildRows(trips: any[]) {
     const pmActType = t.service_type?.pmact_type ?? "";
     const driverSap = t.driver?.sap_number ?? t.driver_sap ?? "";
     let personRespons = t.technician?.sap_number ?? "";
-    if (!String(personRespons).trim() && String(pmActType).trim().toUpperCase() === "FB5") {
+    const hasArabicLetters = /[\u0600-\u06FF]/.test(String(personRespons));
+    if (!String(personRespons).trim() || hasArabicLetters) {
       personRespons = driverSap;
     }
     return [

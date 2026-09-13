@@ -82,6 +82,9 @@ function TripDetail() {
   const [endPreview, setEndPreview] = useState("");
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [sapOpen, setSapOpen] = useState(false);
+  const [sapValue, setSapValue] = useState("");
+  const [sapSaving, setSapSaving] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [segmentsWarning, setSegmentsWarning] = useState(false);
   const segmentsRef = useRef<HTMLDivElement>(null);

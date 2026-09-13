@@ -382,6 +382,28 @@ function TripDetail() {
           }}
         />
       )}
+
+      <Dialog open={sapOpen} onOpenChange={setSapOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>تعديل رقم أمر SAP</DialogTitle></DialogHeader>
+          <div className="space-y-1.5">
+            <Label>رقم أمر SAP</Label>
+            <Input
+              value={sapValue}
+              onChange={(e) => setSapValue(toEnglishDigits(e.target.value))}
+              placeholder="اكتب رقم أمر SAP"
+              dir="ltr"
+              inputMode="numeric"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setSapOpen(false)} disabled={sapSaving}>إلغاء</Button>
+            <Button onClick={saveSapOrder} disabled={sapSaving}>
+              {sapSaving && <Loader2 className="ml-2 size-4 animate-spin" />} حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

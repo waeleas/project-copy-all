@@ -82,6 +82,9 @@ function TripDetail() {
   const [endPreview, setEndPreview] = useState("");
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [sapOpen, setSapOpen] = useState(false);
+  const [sapValue, setSapValue] = useState("");
+  const [sapSaving, setSapSaving] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [segmentsWarning, setSegmentsWarning] = useState(false);
   const segmentsRef = useRef<HTMLDivElement>(null);
@@ -146,6 +149,46 @@ function TripDetail() {
     }
   }
 
+
+  async function saveSapOrder() {
+    const value = toEnglishDigits(sapValue).trim();
+    if (!value) return toast.error("اكتب رقم أمر SAP أولًا");
+    setSapSaving(true);
+    try {
+      const { error } = await supabase.from("trips").update({
+        sap_order_no: value,
+        sap_uploaded_at: new Date().toISOString(),
+      } as any).eq("id", id);
+      if (error) throw error;
+      toast.success("تم حفظ رقم أمر SAP");
+      setSapOpen(false);
+      qc.invalidateQueries({ queryKey: ["trip", id] });
+      qc.invalidateQueries({ queryKey: ["trips"] });
+    } catch (err: any) {
+      toast.error(arabicError(err, "فشل حفظ رقم SAP"));
+    } finally {
+      setSapSaving(false);
+    }
+  }
+
+  async function clearSapOrder() {
+    if (!confirm("هل أنت متأكد من حذف رقم أمر SAP من هذا الطلب؟")) return;
+    setSapSaving(true);
+    try {
+      const { error } = await supabase.from("trips").update({
+        sap_order_no: null,
+        sap_uploaded_at: null,
+      } as any).eq("id", id);
+      if (error) throw error;
+      toast.success("تم حذف رقم أمر SAP");
+      qc.invalidateQueries({ queryKey: ["trip", id] });
+      qc.invalidateQueries({ queryKey: ["trips"] });
+    } catch (err: any) {
+      toast.error(arabicError(err, "فشل حذف رقم SAP"));
+    } finally {
+      setSapSaving(false);
+    }
+  }
 
   async function deleteTrip() {
     if (!confirm("هل أنت متأكد من حذف هذه الرحلة؟ لا يمكن التراجع.")) return;
@@ -215,6 +258,19 @@ function TripDetail() {
           <Info icon={Timer} label={trip.status === "open" ? "المدة حتى الآن" : "إجمالى مدة الرحلة"} value={formatDuration(tripDurationMs(trip, now))} full />
           {distance != null && (
             <Info icon={Gauge} label="فرق الكيلومتر" value={`${distance} كم`} full />
+          )}
+          <Info icon={Hash} label="رقم أمر SAP" value={trip.sap_order_no ?? "غير مسجل"} full />
+          {isAdmin && (
+            <div className="sm:col-span-2 flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => { setSapValue(trip.sap_order_no ?? ""); setSapOpen(true); }}>
+                <Pencil className="size-4 ml-1" /> تعديل رقم SAP
+              </Button>
+              {trip.sap_order_no && (
+                <Button size="sm" variant="outline" onClick={clearSapOrder} disabled={sapSaving}>
+                  <Trash2 className="size-4 ml-1 text-destructive" /> حذف رقم SAP
+                </Button>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -326,6 +382,28 @@ function TripDetail() {
           }}
         />
       )}
+
+      <Dialog open={sapOpen} onOpenChange={setSapOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>تعديل رقم أمر SAP</DialogTitle></DialogHeader>
+          <div className="space-y-1.5">
+            <Label>رقم أمر SAP</Label>
+            <Input
+              value={sapValue}
+              onChange={(e) => setSapValue(toEnglishDigits(e.target.value))}
+              placeholder="اكتب رقم أمر SAP"
+              dir="ltr"
+              inputMode="numeric"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setSapOpen(false)} disabled={sapSaving}>إلغاء</Button>
+            <Button onClick={saveSapOrder} disabled={sapSaving}>
+              {sapSaving && <Loader2 className="ml-2 size-4 animate-spin" />} حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

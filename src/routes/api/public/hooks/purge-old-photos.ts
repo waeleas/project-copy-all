@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 const RETENTION_DAYS = 90;
-const BATCH = 200;
+const BATCH = 500;
 
 async function purge() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

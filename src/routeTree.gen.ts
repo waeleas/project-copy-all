@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TripsNewRouteImport } from './routes/trips.new'
 import { Route as TripsIdRouteImport } from './routes/trips.$id'
+import { Route as ApiPublicHooksPurgeOldPhotosRouteImport } from './routes/api/public/hooks/purge-old-photos'
 
 const TrustRoute = TrustRouteImport.update({
   id: '/trust',
@@ -64,6 +65,12 @@ const TripsIdRoute = TripsIdRouteImport.update({
   path: '/trips/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksPurgeOldPhotosRoute =
+  ApiPublicHooksPurgeOldPhotosRouteImport.update({
+    id: '/api/public/hooks/purge-old-photos',
+    path: '/api/public/hooks/purge-old-photos',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/trust': typeof TrustRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
+  '/api/public/hooks/purge-old-photos': typeof ApiPublicHooksPurgeOldPhotosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +94,7 @@ export interface FileRoutesByTo {
   '/trust': typeof TrustRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
+  '/api/public/hooks/purge-old-photos': typeof ApiPublicHooksPurgeOldPhotosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +107,7 @@ export interface FileRoutesById {
   '/trust': typeof TrustRoute
   '/trips/$id': typeof TripsIdRoute
   '/trips/new': typeof TripsNewRoute
+  '/api/public/hooks/purge-old-photos': typeof ApiPublicHooksPurgeOldPhotosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/trust'
     | '/trips/$id'
     | '/trips/new'
+    | '/api/public/hooks/purge-old-photos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/trust'
     | '/trips/$id'
     | '/trips/new'
+    | '/api/public/hooks/purge-old-photos'
   id:
     | '__root__'
     | '/'
@@ -133,6 +145,7 @@ export interface FileRouteTypes {
     | '/trust'
     | '/trips/$id'
     | '/trips/new'
+    | '/api/public/hooks/purge-old-photos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -145,6 +158,7 @@ export interface RootRouteChildren {
   TrustRoute: typeof TrustRoute
   TripsIdRoute: typeof TripsIdRoute
   TripsNewRoute: typeof TripsNewRoute
+  ApiPublicHooksPurgeOldPhotosRoute: typeof ApiPublicHooksPurgeOldPhotosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -212,6 +226,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/purge-old-photos': {
+      id: '/api/public/hooks/purge-old-photos'
+      path: '/api/public/hooks/purge-old-photos'
+      fullPath: '/api/public/hooks/purge-old-photos'
+      preLoaderRoute: typeof ApiPublicHooksPurgeOldPhotosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -225,6 +246,7 @@ const rootRouteChildren: RootRouteChildren = {
   TrustRoute: TrustRoute,
   TripsIdRoute: TripsIdRoute,
   TripsNewRoute: TripsNewRoute,
+  ApiPublicHooksPurgeOldPhotosRoute: ApiPublicHooksPurgeOldPhotosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

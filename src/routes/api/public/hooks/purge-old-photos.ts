@@ -43,13 +43,12 @@ async function purge() {
     if (rmErr) console.error("storage remove failed", rmErr.message);
   }
 
-  // start_photo_url is NOT NULL — mark it as purged instead of nulling it
-  for (const t of tripRows) {
-    await supabaseAdmin
-      .from("trips")
-      .update({ start_photo_url: "purged", end_photo_url: null })
-      .eq("id", t.id);
-  }
+  // start_photo_url is NOT NULL — point it at the placeholder image instead of nulling it
+  const PLACEHOLDER = "/__l5e/assets-v1/810396f8-fc18-43c7-a50a-5ec200bf8815/odometer-placeholder.jpg";
+  await supabaseAdmin
+    .from("trips")
+    .update({ start_photo_url: PLACEHOLDER, end_photo_url: null })
+    .in("id", ids);
   if ((segments ?? []).length > 0) {
     await supabaseAdmin
       .from("trip_segments")

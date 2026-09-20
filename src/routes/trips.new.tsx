@@ -112,6 +112,48 @@ function NewTrip() {
     },
   });
 
+  // آخر رحلة مغلقة لهذه السيارة مع صورة عداد النهاية (لإعادة استخدامها عند تطابق القراءة)
+  const lastClosedTrip = useQuery({
+    queryKey: ["last-closed-trip", form.car_code, form.car_plate],
+    enabled: !!(form.car_code || form.car_plate),
+    queryFn: async () => {
+      const code = toEnglishDigits(form.car_code).trim();
+      const plate = form.car_plate.trim();
+      let q = supabase
+        .from("trips")
+        .select("trip_no, end_odometer, end_photo_url, start_photo_url, end_at")
+        .eq("status", "closed")
+        .order("end_at", { ascending: false })
+        .limit(1);
+      if (code) q = q.eq("car_code", code);
+      else if (plate) q = q.eq("car_plate", plate);
+      const { data, error } = await q;
+      if (error) throw error;
+      return ((data as any[]) ?? [])[0] ?? null;
+    },
+  });
+
+  const [reusedPhotoUrl, setReusedPhotoUrl] = useState<string | null>(null);
+
+  // إذا كانت قراءة البداية مساوية لقراءة نهاية آخر رحلة مغلقة، استخدم صورتها تلقائياً
+  useEffect(() => {
+    const odo = toEnglishDigits(form.start_odometer).trim();
+    const last = lastClosedTrip.data;
+    const lastPhoto = (last?.end_photo_url ?? last?.start_photo_url ?? null) as string | null;
+    const matches =
+      !!odo && !!last && last.end_odometer != null && String(last.end_odometer) === odo && !!lastPhoto;
+    if (!photo && matches) {
+      if (reusedPhotoUrl !== lastPhoto) {
+        setReusedPhotoUrl(lastPhoto);
+        setPhotoPreview(lastPhoto!);
+        setErrors((e) => (e.photo ? { ...e, photo: false } : e));
+      }
+    } else if (reusedPhotoUrl) {
+      setReusedPhotoUrl(null);
+      setPhotoPreview((p) => (p === reusedPhotoUrl ? "" : p));
+    }
+  }, [form.start_odometer, lastClosedTrip.data, photo, reusedPhotoUrl]);
+
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
     setErrors((e) => (e[k as string] ? { ...e, [k as string]: false } : e));

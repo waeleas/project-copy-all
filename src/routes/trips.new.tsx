@@ -134,25 +134,72 @@ function NewTrip() {
   });
 
   const [reusedPhotoUrl, setReusedPhotoUrl] = useState<string | null>(null);
+  const [autoPhoto, setAutoPhoto] = useState(false);
 
-  // إذا كانت قراءة البداية مساوية لقراءة نهاية آخر رحلة مغلقة، استخدم صورتها تلقائياً
+  // إذا كانت قراءة البداية مساوية لقراءة نهاية آخر رحلة مغلقة، اجلب صورتها وأرفقها كملف عادي
+  // (كأن المستخدم اختارها من المعرض) حتى تُضغط وترفع كصورة جديدة مستقلة لهذا الطلب
   useEffect(() => {
     const odo = toEnglishDigits(form.start_odometer).trim();
     const last = lastClosedTrip.data;
     const lastPhoto = (last?.end_photo_url ?? last?.start_photo_url ?? null) as string | null;
     const matches =
       !!odo && !!last && last.end_odometer != null && String(last.end_odometer) === odo && !!lastPhoto;
-    if (!photo && matches) {
-      if (reusedPhotoUrl !== lastPhoto) {
+    if (!matches) {
+      if (autoPhoto) {
+        if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
+        setPhoto(null);
+        setPhotoPreview("");
+        setAutoPhoto(false);
+        setReusedPhotoUrl(null);
+      } else if (reusedPhotoUrl) {
+        setReusedPhotoUrl(null);
+        setPhotoPreview((p) => (p === reusedPhotoUrl ? "" : p));
+      }
+      return;
+    }
+    if (photo) return;
+    let cancelled = false;
+    (async () => {
+      let blob: Blob | null = null;
+      try {
+        if (/^https?:\/\//i.test(lastPhoto!)) {
+          const res = await fetch(lastPhoto!);
+          if (res.ok) blob = await res.blob();
+        } else {
+          // مسار داخل التخزين: نزّل الملف مباشرة
+          const { data, error } = await supabase.storage.from("odometer-photos").download(lastPhoto!);
+          if (!error && data) blob = data;
+          if (!blob) {
+            // احتياط: رابط موقّع ثم جلب عادي
+            const { getSignedPhotoUrl } = await import("@/lib/storage");
+            const signed = await getSignedPhotoUrl(lastPhoto!);
+            const res = await fetch(signed);
+            if (res.ok) blob = await res.blob();
+          }
+        }
+      } catch {
+        blob = null;
+      }
+      if (cancelled) return;
+      if (blob && blob.size > 0) {
+        const file = new File([blob], "صورة-العداد-من-الرحلة-السابقة.jpg", { type: blob.type || "image/jpeg" });
+        if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
+        setPhoto(file);
+        setPhotoPreview(URL.createObjectURL(file));
+        setAutoPhoto(true);
+        setReusedPhotoUrl(null);
+        setErrors((e) => (e.photo ? { ...e, photo: false } : e));
+      } else if (reusedPhotoUrl !== lastPhoto) {
+        // تعذر جلب الصورة — نعود لإرفاق الرابط مباشرة
         setReusedPhotoUrl(lastPhoto);
         setPhotoPreview(lastPhoto!);
         setErrors((e) => (e.photo ? { ...e, photo: false } : e));
       }
-    } else if (reusedPhotoUrl) {
-      setReusedPhotoUrl(null);
-      setPhotoPreview((p) => (p === reusedPhotoUrl ? "" : p));
-    }
-  }, [form.start_odometer, lastClosedTrip.data, photo, reusedPhotoUrl]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [form.start_odometer, lastClosedTrip.data, photo, autoPhoto, reusedPhotoUrl, photoPreview]);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -210,6 +257,7 @@ function NewTrip() {
 
   function handlePhoto(file: File | null) {
     setPhoto(file);
+    setAutoPhoto(false);
     setReusedPhotoUrl(null);
     if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
     setPhotoPreview(file ? URL.createObjectURL(file) : "");
@@ -749,9 +797,9 @@ function NewTrip() {
           </Field>
 
           <PhotoInput preview={photoPreview} onFile={(f) => { handlePhoto(f); if (f) setErrors((e) => (e.photo ? { ...e, photo: false } : e)); }} invalid={errors.photo} />
-          {reusedPhotoUrl && (
+          {(autoPhoto || reusedPhotoUrl) && (
             <p className="mt-1 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1">
-              تم إرفاق صورة العداد تلقائياً من آخر رحلة مغلقة بنفس القراءة — يمكنك التقاط صورة جديدة إذا أردت
+              تم إرفاق صورة العداد تلقائياً من آخر رحلة مغلقة بنفس القراءة {autoPhoto ? "وسيتم رفعها كصورة جديدة لهذا الطلب" : ""} — يمكنك التقاط صورة جديدة إذا أردت
             </p>
           )}
         </CardContent>

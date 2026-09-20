@@ -352,11 +352,11 @@ function NewTrip() {
         return;
       }
 
-      if (!photo) throw new Error("يجب اختيار صورة العداد");
+      if (!photo && !reusedPhotoUrl) throw new Error("يجب اختيار صورة العداد");
       step = "photo";
-      stepLabel = "جارٍ ضغط ورفع صورة العداد...";
+      stepLabel = photo ? "جارٍ ضغط ورفع صورة العداد..." : "جارٍ استخدام صورة العداد من الرحلة السابقة...";
       setSubmitStep(stepLabel);
-      const path = await uploadOdometerPhoto(photo, "start");
+      const path = photo ? await uploadOdometerPhoto(photo, "start") : (reusedPhotoUrl as string);
       step = "profile";
       stepLabel = "جارٍ قراءة بيانات المستخدم...";
       setSubmitStep(stepLabel);
@@ -749,6 +749,11 @@ function NewTrip() {
           </Field>
 
           <PhotoInput preview={photoPreview} onFile={(f) => { handlePhoto(f); if (f) setErrors((e) => (e.photo ? { ...e, photo: false } : e)); }} invalid={errors.photo} />
+          {reusedPhotoUrl && (
+            <p className="mt-1 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1">
+              تم إرفاق صورة العداد تلقائياً من آخر رحلة مغلقة بنفس القراءة — يمكنك التقاط صورة جديدة إذا أردت
+            </p>
+          )}
         </CardContent>
       </Card>
 

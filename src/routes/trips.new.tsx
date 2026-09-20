@@ -210,6 +210,7 @@ function NewTrip() {
 
   function handlePhoto(file: File | null) {
     setPhoto(file);
+    setReusedPhotoUrl(null);
     if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
     setPhotoPreview(file ? URL.createObjectURL(file) : "");
   }
@@ -276,7 +277,7 @@ function NewTrip() {
     }
     if (!normalizedRouteStart) addMiss("route_start", "بداية خط السير");
     if (!normalizedStartOdometer) addMiss("start_odometer", "قراءة العداد");
-    if (!photo) addMiss("photo", "صورة العداد");
+    if (!photo && !reusedPhotoUrl) addMiss("photo", "صورة العداد");
 
     if (normalizedRouteStart.length > 40) {
       setErrors({ ...errs, route_start: true });

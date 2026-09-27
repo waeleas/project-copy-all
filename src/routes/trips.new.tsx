@@ -50,7 +50,30 @@ function NewTrip() {
       navigate({ to: "/" });
       return;
     }
-    setCheckingOpenTrip(false);
+    let cancelled = false;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) {
+        if (!cancelled) setCheckingOpenTrip(false);
+        return;
+      }
+      const { data: openTrips } = await supabase
+        .from("trips")
+        .select("id, trip_no")
+        .eq("created_by", uid)
+        .eq("status", "open")
+        .order("trip_no", { ascending: false })
+        .limit(1);
+      if (cancelled) return;
+      if (openTrips && openTrips.length > 0) {
+        setOpenTrip(openTrips[0] as any);
+      }
+      setCheckingOpenTrip(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [permLoading, canCreateTrips, navigate]);
 
   useEffect(() => {

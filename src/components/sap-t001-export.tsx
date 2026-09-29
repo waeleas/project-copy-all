@@ -116,7 +116,7 @@ async function buildRows(trips: any[]) {
       t.driver?.sap_number ?? t.driver_sap ?? "", // Mn.wk.ctr/Plnt
       byPlate.get(String(t.car_plate ?? "").trim()) || byCode.get(String(t.car_code ?? "").trim()) || "", // Acty Type
       km, // Work durtn
-      "TPC", // Unit for work
+      "TKM", // Unit for work
       1, // Number
       "TPC", // duration/unit
       t.trip_no ?? "", // Sort Field

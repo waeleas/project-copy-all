@@ -118,7 +118,7 @@ async function buildRows(trips: any[]) {
       km, // Work durtn
       "TKM", // Unit for work
       1, // Number
-      "TPC", // duration/unit
+      "TKM", // duration/unit
       t.trip_no ?? "", // Sort Field
     ];
   });

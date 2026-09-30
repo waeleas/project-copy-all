@@ -76,19 +76,20 @@ async function canvasToBlob(canvas: any, type: string, quality: number): Promise
  * ضغط قوي مع الحفاظ على وضوح أرقام العداد:
  * نبدأ بأبعاد وجودة جيدة ثم نخفض تدريجياً حتى نصل لحجم هدف صغير.
  */
-const TARGET_BYTES = 60 * 1024; // ~60KB هدف مضغوط جداً مع الحفاظ على وضوح أرقام العداد
+const TARGET_BYTES = 45 * 1024; // ~45KB هدف مضغوط جداً مع الحفاظ على وضوح أرقام العداد
 
 async function compressImage(file: File | Blob): Promise<Blob | null> {
   const decoded = await decodeImage(file);
   if (!decoded || !decoded.w || !decoded.h) return null;
 
   const steps: Array<{ maxDim: number; quality: number }> = [
-    { maxDim: 1100, quality: 0.55 },
-    { maxDim: 1000, quality: 0.48 },
+    { maxDim: 1000, quality: 0.5 },
     { maxDim: 900, quality: 0.42 },
     { maxDim: 800, quality: 0.36 },
     { maxDim: 720, quality: 0.3 },
     { maxDim: 640, quality: 0.26 },
+    { maxDim: 560, quality: 0.22 },
+    { maxDim: 480, quality: 0.2 },
   ];
 
   let best: Blob | null = null;

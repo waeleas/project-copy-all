@@ -200,9 +200,13 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
 
   const path = `${user.id}/${prefix}-${Date.now()}.${safeExt}`;
 
-  // إعادة المحاولة تلقائياً في حال ضعف الشبكة (3 محاولات مع تأخير متزايد)
+  // أخطاء شبكية/مؤقتة تستحق إعادة المحاولة
+  const isRetryable = (m: string) =>
+    /network|fetch|timeout|abort|load|failed|503|502|504|429|econn|socket|reset|unavailable|internal/.test(m);
+
+  // إعادة المحاولة تلقائياً في حال ضعف الشبكة (5 محاولات مع تأخير متزايد)
   let lastErr: any = null;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       const { error } = await supabase.storage.from("odometer-photos").upload(path, finalBlob, {
         cacheControl: "3600",
@@ -212,17 +216,32 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
       if (!error) return path;
       lastErr = error;
       const msg = String(error.message || "").toLowerCase();
-      // لا نعيد المحاولة عند الأخطاء غير الشبكية
-      if (!/network|fetch|timeout|abort|load|503|502|504/.test(msg)) throw error;
+      if (!isRetryable(msg)) throw error;
     } catch (e: any) {
       lastErr = e;
       const msg = String(e?.message || "").toLowerCase();
-      if (!/network|fetch|timeout|abort|load|503|502|504/.test(msg)) throw e;
+      if (!isRetryable(msg)) throw e;
     }
-    if (attempt < 3) await sleep(600 * attempt);
+    if (attempt < 5) await sleep(500 * attempt);
   }
+
+  // محاولة أخيرة: رفع الملف الأصلي كما هو إن فشل رفع النسخة المضغوطة
+  if (finalBlob !== file) {
+    try {
+      const rawPath = `${user.id}/${prefix}-${Date.now()}-raw.${(file.name.split(".").pop() || "jpg").toLowerCase()}`;
+      const { error } = await supabase.storage.from("odometer-photos").upload(rawPath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || "image/jpeg",
+      });
+      if (!error) return rawPath;
+    } catch {
+      // نكمل للخطأ النهائي
+    }
+  }
+
   const msg = String(lastErr?.message || "").toLowerCase();
-  if (/network|fetch|timeout|abort|load|503|502|504/.test(msg)) {
+  if (isRetryable(msg)) {
     throw new Error("تعذر رفع الصورة بسبب ضعف الشبكة. جرّب مرة أخرى أو التقط صورة أوضح بحجم أقل");
   }
   throw lastErr ?? new Error("تعذر رفع الصورة، الشبكة ضعيفة");

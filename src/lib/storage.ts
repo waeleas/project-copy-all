@@ -76,19 +76,20 @@ async function canvasToBlob(canvas: any, type: string, quality: number): Promise
  * ضغط قوي مع الحفاظ على وضوح أرقام العداد:
  * نبدأ بأبعاد وجودة جيدة ثم نخفض تدريجياً حتى نصل لحجم هدف صغير.
  */
-const TARGET_BYTES = 60 * 1024; // ~60KB هدف مضغوط جداً مع الحفاظ على وضوح أرقام العداد
+const TARGET_BYTES = 45 * 1024; // ~45KB هدف مضغوط جداً مع الحفاظ على وضوح أرقام العداد
 
 async function compressImage(file: File | Blob): Promise<Blob | null> {
   const decoded = await decodeImage(file);
   if (!decoded || !decoded.w || !decoded.h) return null;
 
   const steps: Array<{ maxDim: number; quality: number }> = [
-    { maxDim: 1100, quality: 0.55 },
-    { maxDim: 1000, quality: 0.48 },
+    { maxDim: 1000, quality: 0.5 },
     { maxDim: 900, quality: 0.42 },
     { maxDim: 800, quality: 0.36 },
     { maxDim: 720, quality: 0.3 },
     { maxDim: 640, quality: 0.26 },
+    { maxDim: 560, quality: 0.22 },
+    { maxDim: 480, quality: 0.2 },
   ];
 
   let best: Blob | null = null;
@@ -199,9 +200,13 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
 
   const path = `${user.id}/${prefix}-${Date.now()}.${safeExt}`;
 
-  // إعادة المحاولة تلقائياً في حال ضعف الشبكة (3 محاولات مع تأخير متزايد)
+  // أخطاء شبكية/مؤقتة تستحق إعادة المحاولة
+  const isRetryable = (m: string) =>
+    /network|fetch|timeout|abort|load|failed|503|502|504|429|econn|socket|reset|unavailable|internal/.test(m);
+
+  // إعادة المحاولة تلقائياً في حال ضعف الشبكة (5 محاولات مع تأخير متزايد)
   let lastErr: any = null;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       const { error } = await supabase.storage.from("odometer-photos").upload(path, finalBlob, {
         cacheControl: "3600",
@@ -211,17 +216,32 @@ export async function uploadOdometerPhoto(file: File, prefix: string): Promise<s
       if (!error) return path;
       lastErr = error;
       const msg = String(error.message || "").toLowerCase();
-      // لا نعيد المحاولة عند الأخطاء غير الشبكية
-      if (!/network|fetch|timeout|abort|load|503|502|504/.test(msg)) throw error;
+      if (!isRetryable(msg)) throw error;
     } catch (e: any) {
       lastErr = e;
       const msg = String(e?.message || "").toLowerCase();
-      if (!/network|fetch|timeout|abort|load|503|502|504/.test(msg)) throw e;
+      if (!isRetryable(msg)) throw e;
     }
-    if (attempt < 3) await sleep(600 * attempt);
+    if (attempt < 5) await sleep(500 * attempt);
   }
+
+  // محاولة أخيرة: رفع الملف الأصلي كما هو إن فشل رفع النسخة المضغوطة
+  if (finalBlob !== file) {
+    try {
+      const rawPath = `${user.id}/${prefix}-${Date.now()}-raw.${(file.name.split(".").pop() || "jpg").toLowerCase()}`;
+      const { error } = await supabase.storage.from("odometer-photos").upload(rawPath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || "image/jpeg",
+      });
+      if (!error) return rawPath;
+    } catch {
+      // نكمل للخطأ النهائي
+    }
+  }
+
   const msg = String(lastErr?.message || "").toLowerCase();
-  if (/network|fetch|timeout|abort|load|503|502|504/.test(msg)) {
+  if (isRetryable(msg)) {
     throw new Error("تعذر رفع الصورة بسبب ضعف الشبكة. جرّب مرة أخرى أو التقط صورة أوضح بحجم أقل");
   }
   throw lastErr ?? new Error("تعذر رفع الصورة، الشبكة ضعيفة");

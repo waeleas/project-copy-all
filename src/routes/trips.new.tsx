@@ -1,3 +1,4 @@
+import { getLastClosedTripPhoto } from "@/lib/last-photo.functions";
 import { arabicError } from "@/lib/errors";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect, useId, type FormEvent } from "react";
@@ -140,7 +141,7 @@ function NewTrip() {
     queryKey: ["last-closed-trip", form.car_code, form.car_plate],
     enabled: !!(form.car_code || form.car_plate),
     queryFn: async () => {
-      const { getLastClosedTripPhoto } = await import("@/lib/last-photo.functions");
+
       const r = await getLastClosedTripPhoto({
         data: { car_code: toEnglishDigits(form.car_code).trim(), car_plate: form.car_plate.trim() },
       });

@@ -140,19 +140,13 @@ function NewTrip() {
     queryKey: ["last-closed-trip", form.car_code, form.car_plate],
     enabled: !!(form.car_code || form.car_plate),
     queryFn: async () => {
-      const code = toEnglishDigits(form.car_code).trim();
-      const plate = form.car_plate.trim();
-      let q = supabase
-        .from("trips")
-        .select("trip_no, end_odometer, end_photo_url, start_photo_url, end_at")
-        .eq("status", "closed")
-        .order("end_at", { ascending: false })
-        .limit(1);
-      if (code) q = q.eq("car_code", code);
-      else if (plate) q = q.eq("car_plate", plate);
-      const { data, error } = await q;
-      if (error) throw error;
-      return ((data as any[]) ?? [])[0] ?? null;
+      const { getLastClosedTripPhoto } = await import("@/lib/last-photo.functions");
+      const r = await getLastClosedTripPhoto({
+        data: { car_code: toEnglishDigits(form.car_code).trim(), car_plate: form.car_plate.trim() },
+      });
+      if (!r) return null;
+      // photo_url رابط موقّع جاهز (يعمل لكل السائقين حتى لو الرحلة السابقة لسائق آخر)
+      return { trip_no: r.trip_no, end_odometer: r.end_odometer, end_photo_url: r.photo_url, start_photo_url: null } as any;
     },
   });
 

@@ -146,8 +146,8 @@ function NewTrip() {
         data: { car_code: toEnglishDigits(form.car_code).trim(), car_plate: form.car_plate.trim() },
       });
       if (!r) return null;
-      // photo_url رابط موقّع جاهز (يعمل لكل السائقين حتى لو الرحلة السابقة لسائق آخر)
-      return { trip_no: r.trip_no, end_odometer: r.end_odometer, end_photo_url: r.photo_url, start_photo_url: null } as any;
+      // photo_url رابط موقّع مؤقت للتحميل فقط؛ photo_path هو المرجع الدائم للحفظ
+      return { trip_no: r.trip_no, end_odometer: r.end_odometer, end_photo_url: r.photo_url, photo_path: r.photo_path, start_photo_url: null } as any;
     },
   });
 
@@ -207,11 +207,14 @@ function NewTrip() {
         setAutoPhoto(true);
         setReusedPhotoUrl(null);
         setErrors((e) => (e.photo ? { ...e, photo: false } : e));
-      } else if (reusedPhotoUrl !== lastPhoto) {
-        // تعذر جلب الصورة — نعود لإرفاق الرابط مباشرة
-        setReusedPhotoUrl(lastPhoto);
-        setPhotoPreview(lastPhoto!);
-        setErrors((e) => (e.photo ? { ...e, photo: false } : e));
+      } else {
+        // تعذر جلب الصورة — نحفظ المسار الدائم داخل التخزين (وليس الرابط المؤقت)
+        const stablePath = (last?.photo_path ?? null) as string | null;
+        if (stablePath && reusedPhotoUrl !== stablePath) {
+          setReusedPhotoUrl(stablePath);
+          setPhotoPreview(lastPhoto!);
+          setErrors((e) => (e.photo ? { ...e, photo: false } : e));
+        }
       }
     })();
     return () => {

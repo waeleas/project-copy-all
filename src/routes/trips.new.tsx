@@ -171,7 +171,7 @@ function NewTrip() {
         setReusedPhotoUrl(null);
       } else if (reusedPhotoUrl) {
         setReusedPhotoUrl(null);
-        setPhotoPreview((p) => (p === reusedPhotoUrl ? "" : p));
+        setPhotoPreview((p) => (p && !p.startsWith("blob:") && !p.startsWith("data:") ? "" : p));
       }
       return;
     }

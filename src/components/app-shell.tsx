@@ -7,7 +7,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Car, ListChecks, Plus, Settings, LogOut, Loader2, User, Mail, BarChart3 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NetworkBanner } from "@/components/network-banner";
 
@@ -49,6 +49,42 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
+
+  // Overdue open trips (> 23:59 since start) — remind every 6 hours
+  const { data: overdue } = useQuery({
+    queryKey: ["overdue-open-trip", user?.id],
+    enabled: !!user?.id,
+    refetchInterval: 5 * 60_000,
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - (23 * 60 + 59) * 60_000).toISOString();
+      const { data } = await supabase
+        .from("trips")
+        .select("id, trip_no, start_at")
+        .eq("created_by", user!.id)
+        .eq("status", "open")
+        .lt("start_at", cutoff)
+        .order("start_at", { ascending: true })
+        .limit(1);
+      return data?.[0] ?? null;
+    },
+  });
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const remindKey = user ? `overdueTrip.lastShown.${user.id}` : "";
+  const [lastShown, setLastShown] = useState<number>(0);
+  useEffect(() => {
+    if (!remindKey) return;
+    setLastShown(Number(localStorage.getItem(remindKey) || 0));
+  }, [remindKey]);
+  const showOverdue = !!overdue && now - lastShown >= 6 * 60 * 60_000;
+  function dismissOverdue() {
+    const t = Date.now();
+    localStorage.setItem(remindKey, String(t));
+    setLastShown(t);
+  }
 
   if (loading || !user) {
     return (
@@ -98,6 +134,28 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-5 pb-24">{children}</main>
+
+      {showOverdue && overdue && (
+        <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border rounded-2xl shadow-xl p-5 max-w-sm w-full text-center space-y-3">
+            <div className="text-lg font-bold text-destructive">تنبيه: رحلة لم تُغلق</div>
+            <p className="text-sm">
+              الرحلة رقم #{overdue.trip_no} مفتوحة منذ أكثر من 23:59 ساعة. برجاء إغلاق الطلب.
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button
+                onClick={() => {
+                  dismissOverdue();
+                  navigate({ to: "/trips/$id", params: { id: overdue.id } });
+                }}
+              >
+                فتح الرحلة
+              </Button>
+              <Button variant="outline" onClick={dismissOverdue}>لاحقًا</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
 
 

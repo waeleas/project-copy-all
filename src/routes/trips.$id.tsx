@@ -704,7 +704,8 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
             {trip.status === "closed" && (
               <Field label="قراءة عداد النهاية (كم)">
-                <Input type="number" min={0} inputMode="numeric" required value={form.end_odometer} onChange={(e) => set("end_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} dir="ltr" />
+                <Input type="number" min={0} inputMode="numeric" value={form.end_odometer} onChange={(e) => set("end_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} dir="ltr" />
+                <p className="text-xs text-muted-foreground">مسح الرقم والحفظ يعيد فتح الطلب ويحذف صورة عداد النهاية</p>
               </Field>
             )}
 

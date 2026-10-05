@@ -497,9 +497,14 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
   async function save(e: FormEvent) {
     e.preventDefault();
+    if (!form.start_odometer.trim()) return toast.error("لا يمكن إزالة قراءة عداد البداية، يمكنك تعديلها فقط");
     const startVal = parseInt(form.start_odometer, 10);
     if (!Number.isFinite(startVal)) return toast.error("قراءة العداد غير صحيحة");
+    if (startVal < 0) return toast.error("لا يمكن أن تكون قراءة العداد بالسالب");
+    if (trip.status === "closed" && !form.end_odometer.trim()) return toast.error("لا يمكن إزالة قراءة عداد النهاية لطلب مكتمل، يمكنك تعديلها فقط");
     const endVal = form.end_odometer ? parseInt(form.end_odometer, 10) : null;
+    if (endVal != null && !Number.isFinite(endVal)) return toast.error("قراءة عداد النهاية غير صحيحة");
+    if (endVal != null && endVal < 0) return toast.error("لا يمكن أن تكون قراءة العداد بالسالب");
     if (endVal != null && endVal <= startVal) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
     if (endVal != null && endVal - startVal > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     if (form.car_type === "rental" && !form.office_id) return toast.error("المكتب مطلوب لسيارات الإيجار");
@@ -683,12 +688,12 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
 
             <Field label="قراءة عداد البداية (كم)">
-              <Input type="number" value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value))} dir="ltr" />
+              <Input type="number" min={0} inputMode="numeric" required value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} dir="ltr" />
             </Field>
 
             {trip.status === "closed" && (
               <Field label="قراءة عداد النهاية (كم)">
-                <Input type="number" value={form.end_odometer} onChange={(e) => set("end_odometer", toEnglishDigits(e.target.value))} dir="ltr" />
+                <Input type="number" min={0} inputMode="numeric" required value={form.end_odometer} onChange={(e) => set("end_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} dir="ltr" />
               </Field>
             )}
 

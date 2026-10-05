@@ -501,7 +501,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     const startVal = parseInt(form.start_odometer, 10);
     if (!Number.isFinite(startVal)) return toast.error("قراءة العداد غير صحيحة");
     if (startVal < 0) return toast.error("لا يمكن أن تكون قراءة العداد بالسالب");
-    if (trip.status === "closed" && !form.end_odometer.trim()) return toast.error("لا يمكن إزالة قراءة عداد النهاية لطلب مكتمل، يمكنك تعديلها فقط");
+    const reopening = trip.status === "closed" && !form.end_odometer.trim();
     const endVal = form.end_odometer ? parseInt(form.end_odometer, 10) : null;
     if (endVal != null && !Number.isFinite(endVal)) return toast.error("قراءة عداد النهاية غير صحيحة");
     if (endVal != null && endVal < 0) return toast.error("لا يمكن أن تكون قراءة العداد بالسالب");

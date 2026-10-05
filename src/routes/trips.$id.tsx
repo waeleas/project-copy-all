@@ -353,7 +353,7 @@ function TripDetail() {
             <form onSubmit={closeTrip} className="space-y-3">
               <div className="space-y-1.5">
                 <Label>قراءة العداد عند النهاية (كم)</Label>
-                <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value))} dir="ltr" />
+                <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} dir="ltr" />
                 <p className="text-xs text-muted-foreground">آخر قراءة مسجلة: {lastOdometer} كم</p>
               </div>
               <div className="space-y-1.5">

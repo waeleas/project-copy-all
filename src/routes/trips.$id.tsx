@@ -531,7 +531,18 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
         start_odometer: startVal,
         notes: form.notes || null,
       };
-      if (trip.status === "closed") payload.end_odometer = endVal;
+      if (trip.status === "closed") {
+        payload.end_odometer = endVal;
+        if (reopening) {
+          // إزالة عداد النهاية تعيد فتح الطلب وتحذف صورة عداد النهاية
+          payload.status = "open";
+          payload.end_at = null;
+          payload.end_photo_url = null;
+          if (trip.end_photo_url) {
+            try { await supabase.storage.from("odometer-photos").remove([trip.end_photo_url]); } catch { /* تجاهل */ }
+          }
+        }
+      }
       if (isAdmin) {
         if (form.start_at) payload.start_at = new Date(form.start_at).toISOString();
         if (trip.status === "closed") payload.end_at = form.end_at ? new Date(form.end_at).toISOString() : null;

@@ -545,7 +545,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
       }
       if (isAdmin) {
         if (form.start_at) payload.start_at = new Date(form.start_at).toISOString();
-        if (trip.status === "closed") payload.end_at = form.end_at ? new Date(form.end_at).toISOString() : null;
+        if (trip.status === "closed" && !reopening) payload.end_at = form.end_at ? new Date(form.end_at).toISOString() : null;
         if (form.created_by && form.created_by !== trip.created_by) {
           const u = usersQuery.data?.find((x: any) => x.id === form.created_by);
           if (u) {

@@ -501,7 +501,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     const startVal = parseInt(form.start_odometer, 10);
     if (!Number.isFinite(startVal)) return toast.error("قراءة العداد غير صحيحة");
     if (startVal < 0) return toast.error("لا يمكن أن تكون قراءة العداد بالسالب");
-    if (trip.status === "closed" && !form.end_odometer.trim()) return toast.error("لا يمكن إزالة قراءة عداد النهاية لطلب مكتمل، يمكنك تعديلها فقط");
+    const reopening = trip.status === "closed" && !form.end_odometer.trim();
     const endVal = form.end_odometer ? parseInt(form.end_odometer, 10) : null;
     if (endVal != null && !Number.isFinite(endVal)) return toast.error("قراءة عداد النهاية غير صحيحة");
     if (endVal != null && endVal < 0) return toast.error("لا يمكن أن تكون قراءة العداد بالسالب");
@@ -531,10 +531,21 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
         start_odometer: startVal,
         notes: form.notes || null,
       };
-      if (trip.status === "closed") payload.end_odometer = endVal;
+      if (trip.status === "closed") {
+        payload.end_odometer = endVal;
+        if (reopening) {
+          // إزالة عداد النهاية تعيد فتح الطلب وتحذف صورة عداد النهاية
+          payload.status = "open";
+          payload.end_at = null;
+          payload.end_photo_url = null;
+          if (trip.end_photo_url) {
+            try { await supabase.storage.from("odometer-photos").remove([trip.end_photo_url]); } catch { /* تجاهل */ }
+          }
+        }
+      }
       if (isAdmin) {
         if (form.start_at) payload.start_at = new Date(form.start_at).toISOString();
-        if (trip.status === "closed") payload.end_at = form.end_at ? new Date(form.end_at).toISOString() : null;
+        if (trip.status === "closed" && !reopening) payload.end_at = form.end_at ? new Date(form.end_at).toISOString() : null;
         if (form.created_by && form.created_by !== trip.created_by) {
           const u = usersQuery.data?.find((x: any) => x.id === form.created_by);
           if (u) {
@@ -693,7 +704,8 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
             {trip.status === "closed" && (
               <Field label="قراءة عداد النهاية (كم)">
-                <Input type="number" min={0} inputMode="numeric" required value={form.end_odometer} onChange={(e) => set("end_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} dir="ltr" />
+                <Input type="number" min={0} inputMode="numeric" value={form.end_odometer} onChange={(e) => set("end_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} dir="ltr" />
+                <p className="text-xs text-muted-foreground">مسح الرقم والحفظ يعيد فتح الطلب ويحذف صورة عداد النهاية</p>
               </Field>
             )}
 

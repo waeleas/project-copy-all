@@ -794,7 +794,7 @@ function NewTrip() {
           <Field label="قراءة العداد (كم)" invalid={errors.start_odometer}>
             <div className="relative">
               <Gauge className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input type="text" inputMode="numeric" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} className="pr-10" dir="ltr" />
+              <Input type="text" inputMode="numeric" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value).replace(/[^0-9.]/g, "").split(".")[0])} className="pr-10" dir="ltr" />
             </div>
             {(form.car_code || form.car_plate) && (
               <div className="mt-1 text-xs">

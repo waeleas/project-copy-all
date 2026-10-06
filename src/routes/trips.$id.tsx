@@ -353,7 +353,7 @@ function TripDetail() {
             <form onSubmit={closeTrip} className="space-y-3">
               <div className="space-y-1.5">
                 <Label>قراءة العداد عند النهاية (كم)</Label>
-                <Input type="number" min={lastOdometer} required value={endKm} onChange={(e) => setEndKm(toEnglishDigits(e.target.value).replace(/[^0-9.]/g, "").split(".")[0])} dir="ltr" />
+                <Input type="text" inputMode="decimal" required value={endKm} onChange={(e) => setEndKm(toOdometerInput(e.target.value))} dir="ltr" />
                 <p className="text-xs text-muted-foreground">آخر قراءة مسجلة: {lastOdometer} كم</p>
               </div>
               <div className="space-y-1.5">
@@ -699,12 +699,12 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
 
 
             <Field label="قراءة عداد البداية (كم)">
-              <Input type="number" min={0} inputMode="numeric" required value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value).replace(/[^0-9.]/g, "").split(".")[0])} dir="ltr" />
+              <Input type="text" inputMode="decimal" required value={form.start_odometer} onChange={(e) => set("start_odometer", toOdometerInput(e.target.value))} dir="ltr" />
             </Field>
 
             {trip.status === "closed" && (
               <Field label="قراءة عداد النهاية (كم)">
-                <Input type="number" min={0} inputMode="numeric" value={form.end_odometer} onChange={(e) => set("end_odometer", toEnglishDigits(e.target.value).replace(/[^0-9.]/g, "").split(".")[0])} dir="ltr" />
+                <Input type="text" inputMode="decimal" value={form.end_odometer} onChange={(e) => set("end_odometer", toOdometerInput(e.target.value))} dir="ltr" />
                 <p className="text-xs text-muted-foreground">مسح الرقم والحفظ يعيد فتح الطلب ويحذف صورة عداد النهاية</p>
               </Field>
             )}

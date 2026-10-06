@@ -97,8 +97,8 @@ export function TripsPhotosBackup() {
       const XLSX = await import("xlsx");
       const rows = trips.map((t) => ({
         "رقم الطلب": t.trip_no,
-        "التاريخ": t.start_at ? new Date(t.start_at).toLocaleString("en-GB") : "",
-        "تاريخ الإنهاء": t.end_at ? new Date(t.end_at).toLocaleString("en-GB") : "",
+        "التاريخ": fmtDate(t.start_at),
+        "تاريخ الإنهاء": fmtDate(t.end_at),
         "كود السيارة": t.car_code ?? "",
         "رقم اللوحة": t.car_plate ?? "",
         "السائق": t.driver_name ?? "",

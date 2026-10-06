@@ -25,6 +25,15 @@ function monthAgo() {
   return d.toISOString().slice(0, 10);
 }
 
+// تنسيق ثابت: يوم/شهر/سنة ساعة:دقيقة — مستقل عن إعدادات الجهاز
+function fmtDate(v: any) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 export function TripsPhotosBackup() {
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState(monthAgo());

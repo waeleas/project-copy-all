@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { sapOperationText } from "./sap-operation-text";
+import { sapOperationText } from "../src/lib/sap-operation-text";
 
 describe("SAP Operation Short Text", () => {
   test("matches the requested example", () => {

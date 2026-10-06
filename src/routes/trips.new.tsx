@@ -19,7 +19,7 @@ import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";
 import { CameraCapture } from "@/components/camera-capture";
 import { usePermissions } from "@/hooks/use-permissions";
-import { toEnglishDigits } from "@/lib/utils";
+import { toEnglishDigits, toOdometerInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/trips/new")({
   head: () => ({ meta: [{ title: "رحلة جديدة" }] }),
@@ -794,7 +794,7 @@ function NewTrip() {
           <Field label="قراءة العداد (كم)" invalid={errors.start_odometer}>
             <div className="relative">
               <Gauge className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input type="text" inputMode="numeric" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toEnglishDigits(e.target.value).replace(/[^0-9]/g, ""))} className="pr-10" dir="ltr" />
+              <Input type="text" inputMode="decimal" min={0} value={form.start_odometer} onChange={(e) => set("start_odometer", toOdometerInput(e.target.value))} className="pr-10" dir="ltr" />
             </div>
             {(form.car_code || form.car_plate) && (
               <div className="mt-1 text-xs">

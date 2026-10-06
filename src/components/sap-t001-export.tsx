@@ -3,6 +3,7 @@ import { FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { supabase } from "@/integrations/supabase/client";
+import { sapOperationText } from "@/lib/sap-operation-text";
 
 const FILE_NAME = "IW31-Creat_Employee_Trip_Order-T001.xlsx";
 
@@ -91,9 +92,7 @@ async function buildRows(trips: any[]) {
   return trips.map((t) => {
     const segs = segsByTrip[t.id] ?? [];
     const extraRoutes = segs.map((s) => String(s.route ?? "").trim()).filter(Boolean);
-    const normalizedExtraRoutes = extraRoutes.map((r) => r.replace(/من|إلى|الي|الى/g, "-"));
-    const joinedRoutes = normalizedExtraRoutes.join(", ");
-    const operationShortText = (joinedRoutes || String(t.route_start ?? "").trim()).slice(0, 40);
+    const operationShortText = sapOperationText(t.route_start, extraRoutes);
     const km = t.end_odometer != null && t.start_odometer != null ? t.end_odometer - t.start_odometer : "";
     const pmActType = t.service_type?.pmact_type ?? "";
     const driverSap = t.driver?.sap_number ?? t.driver_sap ?? "";

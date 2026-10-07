@@ -129,6 +129,14 @@ function TripsList() {
     if (isNaN(d.getTime())) return "";
     return d.toLocaleDateString("en-GB");
   }
+  // صيغة ثابتة: يوم-اسم الشهر-سنة (مثال: 5-Oct-26) — مستقلة عن إعدادات الجهاز
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function fmtDateShort(v: any) {
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    return `${d.getDate()}-${MONTHS[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`;
+  }
   function fmtTime(v: any) {
     if (!v) return "";
     const d = new Date(v);

@@ -123,11 +123,12 @@ function TripsList() {
     setTripNoQ(""); setDateFrom(""); setDateTo(""); setStatusFilter("all"); setServiceFilter("all");
   }
 
+  // صيغة ثابتة DD/MM/YYYY — مبنية يدويًا حتى لا تتأثر بإعدادات الجهاز
   function fmtDate(v: any) {
     if (!v) return "";
     const d = new Date(v);
     if (isNaN(d.getTime())) return "";
-    return d.toLocaleDateString("en-GB");
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
   }
   // صيغة ثابتة: يوم-اسم الشهر-سنة (مثال: 5-Oct-26) — مستقلة عن إعدادات الجهاز
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

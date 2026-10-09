@@ -142,7 +142,9 @@ function TripsList() {
     if (!v) return "";
     const d = new Date(v);
     if (isNaN(d.getTime())) return "";
-    return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    // صيغة ثابتة HH:MM:SS — مبنية يدويًا حتى لا تتأثر بإعدادات الجهاز
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   }
 
   async function exportExcel() {

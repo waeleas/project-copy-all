@@ -49,15 +49,16 @@ function ReportsPage() {
 
   const cars = useQuery({
     queryKey: ["report", "cars", range.from, range.to],
-    queryFn: () => carsFn({ data: range }),
+    queryFn: () => carsFn({ data: localRange(range) }),
   });
-  const drivers = useQuery({
+  const driversQ_ = null as unknown; void driversQ_;
+  const _d = useQuery({
     queryKey: ["report", "drivers", range.from, range.to],
-    queryFn: () => driversFn({ data: range }),
+    queryFn: () => driversFn({ data: localRange(range) }),
   });
-  const compare = useQuery({
+  const _c = useQuery({
     queryKey: ["report", "compare", range.from, range.to],
-    queryFn: () => compareFn({ data: range }),
+    queryFn: () => compareFn({ data: localRange(range) }),
   });
 
   function applyRange() {

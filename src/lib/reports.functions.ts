@@ -50,8 +50,8 @@ async function fetchAllCompletedTrips(supabase: any, range: ReportRange): Promis
         "id, car_plate, car_code, car_description, car_type, driver_id, driver_name_rental, driver_name, driver_sap, created_by_name, start_odometer, end_odometer, start_at, end_at, status, governorate_id, governorate_name",
       )
       .not("end_odometer", "is", null);
-    if (range.from) q = q.gte("start_at", `${range.from}T00:00:00.000Z`);
-    if (range.to) q = q.lte("start_at", `${range.to}T23:59:59.999Z`);
+    if (range.from) q = q.gte("start_at", range.from.includes("T") ? range.from : `${range.from}T00:00:00.000Z`);
+    if (range.to) q = q.lte("start_at", range.to.includes("T") ? range.to : `${range.to}T23:59:59.999Z`);
     const { data, error } = await q.range(from, from + PAGE - 1);
     if (error) throw error;
     if (!data || data.length === 0) break;

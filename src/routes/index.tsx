@@ -90,7 +90,7 @@ function TripsList() {
         if (!hay.includes(q)) return false;
       }
       if (dateFrom) {
-        if (new Date(t.start_at) < new Date(dateFrom)) return false;
+        if (new Date(t.start_at) < new Date(`${dateFrom}T00:00:00`)) return false;
       }
       if (dateTo) {
         const end = new Date(dateTo);

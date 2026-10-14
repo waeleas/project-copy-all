@@ -23,6 +23,14 @@ export const Route = createFileRoute("/reports")({
   ),
 });
 
+// يحوّل أيام الفلتر إلى بداية/نهاية اليوم بتوقيت الجهاز (مصر) بدل UTC
+function localRange(r: { from: string | null; to: string | null }) {
+  return {
+    from: r.from ? new Date(`${r.from}T00:00:00`).toISOString() : null,
+    to: r.to ? new Date(`${r.to}T23:59:59.999`).toISOString() : null,
+  };
+}
+
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US").format(Math.round(n));
 }
@@ -49,15 +57,15 @@ function ReportsPage() {
 
   const cars = useQuery({
     queryKey: ["report", "cars", range.from, range.to],
-    queryFn: () => carsFn({ data: range }),
+    queryFn: () => carsFn({ data: localRange(range) }),
   });
   const drivers = useQuery({
     queryKey: ["report", "drivers", range.from, range.to],
-    queryFn: () => driversFn({ data: range }),
+    queryFn: () => driversFn({ data: localRange(range) }),
   });
   const compare = useQuery({
     queryKey: ["report", "compare", range.from, range.to],
-    queryFn: () => compareFn({ data: range }),
+    queryFn: () => compareFn({ data: localRange(range) }),
   });
 
   function applyRange() {

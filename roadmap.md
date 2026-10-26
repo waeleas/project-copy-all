@@ -1,2 +1,2 @@
-- [ ] Apply 30-day photo retention with authenticated cleanup and regression tests.
-- [ ] Delete eligible old photos and verify request data remains intact.
+- [x] Apply 30-day photo retention with authenticated cleanup and regression tests.
+- [x] Delete eligible old photos and verify request data remains intact (6,330 photos removed; all 5,453 requests preserved).

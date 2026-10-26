@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep SAP operation-text formatting in a pure shared helper with regression tests so export normalization can be verified without accessing real trip data.
+- Keep photo retention rules in a pure tested helper; cleanup must authenticate an admin or server-only schedule secret and protect objects referenced by recent requests before deleting through Storage API.

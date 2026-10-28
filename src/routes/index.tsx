@@ -15,9 +15,17 @@ import { SapOrdersImport } from "@/components/sap-orders-import";
 
 
 import { toast } from "sonner";
+import { loadAllTripPages, tripDateBounds, tripPageRange, TRIP_PAGE_SIZE } from "@/lib/trip-list-loading";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "خطوط السير للسيارات" }] }),
+  head: () => ({ meta: [
+    { title: "الرحلات — خطوط سير السيارات" },
+    { name: "description", content: "متابعة رحلات خدمة ما بعد البيع ونقل العاملين وتقارير العدادات والمسارات." },
+    { property: "og:title", content: "الرحلات — خطوط سير السيارات" },
+    { property: "og:description", content: "متابعة رحلات الخدمة ونقل العاملين وتقارير العدادات والمسارات." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <AppShell><TripsList /></AppShell>,
 });
 
@@ -34,7 +42,7 @@ function TripsList() {
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "completed">("all");
   const [serviceFilter, setServiceFilter] = useState<"all" | "worker" | "aftersales">("all");
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 100;
+  const PAGE_SIZE = TRIP_PAGE_SIZE;
 
   const SELECT = `
           *,
@@ -51,33 +59,25 @@ function TripsList() {
   function applyServerFilters(q: any) {
     if (statusFilter === "open") q = q.eq("status", "open");
     if (statusFilter === "completed") q = q.neq("status", "open");
-    if (dateFrom) q = q.gte("start_at", new Date(`${dateFrom}T00:00:00`).toISOString());
-    if (dateTo) {
-      const end = new Date(`${dateTo}T00:00:00`);
-      end.setHours(23, 59, 59, 999);
-      q = q.lte("start_at", end.toISOString());
-    }
+    const bounds = tripDateBounds(dateFrom, dateTo);
+    if (bounds.start) q = q.gte("start_at", bounds.start);
+    if (bounds.end) q = q.lte("start_at", bounds.end);
     return q;
   }
 
   async function fetchAllTrips() {
-      const CHUNK = 1000;
-      const all: any[] = [];
-      for (let from = 0; ; from += CHUNK) {
+    return loadAllTripPages<any>(async (from, to) => {
         const { data, error } = await applyServerFilters(supabase.from("trips").select(SELECT))
           .order("start_at", { ascending: false })
           .order("id", { ascending: false })
-          .range(from, from + CHUNK - 1);
+          .range(from, to);
         if (error) throw error;
-        if (!data || data.length === 0) break;
-        all.push(...data);
-        if (data.length < CHUNK) break;
-      }
-      return all;
+        return data ?? [];
+    });
   }
 
   const { data: counts = { all: 0, open: 0, completed: 0 }, refetch: refetchCounts } = useQuery({
-    queryKey: ["trips-counts"],
+    queryKey: ["trips", "counts"],
     queryFn: async () => {
       const [a, o] = await Promise.all([
         supabase.from("trips").select("id", { count: "exact", head: true }),
@@ -90,20 +90,20 @@ function TripsList() {
     },
   });
 
-  const { data: listData, isLoading, refetch: refetchList } = useQuery({
+  const { data: listData, isLoading, error: listError, refetch: refetchList } = useQuery({
     queryKey: ["trips", needsAll ? "all" : "page", statusFilter, dateFrom, dateTo, needsAll ? 0 : page],
     queryFn: async () => {
       if (needsAll) {
         const rows = await fetchAllTrips();
         return { rows, total: rows.length };
       }
-      const from = (page - 1) * PAGE_SIZE;
+      const { from, to } = tripPageRange(page);
       const { data, error, count } = await applyServerFilters(
         supabase.from("trips").select(SELECT, { count: "exact" }),
       )
         .order("start_at", { ascending: false })
         .order("id", { ascending: false })
-        .range(from, from + PAGE_SIZE - 1);
+        .range(from, to);
       if (error) throw error;
       return { rows: data ?? [], total: count ?? 0 };
     },
@@ -155,6 +155,9 @@ function TripsList() {
   const filteredTotal = needsAll ? filtered.length : (listData?.total ?? 0);
   const totalPages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
+  useEffect(() => {
+    if (listData && page > totalPages) setPage(totalPages);
+  }, [listData, page, totalPages]);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const pageItems = needsAll ? filtered.slice(pageStart, pageStart + PAGE_SIZE) : filtered;
 
@@ -477,7 +480,7 @@ function TripsList() {
         <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-auto sm:flex-nowrap">
           <SapOrdersImport onDone={() => refetch()} />
           <SapT001Export getTrips={getExportTrips} />
-          <Button variant="outline" size="sm" onClick={exportExcel}><Download className="size-4 ml-1" /> Excel</Button>
+          <Button variant="outline" size="sm" onClick={() => exportExcel().catch(() => toast.error("تعذر تجهيز التقرير، حاول مرة أخرى"))}><Download className="size-4 ml-1" /> Excel</Button>
         </div>
       </div>
 
@@ -539,6 +542,7 @@ function TripsList() {
       </Card>
 
       {isLoading && <p className="text-center py-8 text-muted-foreground">جاري التحميل...</p>}
+      {listError && <p role="alert" className="text-center py-8 text-destructive">تعذر تحميل الرحلات، حاول مرة أخرى</p>}
 
       {!isLoading && counts.all === 0 && trips && trips.length === 0 && (
         <Card className="border-dashed">

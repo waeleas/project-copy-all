@@ -184,7 +184,10 @@ export function SapT001Export({ getTrips }: { getTrips: () => Promise<any[]> }) 
     <Button
       variant="outline"
       size="sm"
-      onClick={async () => downloadTemplate((await getTrips()).filter((t) => !t.sap_order_no))}
+      onClick={async () => {
+        try { await downloadTemplate((await getTrips()).filter((t) => !t.sap_order_no)); }
+        catch { toast.error("تعذر تجهيز تقرير SAP، حاول مرة أخرى"); }
+      }}
       className="gap-1"
     >
       <FileSpreadsheet className="size-4" /> SAP T001

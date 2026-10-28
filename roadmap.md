@@ -1,2 +1,3 @@
 - [x] Apply 30-day photo retention with authenticated cleanup and regression tests.
 - [x] Delete eligible old photos and verify request data remains intact (6,330 photos removed; all 5,453 requests preserved).
+- [ ] Reduce routine trip-list transfers with 100-row database pages, preserving full search and on-demand Excel/SAP exports; verify with authenticated browsing and regression tests.

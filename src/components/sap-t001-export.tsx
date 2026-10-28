@@ -176,14 +176,20 @@ async function downloadTemplate(trips: any[]) {
   toast.success(dataRows.length ? `تم تنزيل شيت SAP (${dataRows.length} طلب)` : "تم تنزيل الشيت الفارغ");
 }
 
-export function SapT001Export({ trips = [] }: { trips?: any[] }) {
+export function SapT001Export({ getTrips }: { getTrips: () => Promise<any[]> }) {
   const { isAdmin } = useIsAdmin();
   if (!isAdmin) return null;
 
-  const pending = trips.filter((t) => !t.sap_order_no);
-
   return (
-    <Button variant="outline" size="sm" onClick={() => downloadTemplate(pending)} className="gap-1">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={async () => {
+        try { await downloadTemplate((await getTrips()).filter((t) => !t.sap_order_no)); }
+        catch { toast.error("تعذر تجهيز تقرير SAP، حاول مرة أخرى"); }
+      }}
+      className="gap-1"
+    >
       <FileSpreadsheet className="size-4" /> SAP T001
     </Button>
   );

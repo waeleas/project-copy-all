@@ -36,11 +36,7 @@ function TripsList() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 100;
 
-  const { data: trips, isLoading, refetch } = useQuery({
-    queryKey: ["trips"],
-
-    queryFn: async () => {
-      const SELECT = `
+  const SELECT = `
           *,
           office:offices!trips_office_id_fkey(name),
           follow_office:offices!trips_follow_office_id_fkey(name),
@@ -49,13 +45,28 @@ function TripsList() {
           driver:drivers(name, sap_number),
           service_type:service_types(name, pmact_type)
         `;
+  // البحث النصي وفلتر نوع الخدمة يحتاجان كل الطلبات؛ غير ذلك نحمّل الصفحة المعروضة فقط
+  const needsAll = !!tripNoQ.trim() || serviceFilter !== "all";
+
+  function applyServerFilters(q: any) {
+    if (statusFilter === "open") q = q.eq("status", "open");
+    if (statusFilter === "completed") q = q.neq("status", "open");
+    if (dateFrom) q = q.gte("start_at", new Date(`${dateFrom}T00:00:00`).toISOString());
+    if (dateTo) {
+      const end = new Date(`${dateTo}T00:00:00`);
+      end.setHours(23, 59, 59, 999);
+      q = q.lte("start_at", end.toISOString());
+    }
+    return q;
+  }
+
+  async function fetchAllTrips() {
       const CHUNK = 1000;
       const all: any[] = [];
       for (let from = 0; ; from += CHUNK) {
-        const { data, error } = await supabase
-          .from("trips")
-          .select(SELECT)
-          .order("created_at", { ascending: false })
+        const { data, error } = await applyServerFilters(supabase.from("trips").select(SELECT))
+          .order("start_at", { ascending: false })
+          .order("id", { ascending: false })
           .range(from, from + CHUNK - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
@@ -63,8 +74,42 @@ function TripsList() {
         if (data.length < CHUNK) break;
       }
       return all;
+  }
+
+  const { data: counts = { all: 0, open: 0, completed: 0 }, refetch: refetchCounts } = useQuery({
+    queryKey: ["trips-counts"],
+    queryFn: async () => {
+      const [a, o] = await Promise.all([
+        supabase.from("trips").select("id", { count: "exact", head: true }),
+        supabase.from("trips").select("id", { count: "exact", head: true }).eq("status", "open"),
+      ]);
+      if (a.error) throw a.error;
+      if (o.error) throw o.error;
+      const all = a.count ?? 0, open = o.count ?? 0;
+      return { all, open, completed: all - open };
     },
   });
+
+  const { data: listData, isLoading, refetch: refetchList } = useQuery({
+    queryKey: ["trips", needsAll ? "all" : "page", statusFilter, dateFrom, dateTo, needsAll ? 0 : page],
+    queryFn: async () => {
+      if (needsAll) {
+        const rows = await fetchAllTrips();
+        return { rows, total: rows.length };
+      }
+      const from = (page - 1) * PAGE_SIZE;
+      const { data, error, count } = await applyServerFilters(
+        supabase.from("trips").select(SELECT, { count: "exact" }),
+      )
+        .order("start_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
+      if (error) throw error;
+      return { rows: data ?? [], total: count ?? 0 };
+    },
+  });
+  const trips = listData?.rows;
+  const refetch = () => { refetchList(); refetchCounts(); };
 
 
   const filtered = useMemo(() => {
@@ -107,17 +152,18 @@ function TripsList() {
 
   useEffect(() => { setPage(1); }, [tripNoQ, dateFrom, dateTo, statusFilter, serviceFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const filteredTotal = needsAll ? filtered.length : (listData?.total ?? 0);
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const pageItems = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const pageItems = needsAll ? filtered.slice(pageStart, pageStart + PAGE_SIZE) : filtered;
 
-
-  const counts = useMemo(() => {
-    const all = trips?.length ?? 0;
-    const open = trips?.filter((t: any) => t.status === "open").length ?? 0;
-    return { all, open, completed: all - open };
-  }, [trips]);
+  // التصدير يحتاج كل الطلبات المطابقة، فنحمّلها عند الضغط فقط
+  async function getExportTrips() {
+    if (needsAll) return filtered;
+    const t = toast.loading("جاري تجهيز البيانات...");
+    try { return await fetchAllTrips(); } finally { toast.dismiss(t); }
+  }
 
   function clearFilters() {
     setTripNoQ(""); setDateFrom(""); setDateTo(""); setStatusFilter("all"); setServiceFilter("all");
@@ -148,6 +194,7 @@ function TripsList() {
   }
 
   async function exportExcel() {
+    const filtered = await getExportTrips();
     const { data: carsMaster } = await supabase.from("cars" as any).select("plate, code, acty_type");
     const actyByPlate = new Map<string, string>();
     const actyByCode = new Map<string, string>();
@@ -429,7 +476,7 @@ function TripsList() {
         </Link>
         <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-auto sm:flex-nowrap">
           <SapOrdersImport onDone={() => refetch()} />
-          <SapT001Export trips={filtered} />
+          <SapT001Export getTrips={getExportTrips} />
           <Button variant="outline" size="sm" onClick={exportExcel}><Download className="size-4 ml-1" /> Excel</Button>
         </div>
       </div>
@@ -484,7 +531,7 @@ function TripsList() {
           </div>
           {hasFilters && (
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-              <span>عرض {filtered.length} من {trips?.length ?? 0}</span>
+              <span>عرض {filteredTotal} من {counts.all}</span>
               <Button size="sm" variant="ghost" onClick={clearFilters}><X className="size-3 ml-1" /> مسح الفلاتر</Button>
             </div>
           )}
@@ -493,7 +540,7 @@ function TripsList() {
 
       {isLoading && <p className="text-center py-8 text-muted-foreground">جاري التحميل...</p>}
 
-      {!isLoading && trips && trips.length === 0 && (
+      {!isLoading && counts.all === 0 && trips && trips.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="py-12 text-center space-y-3">
             <div className="mx-auto size-14 rounded-2xl bg-muted flex items-center justify-center">
@@ -570,10 +617,10 @@ function TripsList() {
         ))}
       </div>
 
-      {filtered.length > PAGE_SIZE && (
+      {filteredTotal > PAGE_SIZE && (
         <div className="flex items-center justify-between gap-2 pt-2">
           <div className="text-xs text-muted-foreground">
-            عرض {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} من {filtered.length}
+            عرض {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filteredTotal)} من {filteredTotal}
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>السابق</Button>

@@ -1,3 +1,4 @@
 - [x] Apply 30-day photo retention with authenticated cleanup and regression tests.
+- [x] Fix repeated gallery opening after cancellation; 7 lifecycle tests and authenticated mobile-size browser checks passed for repeated cancel/return, gallery/fallback selection and preserved preview, without saving requests. Native Android gallery cancellation remains device-specific and was simulated.
 - [x] Delete eligible old photos and verify request data remains intact (6,330 photos removed; all 5,453 requests preserved).
 - [x] Reduce routine trip-list transfers with 100-row database pages, preserving full search and on-demand Excel/SAP exports; authenticated browsing verified 100-row initial load, distinct second page, search across 121 requests, and Excel containing all 121 requests; 8 regression tests passed.

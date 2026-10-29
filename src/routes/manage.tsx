@@ -27,7 +27,14 @@ import { TripsPhotosBackup } from "@/components/trips-photos-backup";
 
 
 export const Route = createFileRoute("/manage")({
-  head: () => ({ meta: [{ title: "البيانات الأساسية" }] }),
+  head: () => ({ meta: [
+    { title: "البيانات الأساسية | Service Tracker Pro" },
+    { name: "description", content: "إدارة بيانات السيارات والموظفين وإعدادات متابعة الرحلات." },
+    { property: "og:title", content: "البيانات الأساسية | Service Tracker Pro" },
+    { property: "og:description", content: "إدارة بيانات السيارات والموظفين وإعدادات متابعة الرحلات." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <AppShell><Manage /></AppShell>,
 });
 

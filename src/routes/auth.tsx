@@ -13,7 +13,14 @@ import { toast } from "sonner";
 import { Car, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "تسجيل الدخول — تتبع الرحلات" }] }),
+  head: () => ({ meta: [
+    { title: "تسجيل الدخول | Service Tracker Pro" },
+    { name: "description", content: "تسجيل الدخول إلى نظام متابعة رحلات السيارات." },
+    { property: "og:title", content: "تسجيل الدخول | Service Tracker Pro" },
+    { property: "og:description", content: "تسجيل الدخول إلى نظام متابعة رحلات السيارات." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: AuthPage,
 });
 

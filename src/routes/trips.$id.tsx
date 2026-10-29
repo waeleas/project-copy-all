@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useId, type FormEvent, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getSignedPhotoUrl, MAX_ODOMETER_PHOTO_BYTES, uploadOdometerPhoto } from "@/lib/storage";
+import { getSignedPhotoUrl, uploadOdometerPhoto } from "@/lib/storage";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +88,7 @@ function TripDetail() {
   const [endPhoto, setEndPhoto] = useState<File | null>(null);
   const [endPreview, setEndPreview] = useState("");
   const [saving, setSaving] = useState(false);
+  const [photoStatus, setPhotoStatus] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [sapOpen, setSapOpen] = useState(false);
   const [sapValue, setSapValue] = useState("");
@@ -130,7 +131,8 @@ function TripDetail() {
     if (endVal - lastOdometer > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     setSaving(true);
     try {
-      const path = await uploadOdometerPhoto(endPhoto, "end");
+      const path = await uploadOdometerPhoto(endPhoto, "end", setPhotoStatus);
+      setPhotoStatus("جارٍ حفظ بيانات الرحلة...");
       // تاريخ الإنهاء يكون بنفس يوم تسجيل الطلب (مع الاحتفاظ بوقت الإنهاء الفعلي)
       const startDate = new Date(trip.start_at);
       const nowT = new Date();
@@ -369,7 +371,7 @@ function TripDetail() {
               </div>
               <PhotoInput preview={endPreview} onFile={handleEnd} label="صورة عداد النهاية" />
               <Button type="submit" className="w-full h-12" disabled={saving}>
-                {saving && <Loader2 className="ml-2 size-4 animate-spin" />} إنهاء الرحلة
+                {saving && <Loader2 className="ml-2 size-4 animate-spin" />} {saving ? (photoStatus || "جارٍ إنهاء الرحلة...") : "إنهاء الرحلة"}
               </Button>
             </form>
           </CardContent>
@@ -977,6 +979,7 @@ function PhotoAdminControls({
   onLocalPreview?: (url: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [pickError, setPickError] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
   const pickerId = `ph-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}-photo`;
@@ -1002,10 +1005,6 @@ function PhotoAdminControls({
   async function onFile(file: File | null) {
     if (!file) return;
     setPickError("");
-    if (file.size > MAX_ODOMETER_PHOTO_BYTES) {
-      setPickError("حجم الصورة كبير جداً، اختر صورة أقل من 15 ميجابايت");
-      return;
-    }
     if (file.type && !file.type.startsWith("image/")) {
       setPickError("الملف المختار ليس صورة");
       return;
@@ -1019,7 +1018,8 @@ function PhotoAdminControls({
     } catch {}
     let replaced = false;
     try {
-      const path = await uploadOdometerPhoto(file, prefix);
+      const path = await uploadOdometerPhoto(file, prefix, setUploadStatus);
+      setUploadStatus("جارٍ حفظ الصورة...");
       const { error } = await supabase.from("trips").update({ [field]: path } as any).eq("id", tripId);
       if (error) throw error;
       // لا ننتظر إعادة جلب الطلب: اعرض النسخة المرفوعة فوراً برابط جديد غير مخزّن مؤقتاً.
@@ -1064,7 +1064,7 @@ function PhotoAdminControls({
           onClick={() => { const el = fileRef.current; if (!el) return; try { el.value = ""; } catch { /* تجاهل */ } el.click(); }}
         >
           <Pencil className="size-4" />
-          {busy ? "جاري الرفع..." : (signedUrl ? "تغيير الصورة" : "رفع صورة")}
+          {busy ? (uploadStatus || "جاري الرفع...") : (signedUrl ? "تغيير الصورة" : "رفع صورة")}
         </Button>
       )}
       {canChange && (

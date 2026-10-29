@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Loader2, MapPin, Gauge, Car as CarIcon, ClipboardList as ClipboardListIcon, User as UserIcon, Image as ImageIcon } from "lucide-react";
-import { MAX_ODOMETER_PHOTO_BYTES, makeThumbnail, uploadOdometerPhoto } from "@/lib/storage";
+import { makeThumbnail, uploadOdometerPhoto } from "@/lib/storage";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { NfcScanner } from "@/components/nfc-scanner";
 import { CameraCapture } from "@/components/camera-capture";
@@ -295,7 +295,7 @@ function NewTrip() {
   function getTripSubmitError(err: unknown, step: string) {
     const translated = arabicError(err, "");
     if (translated) return translated;
-    if (step === "photo") return "تعذر رفع صورة العداد. غالباً الشبكة ضعيفة أو نوع الصورة غير مدعوم";
+    if (step === "photo") return "تعذر رفع صورة العداد. الصورة ما زالت مختارة؛ يمكنك المحاولة مجددًا";
     if (step === "auth") return "تعذر التحقق من المستخدم. سجّل الخروج ثم ادخل مرة أخرى";
     if (step === "open-trip") return "تعذر التحقق من الرحلات المفتوحة. افحص الشبكة ثم حاول مرة أخرى";
     if (step === "profile") return "تعذر قراءة بيانات المستخدم. حاول مرة أخرى";
@@ -433,7 +433,7 @@ function NewTrip() {
       step = "photo";
       stepLabel = photo ? "جارٍ ضغط ورفع صورة العداد..." : "جارٍ استخدام صورة العداد من الرحلة السابقة...";
       setSubmitStep(stepLabel);
-      const path = photo ? await uploadOdometerPhoto(photo, "start") : (reusedPhotoUrl as string);
+      const path = photo ? await uploadOdometerPhoto(photo, "start", setSubmitStep) : (reusedPhotoUrl as string);
       step = "profile";
       stepLabel = "جارٍ قراءة بيانات المستخدم...";
       setSubmitStep(stepLabel);
@@ -1045,12 +1045,6 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
     setPickError("");
     setDataPreview("");
     if (f) {
-      if (f.size > MAX_ODOMETER_PHOTO_BYTES) {
-        setInfo(null);
-        setPickError("حجم الصورة كبير جداً، اختر صورة أقل من 15 ميجابايت");
-        onFile(null);
-        return;
-      }
       const nameExt = (f.name.split(".").pop() || "").toLowerCase();
       const type = (f.type || "").toLowerCase();
       const knownNonImage = !!type && !type.startsWith("image/");

@@ -1,7 +1,8 @@
 import { getLastClosedTripPhoto } from "@/lib/last-photo.functions";
 import { arabicError } from "@/lib/errors";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useEffect, useId, type FormEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
+import { openPhotoPicker } from "@/lib/photo-picker";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
@@ -22,7 +23,14 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { toEnglishDigits, toOdometerInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/trips/new")({
-  head: () => ({ meta: [{ title: "رحلة جديدة" }] }),
+  head: () => ({ meta: [
+    { title: "طلب رحلة جديد | Service Tracker Pro" },
+    { name: "description", content: "تسجيل طلب رحلة جديد وإرفاق صورة العداد في Service Tracker Pro." },
+    { property: "og:title", content: "طلب رحلة جديد | Service Tracker Pro" },
+    { property: "og:description", content: "تسجيل طلب رحلة جديد وإرفاق صورة العداد في Service Tracker Pro." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <AppShell><NewTrip /></AppShell>,
 });
 
@@ -1025,10 +1033,6 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
   const [previewFailed, setPreviewFailed] = useState(false);
   const [dataPreview, setDataPreview] = useState("");
   const [pickError, setPickError] = useState("");
-  // معرّفات ASCII فقط (useId قد يُرجع رموزاً غير قياسية تكسر ربط label بالحقل)
-  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  const galleryId = `ph-${uid}-gallery`;
-  const anyFileId = `ph-${uid}-anyfile`;
   const lastFileRef = useRef<string>("");
   const previewRequestRef = useRef(0);
   const pickerCleanupRef = useRef<(() => void) | null>(null);
@@ -1088,57 +1092,10 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       onFile(null);
     }
   }
-  // فتح منتقي الملفات برمجياً + خطة بديلة: بعض متصفحات الأندرويد لا تُطلق حدث change
-  // ويستمر الترقّب حتى بعد العودة من تطبيق آخر (الكاميرا/المعرض) في الخلفية.
-  function watchForFile(el: HTMLInputElement) {
+  function pickPhoto(accept?: string) {
     pickerCleanupRef.current?.();
-    let elapsed = 0;
-    let cleaned = false;
-    const check = () => {
-      const f = el.files?.[0] ?? null;
-      if (f) {
-        cleanup();
-        handle(f);
-        return true;
-      }
-      return false;
-    };
-    const timer = window.setInterval(() => {
-      elapsed += 300;
-      // مهلة طويلة: المستخدم قد يبقى في تطبيق الكاميرا عدة دقائق
-      if (check()) return;
-      if (elapsed > 300_000) cleanup();
-    }, 300);
-    const onBack = () => {
-      if (document.visibilityState === "visible") {
-        // بعد العودة من التطبيق الخلفي قد يتأخر النظام في تسليم الملف
-        [0, 150, 400, 800, 1500, 2500].forEach((d) => window.setTimeout(check, d));
-        // إذا عاد المستخدم دون اختيار صورة، أنهِ جلسة المنتقي القديمة حتى يمكن فتحه مجدداً.
-        window.setTimeout(() => {
-          if (!el.files?.length) cleanup();
-        }, 3000);
-      }
-    };
-    function cleanup() {
-      if (cleaned) return;
-      cleaned = true;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onBack);
-      window.removeEventListener("focus", onBack);
-      window.removeEventListener("pageshow", onBack);
-      if (pickerCleanupRef.current === cleanup) pickerCleanupRef.current = null;
-    }
-    pickerCleanupRef.current = cleanup;
-    document.addEventListener("visibilitychange", onBack);
-    window.addEventListener("focus", onBack);
-    window.addEventListener("pageshow", onBack);
-  }
-
-  function preparePicker(el: HTMLInputElement) {
-    // يبدأ فتح الحقل من نقرة المستخدم الأصلية عبر label، وهو الأكثر ثباتاً داخل WebView.
-    el.value = "";
     lastFileRef.current = "";
-    watchForFile(el);
+    pickerCleanupRef.current = openPhotoPicker(handle, accept);
   }
 
   useEffect(() => () => pickerCleanupRef.current?.(), []);
@@ -1171,44 +1128,26 @@ export function PhotoInput({ preview, onFile, label = "صورة العداد", i
       )}
       <div className={`grid grid-cols-2 gap-3 ${invalid ? "rounded-xl ring-2 ring-destructive ring-offset-2 ring-offset-background p-2" : ""}`}>
         <CameraCapture onCapture={(f) => handle(f)} />
-        {/* زر واحد يفتح المعرض مباشرة — بدون تكرار فتح المنتقي */}
-        <label
-          htmlFor={galleryId}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => pickPhoto("image/*,.heic,.heif")}
           className="h-auto min-h-28 border-2 border-dashed border-muted-foreground/30 rounded-xl flex flex-col items-center justify-center gap-2 text-sm cursor-pointer bg-muted/20 hover:bg-primary/5 hover:border-primary/40 active:bg-primary/10 transition-all select-none"
         >
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             <ImageIcon className="size-5 text-primary" />
           </div>
           <span className="font-semibold text-foreground">من المعرض</span>
-        </label>
-        <input
-          id={galleryId}
-          type="file"
-          accept="image/*,.heic,.heif"
-          className="sr-only"
-          onClick={(e) => preparePicker(e.currentTarget)}
-          onChange={(e) => {
-            const f = e.target.files?.[0] ?? null;
-            handle(f);
-          }}
-        />
+        </Button>
         {/* بديل: بدون تقييد النوع — يعمل حتى لو مُنع إذن الصور */}
-        <label
-          htmlFor={anyFileId}
+        <Button
+          type="button"
+          variant="link"
+          onClick={() => pickPhoto()}
           className="col-span-2 text-xs text-center underline text-muted-foreground cursor-pointer py-2 hover:text-primary transition-colors"
         >
           لم يفتح المعرض؟ اختر ملفاً من الجهاز
-        </label>
-        <input
-          id={anyFileId}
-          type="file"
-          className="sr-only"
-          onClick={(e) => preparePicker(e.currentTarget)}
-          onChange={(e) => {
-            const f = e.target.files?.[0] ?? null;
-            handle(f);
-          }}
-        />
+        </Button>
       </div>
 
 

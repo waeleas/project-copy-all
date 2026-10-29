@@ -28,7 +28,8 @@ export async function retryPhotoOperation<T>(
     try { return await operation(); }
     catch (error) {
       if (!isRecoverablePhotoError(error)) throw error;
-      onRetry?.(++attempt);
+      attempt++;
+      onRetry?.(attempt);
       await wait(Math.min(1000 * 2 ** Math.min(attempt - 1, 5), 30000));
     }
   }

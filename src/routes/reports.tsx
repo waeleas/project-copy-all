@@ -15,7 +15,14 @@ import { getCarKmReport, getDriverKmReport, getCarDriverComparisonReport } from 
 import { exportToXlsx } from "@/components/data-toolbar";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ title: "التقارير" }] }),
+  head: () => ({ meta: [
+    { title: "التقارير | Service Tracker Pro" },
+    { name: "description", content: "تقارير رحلات السيارات والمسافات والعدادات." },
+    { property: "og:title", content: "التقارير | Service Tracker Pro" },
+    { property: "og:description", content: "تقارير رحلات السيارات والمسافات والعدادات." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => (
     <AppShell>
       <ReportsPage />

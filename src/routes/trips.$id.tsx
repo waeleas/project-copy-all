@@ -27,7 +27,14 @@ import { listUsersWithRoles } from "@/lib/users.functions";
 import { toEnglishDigits, toOdometerInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/trips/$id")({
-  head: () => ({ meta: [{ title: "تفاصيل الرحلة" }] }),
+  head: () => ({ meta: [
+    { title: "تفاصيل الرحلة | Service Tracker Pro" },
+    { name: "description", content: "متابعة تفاصيل طلب الرحلة والعداد والمسارات والصور." },
+    { property: "og:title", content: "تفاصيل الرحلة | Service Tracker Pro" },
+    { property: "og:description", content: "متابعة تفاصيل طلب الرحلة والعداد والمسارات والصور." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <AppShell><TripDetail /></AppShell>,
 });
 

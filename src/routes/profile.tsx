@@ -12,7 +12,14 @@ import { toast } from "sonner";
 import { Loader2, ArrowLeft, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
-  head: () => ({ meta: [{ title: "الملف الشخصي — تتبع الرحلات" }] }),
+  head: () => ({ meta: [
+    { title: "حسابي | Service Tracker Pro" },
+    { name: "description", content: "إعدادات حساب المستخدم في نظام متابعة رحلات السيارات." },
+    { property: "og:title", content: "حسابي | Service Tracker Pro" },
+    { property: "og:description", content: "إعدادات حساب المستخدم في نظام متابعة رحلات السيارات." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <AppShell><ProfilePage /></AppShell>,
 });
 

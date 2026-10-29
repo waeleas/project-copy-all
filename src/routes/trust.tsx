@@ -3,7 +3,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/trust")({
   head: () => ({
     meta: [
-      { title: "الأمان والخصوصية" },
+      { title: "الأمان والخصوصية | Service Tracker Pro" },
+      { property: "og:title", content: "الأمان والخصوصية | Service Tracker Pro" },
+      { property: "og:description", content: "الأمان والخصوصية وحماية بيانات رحلات السيارات في Service Tracker Pro." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content:

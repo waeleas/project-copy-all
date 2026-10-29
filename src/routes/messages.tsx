@@ -8,7 +8,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/messages")({
-  head: () => ({ meta: [{ title: "الرسائل" }] }),
+  head: () => ({ meta: [
+    { title: "الرسائل | Service Tracker Pro" },
+    { name: "description", content: "رسائل وتنبيهات موظفي نظام متابعة رحلات السيارات." },
+    { property: "og:title", content: "الرسائل | Service Tracker Pro" },
+    { property: "og:description", content: "رسائل وتنبيهات موظفي نظام متابعة رحلات السيارات." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => (
     <AppShell>
       <Inbox />

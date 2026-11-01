@@ -118,7 +118,7 @@ function AppSettingsCard() {
       qc.invalidateQueries({ queryKey: ["cars"] });
       toast.success("تم حفظ الإعداد");
     } catch (e: any) {
-      toast.error(e.message ?? "فشل");
+      toast.error(arabicError(e));
     }
   }
 
@@ -297,17 +297,19 @@ function UsersManager() {
 
   async function importUsers(rows: any[]) {
     let ok = 0, fail = 0;
+    const reasons = new Set<string>();
     for (const r of rows) {
       const u = pick(r, "username", "اليوزر", "اسم المستخدم");
       const d = pick(r, "display_name", "الاسم", "الاسم الكامل");
-      if (!u || !d) { fail++; continue; }
+      if (!u || !d) { fail++; reasons.add("اسم المستخدم أو الاسم فارغ في بعض الصفوف"); continue; }
       try {
         await create({ data: { username: u, display_name: d, email: pick(r, "email", "البريد") || undefined, is_admin: /^(1|true|yes|نعم)$/i.test(pick(r, "is_admin", "أدمن")) } });
         ok++;
-      } catch { fail++; }
+      } catch (err) { fail++; reasons.add(arabicError(err)); }
     }
     qc.invalidateQueries({ queryKey: ["users-with-roles"] });
-    toast.success(`تم إضافة ${ok} مستخدم${fail ? ` — فشل ${fail}` : ""}`);
+    if (fail) toast.warning(`تم إضافة ${ok} مستخدم؛ تعذر إضافة ${fail}: ${[...reasons].join("؛ ")}`, { duration: 10000 });
+    else toast.success(`تم إضافة ${ok} مستخدم`);
   }
 
   async function add() {
@@ -327,7 +329,7 @@ function UsersManager() {
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
       toast.success("تم إنشاء المستخدم");
     } catch (e: any) {
-      toast.error(e.message ?? "فشل");
+      toast.error(arabicError(e));
     } finally {
       setSaving(false);
     }
@@ -338,7 +340,7 @@ function UsersManager() {
     try {
       await setAdmin({ data: { user_id: u.id, is_admin: !isAdmin } });
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
-    } catch (e: any) { toast.error(e.message ?? "فشل"); }
+    } catch (e: any) { toast.error(arabicError(e)); }
   }
 
   async function toggleViewer(u: any) {
@@ -346,7 +348,7 @@ function UsersManager() {
     try {
       await setViewer({ data: { user_id: u.id, is_viewer: !isViewer } });
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
-    } catch (e: any) { toast.error(e.message ?? "فشل"); }
+    } catch (e: any) { toast.error(arabicError(e)); }
   }
 
   async function changeOverride(u: any, key: "rental_cars_override" | "trip_create_override", value: boolean | null) {
@@ -354,7 +356,7 @@ function UsersManager() {
       await setOverride({ data: { user_id: u.id, key, value } });
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
       toast.success("تم الحفظ");
-    } catch (e: any) { toast.error(e.message ?? "فشل"); }
+    } catch (e: any) { toast.error(arabicError(e)); }
   }
 
   async function del(u: any) {
@@ -363,7 +365,7 @@ function UsersManager() {
       await remove({ data: { user_id: u.id } });
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
       toast.success("تم الحذف");
-    } catch (e: any) { toast.error(e.message ?? "فشل"); }
+    } catch (e: any) { toast.error(arabicError(e)); }
   }
 
   async function changePwd(u: any) {
@@ -373,7 +375,7 @@ function UsersManager() {
     try {
       await changePassword({ data: { user_id: u.id, password: pwd } });
       toast.success("تم تغيير كلمة المرور");
-    } catch (e: any) { toast.error(e.message ?? "فشل"); }
+    } catch (e: any) { toast.error(arabicError(e)); }
   }
 
   return (
@@ -656,7 +658,7 @@ function DriversManager() {
     setCreatingUsers(true);
     try {
       const res: any = await createDriverUsers({});
-      const msg = `تم إنشاء ${res.created} حساب، تم تخطي ${res.skipped}` + (res.errors?.length ? ` — أخطاء: ${res.errors.length}` : "");
+      const msg = `تم إنشاء ${res.created} حساب، تم تخطي ${res.skipped}` + (res.errors?.length ? ` — تعذر إنشاء ${res.errors.length} حساب: ${res.errors.map((err: unknown) => arabicError(err)).join("؛ ")}` : "");
       if (res.errors?.length) toast.warning(msg); else toast.success(msg);
       qc.invalidateQueries({ queryKey: ["users-with-roles"] });
     } catch (e: any) {
@@ -1153,8 +1155,7 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter, withPm
     }
     qc.invalidateQueries({ queryKey: [table] });
     if (firstError) {
-      const raw = firstError?.message || firstError?.details || firstError?.hint || JSON.stringify(firstError);
-      return toast.error(`فشل الاستيراد بعد ${ok} صف: ${arabicError(firstError, raw || "حدث خطأ غير متوقع")}`);
+      return toast.error(`فشل الاستيراد بعد ${ok} صف: ${arabicError(firstError)}`);
     }
     const extra = dupInFile ? ` — تم تجاهل ${dupInFile} صف مكرر` : "";
     toast.success(`تم استيراد ${ok} صف${extra}`);

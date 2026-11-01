@@ -73,7 +73,7 @@ export function RestoreButton() {
       if (partial) toast.warning("اكتملت الاستعادة جزئيًا؛ بعض السجلات لم تُحفظ، ولا يتوفر سبب تفصيلي لها\n" + lines, { duration: 10000 });
       else toast.success("تمت الاستعادة\n" + lines, { duration: 10000 });
     } catch (e: any) {
-      toast.error(arabicError(e) ?? "فشل استعادة النسخة الاحتياطية");
+      toast.error("فشل استعادة النسخة الاحتياطية: " + arabicError(e));
     } finally {
       setProgress(null);
       setLoading(false);

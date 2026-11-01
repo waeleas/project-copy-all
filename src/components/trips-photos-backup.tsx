@@ -173,7 +173,7 @@ export function TripsPhotosBackup() {
       );
       setOpen(false);
     } catch (e: any) {
-      toast.error(arabicError(e) ?? "فشل إنشاء النسخة الاحتياطية بالصور");
+      toast.error("فشل إنشاء النسخة الاحتياطية بالصور: " + arabicError(e));
     } finally {
       setProgress("");
       setLoading(false);

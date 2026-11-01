@@ -48,7 +48,7 @@ export function MessagesManager() {
       setBody("");
       qc.invalidateQueries({ queryKey: ["admin-messages"] });
     } catch (e: any) {
-      toast.error(arabicError(e) ?? "فشل الإرسال");
+      toast.error("فشل الإرسال: " + arabicError(e));
     } finally {
       setSending(false);
     }
@@ -61,7 +61,7 @@ export function MessagesManager() {
       qc.invalidateQueries({ queryKey: ["admin-messages"] });
       toast.success("تم الحذف");
     } catch (e: any) {
-      toast.error(arabicError(e) ?? "فشل الحذف");
+      toast.error("فشل الحذف: " + arabicError(e));
     }
   }
 

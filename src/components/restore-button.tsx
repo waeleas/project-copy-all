@@ -7,6 +7,12 @@ import { restoreChunk, TABLE_ORDER } from "@/lib/backup.functions";
 import { arabicError } from "@/lib/errors";
 
 const CHUNK = 200;
+const TABLE_LABELS: Record<string, string> = {
+  app_settings: "الإعدادات", offices: "المكاتب", managers: "المديرون", technicians: "الفنيون",
+  drivers: "السائقون", cars: "السيارات", service_types: "أنواع الخدمة", profiles: "المستخدمون",
+  user_roles: "الصلاحيات", trips: "الرحلات", trip_segments: "المسارات الإضافية",
+  governorates: "المحافظات",
+};
 
 export function RestoreButton() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,9 +67,11 @@ export function RestoreButton() {
       }
 
       const lines = Object.entries(report)
-        .map(([t, r]) => `${t}: ${r.inserted} ✓${r.skipped ? ` / ${r.skipped} ✗` : ""}`)
+        .map(([t, r]) => `${TABLE_LABELS[t] ?? "بيانات"}: استعادة ${r.inserted}${r.skipped ? ` / تعذرت استعادة ${r.skipped} سجل` : ""}`)
         .join("\n");
-      toast.success("تمت الاستعادة\n" + lines, { duration: 10000 });
+      const partial = Object.values(report).some(r => r.skipped > 0);
+      if (partial) toast.warning("اكتملت الاستعادة جزئيًا؛ بعض السجلات لم تُحفظ، ولا يتوفر سبب تفصيلي لها\n" + lines, { duration: 10000 });
+      else toast.success("تمت الاستعادة\n" + lines, { duration: 10000 });
     } catch (e: any) {
       toast.error(arabicError(e) ?? "فشل استعادة النسخة الاحتياطية");
     } finally {

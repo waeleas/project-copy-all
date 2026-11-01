@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScanLine, X } from "lucide-react";
 import { toast } from "sonner";
+import { arabicError } from "@/lib/errors";
 
 interface Props {
   onScan: (text: string) => void;
@@ -57,15 +58,7 @@ export function BarcodeScanner({ onScan }: Props) {
           );
         }
       } catch (e: any) {
-        const name = e?.name || "";
-        const msg = e?.message || String(e);
-        let userMsg = "تعذر فتح الكاميرا";
-        if (name === "NotAllowedError" || /Permission/i.test(msg))
-          userMsg = "تم رفض إذن الكاميرا. فعّل الإذن من إعدادات المتصفح";
-        else if (name === "NotFoundError") userMsg = "لا توجد كاميرا متاحة";
-        else if (name === "NotReadableError") userMsg = "الكاميرا قيد الاستخدام من تطبيق آخر";
-        else if (/secure|https/i.test(msg)) userMsg = "الكاميرا تتطلب اتصال آمن HTTPS";
-        toast.error(userMsg + (msg ? ` — ${msg}` : ""));
+        toast.error(arabicError(e, "تعذر فتح الكاميرا؛ لم يحدد الجهاز سببًا واضحًا"));
         console.error("Camera error:", e);
         setOpen(false);
       }

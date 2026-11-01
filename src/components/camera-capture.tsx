@@ -3,6 +3,7 @@ import { Camera, X, RotateCcw, Check } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { arabicError } from "@/lib/errors";
 
 interface Props {
   onCapture: (file: File) => void;
@@ -57,13 +58,7 @@ export function CameraCapture({ onCapture, trigger }: Props) {
           await videoRef.current.play().catch(() => {});
         }
       } catch (e: any) {
-        const msg = String(e?.name || e?.message || "");
-        let m = "تعذر فتح الكاميرا";
-        if (msg.includes("NotAllowed") || msg.includes("Permission")) m = "تم رفض إذن الكاميرا. فعّل الإذن من إعدادات المتصفح";
-        else if (msg.includes("NotFound") || msg.includes("DevicesNotFound")) m = "لا توجد كاميرا متاحة على هذا الجهاز";
-        else if (msg.includes("NotReadable")) m = "الكاميرا قيد الاستخدام من تطبيق آخر، أغلق التطبيق الآخر ثم أعد المحاولة";
-        else if (msg.includes("Secure") || location.protocol !== "https:" && location.hostname !== "localhost") m = "الكاميرا تتطلب اتصال آمن (HTTPS)";
-        toast.error(m);
+        toast.error(arabicError(e, "تعذر فتح الكاميرا؛ لم يحدد الجهاز سببًا واضحًا"));
         setOpen(false);
       }
     };

@@ -186,7 +186,7 @@ export function SapT001Export({ getTrips }: { getTrips: () => Promise<any[]> }) 
       size="sm"
       onClick={async () => {
         try { await downloadTemplate((await getTrips()).filter((t) => !t.sap_order_no)); }
-        catch { toast.error("تعذر تجهيز تقرير SAP، حاول مرة أخرى"); }
+        catch (err) { toast.error("تعذر تجهيز تقرير الساب: " + arabicError(err)); }
       }}
       className="gap-1"
     >

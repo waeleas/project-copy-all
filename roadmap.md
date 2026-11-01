@@ -1,4 +1,5 @@
-- [x] Apply 30-day photo retention with authenticated cleanup and regression tests.
+- [ ] Change photo retention to 90 days and verify cleanup boundary tests.
+- [ ] Review and Arabic-localize system messages with truthful failure causes and verify affected flows.
 - [x] Improve large-photo compression and weak-network upload retries; 32 regression tests passed and an authenticated mobile browser selected a 36 MB image, compressed/uploaded it to 10.8 KB after six simulated network failures, read it back and removed the test object without changing trip data. Native phone-specific formats and actual cellular conditions remain device-specific.
 - [x] Fix repeated gallery opening after cancellation; 7 lifecycle tests and authenticated mobile-size browser checks passed for repeated cancel/return, gallery/fallback selection and preserved preview, without saving requests. Native Android gallery cancellation remains device-specific and was simulated.
 - [x] Delete eligible old photos and verify request data remains intact (6,330 photos removed; all 5,453 requests preserved).

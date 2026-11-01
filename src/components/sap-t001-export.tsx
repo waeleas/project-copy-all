@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { supabase } from "@/integrations/supabase/client";
 import { sapOperationText } from "@/lib/sap-operation-text";
+import { arabicError } from "@/lib/errors";
 
 const FILE_NAME = "IW31-Creat_Employee_Trip_Order-T001.xlsx";
 

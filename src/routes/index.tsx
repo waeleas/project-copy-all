@@ -15,6 +15,7 @@ import { SapOrdersImport } from "@/components/sap-orders-import";
 
 
 import { toast } from "sonner";
+import { arabicError } from "@/lib/errors";
 import { loadAllTripPages, tripDateBounds, tripPageRange, TRIP_PAGE_SIZE } from "@/lib/trip-list-loading";
 
 export const Route = createFileRoute("/")({
@@ -217,7 +218,7 @@ function TripsList() {
         .in("trip_id", chunk)
         .order("sequence", { ascending: true });
       if (segErr) {
-        toast.error("تعذر تحميل المسارات الإضافية — سيتم التصدير بدونها");
+        toast.warning("تعذر تحميل بعض المسارات الإضافية؛ التقرير قد يكون ناقصًا: " + arabicError(segErr));
         break;
       }
       segsAll.push(...((segs as any[]) ?? []));
@@ -480,7 +481,7 @@ function TripsList() {
         <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-auto sm:flex-nowrap">
           <SapOrdersImport onDone={() => refetch()} />
           <SapT001Export getTrips={getExportTrips} />
-          <Button variant="outline" size="sm" onClick={() => exportExcel().catch(() => toast.error("تعذر تجهيز التقرير، حاول مرة أخرى"))}><Download className="size-4 ml-1" /> Excel</Button>
+          <Button variant="outline" size="sm" onClick={() => exportExcel().catch(err => toast.error("تعذر تجهيز التقرير: " + arabicError(err)))}><Download className="size-4 ml-1" /> Excel</Button>
         </div>
       </div>
 

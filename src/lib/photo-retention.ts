@@ -1,4 +1,4 @@
-export const PHOTO_RETENTION_DAYS = 30;
+export const PHOTO_RETENTION_DAYS = 90;
 export const PHOTO_PLACEHOLDER = "/__l5e/assets-v1/810396f8-fc18-43c7-a50a-5ec200bf8815/odometer-placeholder.jpg";
 
 export function photoCutoff(now = Date.now()) {

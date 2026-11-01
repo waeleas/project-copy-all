@@ -63,7 +63,7 @@ function AuthPage() {
       }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        toast.error("اسم المستخدم أو كلمة المرور غير صحيحة");
+        toast.error(arabicError(error));
         return;
       }
       try {
@@ -71,6 +71,8 @@ function AuthPage() {
       } catch {}
       toast.success("تم تسجيل الدخول");
       navigate({ to: "/" });
+    } catch (err) {
+      toast.error(arabicError(err, "تعذر تسجيل الدخول؛ لم تحدد الخدمة سببًا واضحًا"));
     } finally {
       setLoading(false);
     }
@@ -86,7 +88,7 @@ function AuthPage() {
         data: { username: username.trim(), new_password: newPassword },
       });
       if (result.error === "weak_password") {
-        toast.error(result.message || "كلمة المرور ضعيفة، اختر كلمة أقوى");
+        toast.error(arabicError(result.message, "كلمة المرور ضعيفة، اختر كلمة أقوى"));
         return;
       }
       const { email } = result;
@@ -96,7 +98,7 @@ function AuthPage() {
       }
       const { error } = await supabase.auth.signInWithPassword({ email, password: newPassword });
       if (error) {
-        toast.error("تم تعيين كلمة المرور لكن تعذر تسجيل الدخول");
+        toast.error("تم تعيين كلمة المرور لكن تعذر تسجيل الدخول: " + arabicError(error));
         return;
       }
       try {

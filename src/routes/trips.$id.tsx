@@ -152,7 +152,7 @@ function TripDetail() {
       qc.invalidateQueries({ queryKey: ["trips"] });
       navigate({ to: "/" });
     } catch (err: any) {
-      toast.error(arabicError(err, "فشل"));
+      toast.error(arabicError(err));
     } finally {
       setSaving(false);
     }
@@ -845,7 +845,7 @@ function SegmentsCard({
       onWarningDismiss?.();
       onChanged();
     } catch (err: any) {
-      toast.error(arabicError(err, "فشل"));
+      toast.error(arabicError(err));
     } finally {
       setSaving(false);
     }

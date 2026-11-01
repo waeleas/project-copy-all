@@ -48,7 +48,7 @@ export function MessagesManager() {
       setBody("");
       qc.invalidateQueries({ queryKey: ["admin-messages"] });
     } catch (e: any) {
-      toast.error(arabicError(e) ?? "فشل الإرسال");
+      toast.error("فشل الإرسال: " + arabicError(e));
     } finally {
       setSending(false);
     }
@@ -61,7 +61,7 @@ export function MessagesManager() {
       qc.invalidateQueries({ queryKey: ["admin-messages"] });
       toast.success("تم الحذف");
     } catch (e: any) {
-      toast.error(arabicError(e) ?? "فشل الحذف");
+      toast.error("فشل الحذف: " + arabicError(e));
     }
   }
 
@@ -106,7 +106,7 @@ export function MessagesManager() {
           <CardTitle className="text-base">الرسائل المرسلة</CardTitle>
         </CardHeader>
         <CardContent>
-          {messages.isLoading ? (
+          {messages.error ? <p role="alert" className="text-destructive">تعذر تحميل الرسائل المرسلة: {arabicError(messages.error)}</p> : messages.isLoading ? (
             <Loader2 className="size-6 animate-spin mx-auto text-primary" />
           ) : (messages.data ?? []).length === 0 ? (
             <p className="text-center text-muted-foreground py-4">لا توجد رسائل</p>

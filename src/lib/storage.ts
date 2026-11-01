@@ -148,11 +148,11 @@ export async function makeThumbnail(file: File | Blob, maxDim = 900): Promise<st
 }
 
 export async function uploadOdometerPhoto(file: File, prefix: string, onStatus?: (status: string) => void): Promise<string> {
-  const retryStatus = () => onStatus?.("الاتصال ضعيف، ننتظر ونحاول رفع الصورة مجددًا...");
+  const retryStatus = () => onStatus?.("لم يكتمل الرد من الخدمة؛ ننتظر ونحاول مجددًا تلقائيًا...");
   onStatus?.("جارٍ ضغط صورة العداد...");
   const compressed = await compressImage(file);
   if (!compressed || !compressed.size) {
-    throw new Error("تعذر قراءة الصورة وضغطها. اختر صورة سليمة بصيغة JPG أو PNG أو HEIC");
+    throw new Error("لم يتمكن الجهاز من قراءة الصورة وضغطها؛ قد تكون الصيغة غير مدعومة على الجهاز أو الملف تالفًا، جرّب صورة أخرى");
   }
   const user = await retryPhotoOperation(async () => {
     const { data, error } = await supabase.auth.getUser();

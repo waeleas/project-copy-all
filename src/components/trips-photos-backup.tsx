@@ -134,6 +134,7 @@ export function TripsPhotosBackup() {
 
       let done = 0;
       let failed = 0;
+      const failureReasons = new Set<string>();
       const CONCURRENCY = 5;
       async function worker(queue: typeof jobs) {
         while (queue.length) {
@@ -142,12 +143,13 @@ export function TripsPhotosBackup() {
           try {
             const url = await getSignedPhotoUrl(job.path);
             const res = await fetch(url);
-            if (!res.ok) throw new Error(String(res.status));
+            if (!res.ok) throw { status: res.status, message: "" };
             const blob = await res.blob();
             const ext = (job.path.split(".").pop() || "jpg").split("?")[0];
             zip.file(`photos/${job.trip_no}/${job.name}.${ext}`, blob);
-          } catch {
+          } catch (err) {
             failed++;
+            failureReasons.add(arabicError(err));
           }
           done++;
           setProgress(`الصور: ${done} / ${jobs.length}`);
@@ -167,13 +169,12 @@ export function TripsPhotosBackup() {
       a.remove();
       URL.revokeObjectURL(url);
 
-      toast.success(
-        `تم إنشاء النسخة: ${trips.length} رحلة و ${jobs.length - failed} صورة${failed ? ` (تعذّر ${failed} صورة)` : ""}`,
-        { duration: 8000 },
-      );
+      const message = `تم إنشاء النسخة: ${trips.length} رحلة و ${jobs.length - failed} صورة${failed ? `؛ تعذر تنزيل ${failed} صورة: ${[...failureReasons].join("؛ ")}` : ""}`;
+      if (failed) toast.warning(message, { duration: 10000 });
+      else toast.success(message, { duration: 8000 });
       setOpen(false);
     } catch (e: any) {
-      toast.error(arabicError(e) ?? "فشل إنشاء النسخة الاحتياطية بالصور");
+      toast.error("فشل إنشاء النسخة الاحتياطية بالصور: " + arabicError(e));
     } finally {
       setProgress("");
       setLoading(false);

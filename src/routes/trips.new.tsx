@@ -293,14 +293,9 @@ function NewTrip() {
   }
 
   function getTripSubmitError(err: unknown, step: string) {
-    const translated = arabicError(err, "");
-    if (translated) return translated;
-    if (step === "photo") return "تعذر رفع صورة العداد. الصورة ما زالت مختارة؛ يمكنك المحاولة مجددًا";
-    if (step === "auth") return "تعذر التحقق من المستخدم. سجّل الخروج ثم ادخل مرة أخرى";
-    if (step === "open-trip") return "تعذر التحقق من الرحلات المفتوحة. افحص الشبكة ثم حاول مرة أخرى";
-    if (step === "profile") return "تعذر قراءة بيانات المستخدم. حاول مرة أخرى";
-    if (step === "insert") return "تعذر حفظ الرحلة في قاعدة البيانات. راجع الحقول المظللة وحاول مرة أخرى";
-    return "تعذّر إنشاء الرحلة. افحص الشبكة ثم حاول مرة أخرى";
+    return arabicError(err, step === "photo"
+      ? "تعذر رفع صورة العداد؛ السبب غير محدد، والصورة ما زالت مختارة للمحاولة مجددًا"
+      : "تعذر إكمال إنشاء الرحلة؛ لم تحدد الخدمة سببًا واضحًا");
   }
 
   async function handleSubmit(e: FormEvent) {

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { supabase } from "@/integrations/supabase/client";
 import { sapOperationText } from "@/lib/sap-operation-text";
+import { arabicError } from "@/lib/errors";
 
 const FILE_NAME = "IW31-Creat_Employee_Trip_Order-T001.xlsx";
 
@@ -186,7 +187,7 @@ export function SapT001Export({ getTrips }: { getTrips: () => Promise<any[]> }) 
       size="sm"
       onClick={async () => {
         try { await downloadTemplate((await getTrips()).filter((t) => !t.sap_order_no)); }
-        catch { toast.error("تعذر تجهيز تقرير SAP، حاول مرة أخرى"); }
+        catch (err) { toast.error("تعذر تجهيز تقرير الساب: " + arabicError(err)); }
       }}
       className="gap-1"
     >

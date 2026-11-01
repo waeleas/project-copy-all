@@ -13,22 +13,24 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { Button } from "@/components/ui/button";
+import { arabicError } from "@/lib/errors";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">الصفحة غير موجودة</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          الرابط المطلوب غير موجود أو تغير عنوانه؛ ارجع إلى صفحة الرحلات.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            العودة إلى الرحلات
           </Link>
         </div>
       </div>
@@ -47,26 +49,26 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          تعذر تحميل الصفحة
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          {arabicError(error, "حدث خطأ أثناء تحميل الصفحة؛ لم يتوفر سبب واضح، جرّب مرة أخرى")}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
+          <Button
             onClick={() => {
               router.invalidate();
               reset();
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
-          </button>
+            إعادة المحاولة
+          </Button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            العودة إلى الرحلات
           </a>
         </div>
       </div>
@@ -91,8 +93,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "خطوط السير للسيارات" },
       { property: "og:description", content: "نظام تتبع رحلات خدمة ما بعد البيع مع تسجيل العداد والصور" },
       { name: "twitter:description", content: "نظام تتبع رحلات خدمة ما بعد البيع مع تسجيل العداد والصور" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/41d6aaa1-9552-47f1-a020-c0da5987b293/id-preview-035cf55d--d5cac4ec-df30-45a1-987d-259cc630e21a.lovable.app-1780621833864.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/41d6aaa1-9552-47f1-a020-c0da5987b293/id-preview-035cf55d--d5cac4ec-df30-45a1-987d-259cc630e21a.lovable.app-1780621833864.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
       { name: "theme-color", content: "#2563eb" },

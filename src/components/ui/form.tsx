@@ -12,6 +12,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { arabicError } from "@/lib/errors";
 
 const Form = FormProvider;
 
@@ -140,7 +141,7 @@ const FormMessage = React.forwardRef<
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField();
-  const body = error ? String(error?.message ?? "") : children;
+  const body = error ? arabicError(error, "قيمة الحقل غير صحيحة؛ راجع البيانات المطلوبة") : children;
 
   if (!body) {
     return null;

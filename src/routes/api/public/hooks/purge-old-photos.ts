@@ -80,14 +80,14 @@ export const Route = createFileRoute("/api/public/hooks/purge-old-photos")({
     handlers: {
       POST: async ({ request }) => {
         try {
-          if (!(await authorized(request))) return Response.json({ error: "Unauthorized" }, { status: 401 });
+          if (!(await authorized(request))) return Response.json({ error: "لم يتم السماح بطلب تنظيف الصور؛ يلزم دخول المشرف أو تصريح المهمة التلقائية" }, { status: 401 });
           const result = await purge();
           return new Response(JSON.stringify({ ok: true, ...result }), {
             headers: { "Content-Type": "application/json" },
           });
         } catch (e: any) {
           console.error("purge-old-photos failed", e?.message ?? e);
-          return new Response(JSON.stringify({ ok: false, error: "Photo cleanup failed" }), {
+          return new Response(JSON.stringify({ ok: false, error: "تعذر تنظيف الصور؛ لم تكتمل العملية، يلزم مراجعة سجل الخدمة لمعرفة السبب" }), {
             status: 500,
             headers: { "Content-Type": "application/json" },
           });

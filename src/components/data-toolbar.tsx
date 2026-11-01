@@ -1,4 +1,6 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { arabicError } from "@/lib/errors";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Search } from "lucide-react";
@@ -14,14 +16,17 @@ type Props = {
 
 export function DataToolbar({ search, onSearch, onExport, onImportRows, placeholder }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
+    setBusy(true);
     try {
       const buf = await f.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const ws = wb.Sheets[wb.SheetNames[0]];
+      if (!ws) throw new Error("الملف لا يحتوي على ورقة بيانات قابلة للقراءة");
       const matrix = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: "" });
       // تخطي صفوف العنوان/الملخص: أول صف يحتوي على خليتين أو أكثر يعتبر رأس الجدول
       const headerIdx = matrix.findIndex(
@@ -32,7 +37,10 @@ export function DataToolbar({ search, onSearch, onExport, onImportRows, placehol
           ? XLSX.utils.sheet_to_json<any>(ws, { defval: "" })
           : XLSX.utils.sheet_to_json<any>(ws, { defval: "", range: headerIdx });
       await onImportRows(rows);
+    } catch (err) {
+      toast.error("تعذر الاستيراد: " + arabicError(err));
     } finally {
+      setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
     }
   }
@@ -49,11 +57,11 @@ export function DataToolbar({ search, onSearch, onExport, onImportRows, placehol
         />
       </div>
       <div className="flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={onExport} className="gap-1">
+        <Button type="button" variant="outline" size="sm" onClick={() => Promise.resolve().then(onExport).catch(err => toast.error("تعذر التصدير: " + arabicError(err)))} className="gap-1">
           <Download className="size-4" /> تصدير
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} className="gap-1">
-          <Upload className="size-4" /> استيراد
+        <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => fileRef.current?.click()} className="gap-1">
+          <Upload className="size-4" /> {busy ? "جارٍ قراءة الملف واستيراد البيانات…" : "استيراد"}
         </Button>
         <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFile} />
       </div>

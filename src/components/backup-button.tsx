@@ -67,7 +67,7 @@ export function BackupButton() {
 
       toast.success("تم إنشاء النسخة الاحتياطية");
     } catch (e: any) {
-      toast.error(arabicError(e) ?? "فشل إنشاء النسخة الاحتياطية");
+      toast.error("فشل إنشاء النسخة الاحتياطية: " + arabicError(e));
     } finally {
       setLoading(false);
     }

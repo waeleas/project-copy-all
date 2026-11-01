@@ -13,6 +13,7 @@ import { useIsViewer } from "@/hooks/use-is-viewer";
 import { toast } from "sonner";
 import { getCarKmReport, getDriverKmReport, getCarDriverComparisonReport } from "@/lib/reports.functions";
 import { exportToXlsx } from "@/components/data-toolbar";
+import { arabicError } from "@/lib/errors";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({ meta: [
@@ -211,7 +212,7 @@ function ReportsPage() {
               </Button>
             </CardHeader>
             <CardContent>
-              {cars.isLoading ? (
+              {cars.error ? <p role="alert" className="text-destructive">تعذر تحميل تقرير السيارات: {arabicError(cars.error)}</p> : cars.isLoading ? (
                 <Loader2 className="size-6 animate-spin mx-auto text-primary" />
               ) : (
                 <div className="overflow-x-auto">
@@ -285,7 +286,7 @@ function ReportsPage() {
               </Button>
             </CardHeader>
             <CardContent>
-              {drivers.isLoading ? (
+              {drivers.error ? <p role="alert" className="text-destructive">تعذر تحميل تقرير السائقين: {arabicError(drivers.error)}</p> : drivers.isLoading ? (
                 <Loader2 className="size-6 animate-spin mx-auto text-primary" />
               ) : (
                 <div className="overflow-x-auto">
@@ -395,7 +396,7 @@ function ReportsPage() {
               </Button>
             </CardHeader>
             <CardContent>
-              {compare.isLoading ? (
+              {compare.error ? <p role="alert" className="text-destructive">تعذر تحميل تقرير المقارنة: {arabicError(compare.error)}</p> : compare.isLoading ? (
                 <Loader2 className="size-6 animate-spin mx-auto text-primary" />
               ) : (
                 <div className="overflow-x-auto">

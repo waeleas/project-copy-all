@@ -106,7 +106,7 @@ export function MessagesManager() {
           <CardTitle className="text-base">الرسائل المرسلة</CardTitle>
         </CardHeader>
         <CardContent>
-          {messages.isLoading ? (
+          {messages.error ? <p role="alert" className="text-destructive">تعذر تحميل الرسائل المرسلة: {arabicError(messages.error)}</p> : messages.isLoading ? (
             <Loader2 className="size-6 animate-spin mx-auto text-primary" />
           ) : (messages.data ?? []).length === 0 ? (
             <p className="text-center text-muted-foreground py-4">لا توجد رسائل</p>

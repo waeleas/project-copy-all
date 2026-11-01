@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Mail, MailOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { arabicError } from "@/lib/errors";
 
 export const Route = createFileRoute("/messages")({
   head: () => ({ meta: [
@@ -27,14 +28,15 @@ function Inbox() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["messages", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("user_messages")
         .select("id, title, body, created_at, read_at, recipient_id")
-        .or(`recipient_id.eq.${user!.id},recipient_id.is.null`)
+        .or(`recipient_id.eq.${user.id},recipient_id.is.null`)
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
@@ -68,7 +70,7 @@ function Inbox() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">الرسائل</h1>
-      {isLoading ? (
+      {error ? <p role="alert" className="text-destructive">تعذر تحميل الرسائل: {arabicError(error)}</p> : isLoading ? (
         <Loader2 className="size-6 animate-spin mx-auto text-primary" />
       ) : (data ?? []).length === 0 ? (
         <p className="text-center text-muted-foreground py-8">لا توجد رسائل</p>

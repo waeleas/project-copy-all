@@ -543,7 +543,7 @@ function TripsList() {
       </Card>
 
       {isLoading && <p className="text-center py-8 text-muted-foreground">جاري التحميل...</p>}
-      {listError && <p role="alert" className="text-center py-8 text-destructive">تعذر تحميل الرحلات، حاول مرة أخرى</p>}
+      {listError && <p role="alert" className="text-center py-8 text-destructive">تعذر تحميل الرحلات: {arabicError(listError)}</p>}
 
       {!isLoading && counts.all === 0 && trips && trips.length === 0 && (
         <Card className="border-dashed">

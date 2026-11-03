@@ -206,15 +206,18 @@ export const resolveUsernameToEmail = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const username = data.username.toLowerCase();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: prof } = await supabaseAdmin
+    const { data: prof, error: profErr } = await supabaseAdmin
       .from("profiles")
       .select("user_id, must_change_password")
       .ilike("username", username)
       .maybeSingle();
-    if (!prof) return { email: null, must_change_password: false };
-    const { data: u } = await supabaseAdmin.auth.admin.getUserById(prof.user_id);
+    if (profErr) throw new Error(profErr.message || "database error");
+    if (!prof) return { email: null, must_change_password: false, reason: "username_missing" as const };
+    const { data: u, error: userErr } = await supabaseAdmin.auth.admin.getUserById(prof.user_id);
+    if (userErr && userErr.status !== 404) throw new Error(userErr.message || "database error");
     return {
-      email: u.user?.email ?? null,
+      reason: u?.user?.email ? null : ("account_missing" as const),
+      email: u?.user?.email ?? null,
       must_change_password: !!prof.must_change_password,
     };
   });

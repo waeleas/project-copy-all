@@ -43,11 +43,12 @@ export function openPhotoPicker(onFile: (file: File) => void, accept?: string): 
     check();
     if (!active) return;
     clearTimeout(returnTimer);
-    // Android may deliver change after focus/visibility. Keep listening briefly.
+    // Android WebView may deliver large/cloud photos long after focus returns.
+    // Keep listening; reopening the picker supersedes this session anyway.
     returnTimer = setTimeout(() => {
       check();
       cleanup();
-    }, 3000);
+    }, 120000);
   }
 
   input.addEventListener("change", changed);

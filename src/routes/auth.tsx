@@ -65,7 +65,9 @@ function AuthPage() {
       }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        toast.error(arabicError(error));
+        toast.error(/invalid login credentials|invalid_credentials/i.test(`${error.code ?? ""} ${error.message}`)
+          ? "كلمة المرور غير صحيحة لهذا المستخدم"
+          : arabicError(error));
         return;
       }
       try {

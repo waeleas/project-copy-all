@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { arabicError } from "@/lib/errors";
 
 const USERNAME_DOMAIN = "app.local";
 
@@ -204,6 +205,7 @@ const usernameLookupSchema = z.object({
 export const resolveUsernameToEmail = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => usernameLookupSchema.parse(d))
   .handler(async ({ data }) => {
+    try {
     const username = data.username.toLowerCase();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: prof, error: profErr } = await supabaseAdmin
@@ -211,15 +213,25 @@ export const resolveUsernameToEmail = createServerFn({ method: "POST" })
       .select("user_id, must_change_password")
       .ilike("username", username)
       .maybeSingle();
-    if (profErr) throw new Error(profErr.message || "database error");
-    if (!prof) return { email: null, must_change_password: false, reason: "username_missing" as const };
+    if (profErr) throw profErr;
+    if (!prof) return { email: null, must_change_password: false, reason: "username_missing" as const, error_message: null };
     const { data: u, error: userErr } = await supabaseAdmin.auth.admin.getUserById(prof.user_id);
-    if (userErr && userErr.status !== 404) throw new Error(userErr.message || "database error");
+    if (userErr && userErr.status !== 404) throw userErr;
     return {
+      error_message: null,
       reason: u?.user?.email ? null : ("account_missing" as const),
       email: u?.user?.email ?? null,
       must_change_password: !!prof.must_change_password,
     };
+    } catch (error) {
+      // Return a safe plain result: production may redact thrown error details.
+      return {
+        email: null,
+        must_change_password: false,
+        reason: "lookup_failed" as const,
+        error_message: arabicError(error, "تعذر التحقق من اسم المستخدم لدى خدمة الحسابات؛ لم يتوفر سبب محدد، حاول مجددًا"),
+      };
+    }
   });
 
 const firstTimeSchema = z.object({

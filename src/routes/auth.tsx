@@ -51,7 +51,11 @@ function AuthPage() {
     if (!username.trim() || !password) return toast.error("اسم المستخدم وكلمة المرور مطلوبان");
     setLoading(true);
     try {
-      const { email, must_change_password, reason } = await resolve({ data: { username: username.trim() } });
+      const { email, must_change_password, reason, error_message } = await resolve({ data: { username: username.trim() } });
+      if (reason === "lookup_failed") {
+        toast.error(error_message ?? "تعذر التحقق من اسم المستخدم؛ حاول مجددًا");
+        return;
+      }
       if (!email) {
         toast.error(reason === "account_missing"
           ? "اسم المستخدم مسجّل لكن حساب الدخول المرتبط به غير موجود؛ تواصل مع مسؤول البرنامج"

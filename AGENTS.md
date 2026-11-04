@@ -14,6 +14,7 @@
 - Open photo pickers through the shared lifecycle helper with a fresh native input per user gesture; cancellation and stale callbacks must never clear a previously selected photo or block reopening.
 - Keep photo retention rules in a pure tested helper; cleanup must authenticate an admin or server-only schedule secret and protect objects referenced by recent requests before deleting through Storage API.
 - Route user-facing failures through the browser-safe shared error classifier; classify using known codes/status/messages and keep unknown causes explicit, so provider diagnostics never leak through translation fragments.
+- Return classified Arabic failures as plain results from public username lookup, preserving provider codes/status before classification, because production can redact thrown errors.
 - Load the main trip list in bounded database pages for ordinary status/date browsing; text/service searches retain complete matching data, and Excel/SAP reports load all matching pages only on demand to preserve report completeness while reducing routine transfers. Keep loading ranges and device-local date bounds in a tested browser-safe helper.
 - Derive service filter buttons from managed service IDs and use head-only counts during paged browsing; shared pure filter/count helpers keep new service types independent without downloading all trips for counters.
 - Keep Excel registration-date formatting and additional-route date selection in a tested browser-safe helper so report-only date rules never modify stored trip or segment timestamps.

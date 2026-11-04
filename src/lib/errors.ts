@@ -7,6 +7,9 @@ function info(err: unknown) {
 }
 
 const RULES = [
+  ["login_configuration", /missing supabase environment variable|invalid api key|invalid_api_key/i, "إعدادات خدمة الدخول غير مكتملة أو غير صالحة؛ يلزم مراجعتها بواسطة مسؤول البرنامج"],
+  ["app_version", /server function (info )?not found|failed to find server function|failed to fetch dynamically imported module|importing a module script failed/i, "نسخة الصفحة لا تتوافق مع النسخة المنشورة؛ حدّث الصفحة ثم حاول الدخول مجددًا"],
+  ["multiple_records", /PGRST116|multiple \(or no\) rows returned|cannot coerce the result to a single JSON object/i, "تعذر تحديد حساب واحد من البيانات المسجلة؛ يلزم مراجعة سجلات الحساب بواسطة مسؤول البرنامج"],
   ["credentials", /invalid login credentials|invalid_credentials/i, "اسم المستخدم أو كلمة المرور غير صحيحة"],
   ["email_unconfirmed", /email not confirmed|email_not_confirmed/i, "البريد الإلكتروني غير مفعّل؛ يلزم تفعيله قبل تسجيل الدخول"],
   ["user_missing", /user not found|user_not_found/i, "الحساب المطلوب غير موجود"],
@@ -40,7 +43,7 @@ const RULES = [
   ["server", /database error|internal server error|service unavailable|bad gateway/i, "حدث خطأ في الخدمة أثناء تنفيذ الطلب؛ حاول مجددًا لاحقًا"],
 ] as const;
 
-const CODES: Record<string, string> = { "23505": "duplicate", "23503": "reference", "23502": "required", "23514": "invalid_value", "22P02": "invalid_value", "42501": "permission", "PGRST301": "session" };
+const CODES: Record<string, string> = { "23505": "duplicate", "23503": "reference", "23502": "required", "23514": "invalid_value", "22P02": "invalid_value", "42501": "permission", "PGRST301": "session", "PGRST116": "multiple_records" };
 
 /** Classification uses evidence, never guesses that a generic TypeError means weak internet. */
 export function errorReason(err: unknown): string {

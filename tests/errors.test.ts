@@ -1,7 +1,21 @@
 import { describe, expect, test } from "bun:test";
-import { errorReason } from "../src/lib/errors";
+import { arabicError, errorReason } from "../src/lib/errors";
 
 describe("truthful error causes", () => {
+  test("login configuration failure is not missing username", () => {
+    expect(errorReason(new Error("Missing Supabase environment variable(s): SUPABASE_URL"))).toBe("login_configuration");
+  });
+  test("unavailable server function is a page version problem", () => {
+    expect(errorReason(new Error("Server function info not found for abc123"))).toBe("app_version");
+  });
+  test("non-single account lookup retains its database code", () => {
+    expect(errorReason({ code: "PGRST116", message: "Rejected" })).toBe("multiple_records");
+  });
+  test("known server failures survive a plain Arabic result boundary", () => {
+    const message = arabicError({ status: 503, message: "Rejected" });
+    expect(arabicError({ message })).toBe(arabicError({ message: "Service unavailable" }));
+    expect(message).not.toContain("Rejected");
+  });
   test("generic TypeError is not evidence of weak internet", () => {
     expect(errorReason(new TypeError("Cannot read properties of null"))).toBe("unknown");
   });

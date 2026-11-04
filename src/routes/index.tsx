@@ -17,6 +17,8 @@ import { SapOrdersImport } from "@/components/sap-orders-import";
 import { toast } from "sonner";
 import { arabicError } from "@/lib/errors";
 import { loadAllTripPages, tripDateBounds, tripPageRange, TRIP_PAGE_SIZE } from "@/lib/trip-list-loading";
+import { countTripsByService, filterTripsByService } from "@/lib/trip-service-filters";
+import { additionalRouteReportDate, tripReportDate } from "@/lib/trip-report-date";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -41,7 +43,7 @@ function TripsList() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "completed">("all");
-  const [serviceFilter, setServiceFilter] = useState<"all" | "worker" | "aftersales">("all");
+  const [serviceFilter, setServiceFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = TRIP_PAGE_SIZE;
 
@@ -56,6 +58,15 @@ function TripsList() {
         `;
   // البحث النصي وفلتر نوع الخدمة يحتاجان كل الطلبات؛ غير ذلك نحمّل الصفحة المعروضة فقط
   const needsAll = !!tripNoQ.trim() || serviceFilter !== "all";
+
+  const { data: serviceTypes = [], error: servicesError } = useQuery({
+    queryKey: ["service_types"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("service_types").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   function applyServerFilters(q: any) {
     if (statusFilter === "open") q = q.eq("status", "open");
@@ -76,6 +87,18 @@ function TripsList() {
         return data ?? [];
     });
   }
+
+  const { data: serverServiceCounts, error: serviceCountsError } = useQuery({
+    queryKey: ["trips", "service-counts", statusFilter, dateFrom, dateTo, serviceTypes.map(s => s.id)],
+    enabled: !needsAll && serviceTypes.length > 0,
+    queryFn: async () => Object.fromEntries(await Promise.all(serviceTypes.map(async (service) => {
+      const { count, error } = await applyServerFilters(
+        supabase.from("trips").select("id", { count: "exact", head: true }).eq("service_type_id", service.id),
+      );
+      if (error) throw error;
+      return [service.id, count ?? 0];
+    }))),
+  });
 
   const { data: counts = { all: 0, open: 0, completed: 0 }, refetch: refetchCounts } = useQuery({
     queryKey: ["trips", "counts"],
@@ -113,15 +136,11 @@ function TripsList() {
   const refetch = () => { refetchList(); refetchCounts(); };
 
 
-  const filtered = useMemo(() => {
+  const matchingTrips = useMemo(() => {
     if (!trips) return [];
     return trips.filter((t: any) => {
       if (statusFilter === "open" && t.status !== "open") return false;
       if (statusFilter === "completed" && t.status === "open") return false;
-      const svc = t.service_type?.name ?? "";
-      const isWorker = svc.includes("نقل") && svc.includes("عامل");
-      if (serviceFilter === "worker" && !isWorker) return false;
-      if (serviceFilter === "aftersales" && isWorker) return false;
       if (tripNoQ.trim()) {
         const q = tripNoQ.trim().toLowerCase();
         const hay = [
@@ -149,7 +168,10 @@ function TripsList() {
       const db = new Date(b.start_at ?? b.created_at).getTime();
       return db - da;
     });
-  }, [trips, tripNoQ, dateFrom, dateTo, statusFilter, serviceFilter]);
+  }, [trips, tripNoQ, dateFrom, dateTo, statusFilter]);
+  const filtered = useMemo(() => filterTripsByService(matchingTrips, serviceFilter), [matchingTrips, serviceFilter]);
+  const serviceCounts = needsAll ? countTripsByService(matchingTrips) : serverServiceCounts;
+  const allServicesCount = needsAll ? matchingTrips.length : listData?.total;
 
   useEffect(() => { setPage(1); }, [tripNoQ, dateFrom, dateTo, statusFilter, serviceFilter]);
 
@@ -181,13 +203,7 @@ function TripsList() {
     return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
   }
   // صيغة ثابتة: يوم-اسم الشهر-سنة (مثال: 5-Oct-26) — مستقلة عن إعدادات الجهاز
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  function fmtDateShort(v: any) {
-    if (!v) return "";
-    const d = new Date(v);
-    if (isNaN(d.getTime())) return "";
-    return `${d.getDate()}-${MONTHS[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`;
-  }
+  const fmtDateShort = tripReportDate;
   function fmtTime(v: any) {
     if (!v) return "";
     const d = new Date(v);
@@ -287,7 +303,7 @@ function TripsList() {
           "ترتيب المسار": s.sequence ?? i + 1,
           "خط السير": s.route ?? "",
           "قراءة العداد (كم)": s.odometer ?? "",
-"تاريخ التسجيل": fmtDateShort(s.created_at),
+"تاريخ التسجيل": additionalRouteReportDate(t),
           "وقت التسجيل": fmtTime(s.created_at),
           "ملاحظات": s.notes ?? "",
           "صورة العداد": s.photo_url ?? "",
@@ -514,10 +530,16 @@ function TripsList() {
             </Button>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant={serviceFilter === "all" ? "default" : "outline"} onClick={() => setServiceFilter("all")}>كل الخدمات</Button>
-            <Button size="sm" variant={serviceFilter === "worker" ? "default" : "outline"} onClick={() => setServiceFilter("worker")}>نقل عاملين</Button>
-            <Button size="sm" variant={serviceFilter === "aftersales" ? "default" : "outline"} onClick={() => setServiceFilter("aftersales")}>خدمة ما بعد البيع</Button>
+            <Button size="sm" variant={serviceFilter === "all" ? "default" : "outline"} onClick={() => setServiceFilter("all")}>
+              كل الخدمات <Badge variant="secondary" className="ml-1">{isLoading ? "…" : allServicesCount ?? "…"}</Badge>
+            </Button>
+            {serviceTypes.map((service) => (
+              <Button key={service.id} size="sm" variant={serviceFilter === service.id ? "default" : "outline"} onClick={() => setServiceFilter(service.id)} className="h-auto min-h-8 max-w-full whitespace-normal text-start">
+                {service.name} <Badge variant="secondary" className="ml-1 shrink-0">{needsAll && isLoading ? "…" : serviceCounts ? serviceCounts[service.id] ?? 0 : "…"}</Badge>
+              </Button>
+            ))}
           </div>
+          {(servicesError || (!needsAll && serviceCountsError)) && <p role="alert" className="text-sm text-destructive">تعذر تحميل فلاتر الخدمات أو أعدادها: {arabicError(servicesError || serviceCountsError)}</p>}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div className="space-y-1">
               <Label className="text-xs flex items-center gap-1"><Search className="size-3" /> بحث</Label>

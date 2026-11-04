@@ -1,5 +1,5 @@
-- [ ] Generate counted filters for all managed service types and verify filtering.
-- [ ] Make additional-route Excel registration dates match the trip start and verify an exported report.
+- [x] Generate counted filters for all managed service types; authenticated browsing verified المكتبية والساعات (85 requests), complete search counts and mobile layout; pure filtering/count tests passed.
+- [x] Make additional-route Excel registration dates match trip start; verified 457 real additional-route rows in an authenticated export, preserving times and stored data; regression test passed.
 - [x] Change photo retention to 90 days; cutoff and protection tests passed. Previously deleted photos cannot be restored.
 - [x] Review system messages; translate shared failures, login/import/export/restore/camera and fallback screens, distinguish partial completion and known causes. 39 regression tests passed; authenticated invalid import and Arabic not-found screen verified without saving data. Login outage simulation did not complete, and native device errors were not exercised individually.
 - [x] Improve large-photo compression and weak-network upload retries; 32 regression tests passed and an authenticated mobile browser selected a 36 MB image, compressed/uploaded it to 10.8 KB after six simulated network failures, read it back and removed the test object without changing trip data. Native phone-specific formats and actual cellular conditions remain device-specific.

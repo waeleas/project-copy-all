@@ -1,3 +1,4 @@
+- [ ] Diagnose unclear sign-in failure, preserve known Arabic causes across login server calls, and verify without changing accounts or trip data.
 - [x] Generate counted filters for all managed service types; authenticated browsing verified المكتبية والساعات (85 requests), complete search counts and mobile layout; pure filtering/count tests passed.
 - [x] Make additional-route Excel registration dates match trip start; verified 457 real additional-route rows in an authenticated export, preserving times and stored data; regression test passed.
 - [x] Change photo retention to 90 days; cutoff and protection tests passed. Previously deleted photos cannot be restored.

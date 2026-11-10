@@ -18,3 +18,4 @@
 - Load the main trip list in bounded database pages for ordinary status/date browsing; text/service searches retain complete matching data, and Excel/SAP reports load all matching pages only on demand to preserve report completeness while reducing routine transfers. Keep loading ranges and device-local date bounds in a tested browser-safe helper.
 - Derive service filter buttons from managed service IDs and use head-only counts during paged browsing; shared pure filter/count helpers keep new service types independent without downloading all trips for counters.
 - Keep Excel registration-date formatting and additional-route date selection in a tested browser-safe helper so report-only date rules never modify stored trip or segment timestamps.
+- Keep automatic starting-photo eligibility in a pure tested device-local calendar helper; return the previous reading date and status so the UI can enforce eligibility.

@@ -1,4 +1,5 @@
 import { getLastClosedTripPhoto } from "@/lib/last-photo.functions";
+import { canReuseStartPhoto } from "@/lib/automatic-start-photo";
 import { arabicError } from "@/lib/errors";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect, type FormEvent } from "react";
@@ -155,7 +156,7 @@ function NewTrip() {
       });
       if (!r) return null;
       // photo_url رابط موقّع مؤقت للتحميل فقط؛ photo_path هو المرجع الدائم للحفظ
-      return { trip_no: r.trip_no, end_odometer: r.end_odometer, end_photo_url: r.photo_url, photo_path: r.photo_path, start_photo_url: null } as any;
+      return { trip_no: r.trip_no, status: r.status, at: r.at, end_odometer: r.end_odometer, end_photo_url: r.photo_url, photo_path: r.photo_path, start_photo_url: null };
     },
   });
 
@@ -169,7 +170,7 @@ function NewTrip() {
     const last = lastClosedTrip.data;
     const lastPhoto = (last?.end_photo_url ?? last?.start_photo_url ?? null) as string | null;
     const matches =
-      !!odo && !!last && last.end_odometer != null && String(last.end_odometer) === odo && !!lastPhoto;
+      !!last && canReuseStartPhoto({ status: last.status, at: last.at, reading: last.end_odometer }, odo) && !!lastPhoto;
     if (!matches) {
       if (autoPhoto) {
         if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
@@ -183,22 +184,22 @@ function NewTrip() {
       }
       return;
     }
-    if (photo) return;
+    if (photo || !lastPhoto) return;
     let cancelled = false;
     (async () => {
       let blob: Blob | null = null;
       try {
-        if (/^https?:\/\//i.test(lastPhoto!)) {
-          const res = await fetch(lastPhoto!);
+        if (/^https?:\/\//i.test(lastPhoto)) {
+          const res = await fetch(lastPhoto);
           if (res.ok) blob = await res.blob();
         } else {
           // مسار داخل التخزين: نزّل الملف مباشرة
-          const { data, error } = await supabase.storage.from("odometer-photos").download(lastPhoto!);
+          const { data, error } = await supabase.storage.from("odometer-photos").download(lastPhoto);
           if (!error && data) blob = data;
           if (!blob) {
             // احتياط: رابط موقّع ثم جلب عادي
             const { getSignedPhotoUrl } = await import("@/lib/storage");
-            const signed = await getSignedPhotoUrl(lastPhoto!);
+            const signed = await getSignedPhotoUrl(lastPhoto);
             const res = await fetch(signed);
             if (res.ok) blob = await res.blob();
           }
@@ -220,7 +221,7 @@ function NewTrip() {
         const stablePath = (last?.photo_path ?? null) as string | null;
         if (stablePath && reusedPhotoUrl !== stablePath) {
           setReusedPhotoUrl(stablePath);
-          setPhotoPreview(lastPhoto!);
+          setPhotoPreview(lastPhoto);
           setErrors((e) => (e.photo ? { ...e, photo: false } : e));
         }
       }

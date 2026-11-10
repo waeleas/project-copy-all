@@ -1,4 +1,5 @@
 - [x] Preserve known Arabic username-lookup failures as plain results before production error redaction; 11 classifier tests passed, preview and published wrong-password checks and preview missing-username check passed. The reported intermittent failure was not reproduced; successful password login was not verified with the historical password, and no accounts or trip data were changed.
+- [x] Restrict automatic starting photos to yesterday's matching closed-trip reading; 14 eligibility and picker tests passed and preview build OK. No real requests were modified; authenticated end-to-end attachment was not exercised.
 - [x] Generate counted filters for all managed service types; authenticated browsing verified المكتبية والساعات (85 requests), complete search counts and mobile layout; pure filtering/count tests passed.
 - [x] Make additional-route Excel registration dates match trip start; verified 457 real additional-route rows in an authenticated export, preserving times and stored data; regression test passed.
 - [x] Change photo retention to 90 days; cutoff and protection tests passed. Previously deleted photos cannot be restored.

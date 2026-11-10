@@ -18,7 +18,7 @@ export const getLastClosedTripPhoto = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let q = supabaseAdmin
       .from("trips")
-      .select("trip_no, start_odometer, end_odometer, end_photo_url, start_photo_url, start_at, end_at")
+      .select("trip_no, status, start_odometer, end_odometer, end_photo_url, start_photo_url, start_at, end_at")
       .order("start_at", { ascending: false })
       .limit(30);
     if (code) q = q.eq("car_code", code);
@@ -45,5 +45,5 @@ export const getLastClosedTripPhoto = createServerFn({ method: "POST" })
         url = s?.signedUrl ?? null;
       }
     }
-    return { trip_no: last.trip_no as number, end_odometer: reading, photo_path: path, photo_url: url };
+    return { trip_no: last.trip_no as number, status: last.status as string, at: (last.end_at ?? last.start_at) as string, end_odometer: reading, photo_path: path, photo_url: url };
   });

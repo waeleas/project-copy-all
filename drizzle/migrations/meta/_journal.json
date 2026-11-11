@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794394986641,
+      "tag": "0000_restrict_lookup_reads_to_role_holders",
+      "breakpoints": true
+    }
+  ]
+}

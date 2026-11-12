@@ -654,7 +654,7 @@ function DriversManager() {
   const createDriverUsers = useServerFn(createUsersForAllDrivers);
 
   async function generateUsers() {
-    if (!confirm("سيتم إنشاء حساب مستخدم لكل سائق ليس لديه حساب (كلمة السر 123456). متابعة؟")) return;
+    if (!confirm("سيتم إنشاء حساب مستخدم لكل سائق ليس لديه حساب (يحدد كل سائق كلمة السر بنفسه عند أول دخول). متابعة؟")) return;
     setCreatingUsers(true);
     try {
       const res: any = await createDriverUsers({});
@@ -732,7 +732,7 @@ function DriversManager() {
 
         <Button type="button" variant="outline" onClick={generateUsers} disabled={creatingUsers} className="w-full">
           {creatingUsers ? <Loader2 className="size-4 animate-spin ml-2" /> : <UserPlus className="size-4 ml-2" />}
-          إنشاء حسابات مستخدمين للسائقين (كلمة السر 123456)
+          إنشاء حسابات مستخدمين للسائقين
         </Button>
           <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
             <Input placeholder="اسم السائق" value={name} onChange={(e) => setName(e.target.value)} />

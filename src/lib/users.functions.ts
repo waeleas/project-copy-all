@@ -105,7 +105,12 @@ const createUserSchema = z.object({
   is_admin: z.boolean().default(false),
 });
 
-const DEFAULT_PASSWORD = "123456";
+/** Random strong initial password; new users set their own via first-time setup. */
+function randomInitialPassword() {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return "Tmp!" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 function isWeakPasswordError(error: unknown) {
   const message = String((error as { message?: unknown } | null)?.message ?? error ?? "");
@@ -131,7 +136,7 @@ export const createUser = createServerFn({ method: "POST" })
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password: DEFAULT_PASSWORD,
+      password: randomInitialPassword(),
       email_confirm: true,
       user_metadata: { username, display_name: data.display_name },
     });
@@ -316,7 +321,7 @@ export const createUsersForAllDrivers = createServerFn({ method: "POST" })
 
       const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password: DEFAULT_PASSWORD,
+        password: randomInitialPassword(),
         email_confirm: true,
         user_metadata: { username, display_name: d.name },
       });
@@ -330,7 +335,7 @@ export const createUsersForAllDrivers = createServerFn({ method: "POST" })
           user_id: newUser.user.id,
           username,
           display_name: d.name,
-          must_change_password: false,
+          must_change_password: true,
         },
         { onConflict: "user_id" }
       );

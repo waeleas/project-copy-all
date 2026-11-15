@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { comparisonOdometers } from "@/lib/comparison-odometer";
 
 async function ensureAdminOrViewer(supabase: any, userId: string) {
   const { data } = await supabase
@@ -52,7 +53,7 @@ async function fetchAllCompletedTrips(supabase: any, range: ReportRange): Promis
       .not("end_odometer", "is", null);
     if (range.from) q = q.gte("start_at", range.from.includes("T") ? range.from : `${range.from}T00:00:00.000Z`);
     if (range.to) q = q.lte("start_at", range.to.includes("T") ? range.to : `${range.to}T23:59:59.999Z`);
-    const { data, error } = await q.range(from, from + PAGE - 1);
+    const { data, error } = await q.order("start_at", { ascending: true }).order("id", { ascending: true }).range(from, from + PAGE - 1);
     if (error) throw error;
     if (!data || data.length === 0) break;
     all.push(...(data as TripRow[]));
@@ -287,6 +288,7 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     await ensureAdminOrViewer(context.supabase, context.userId);
     const trips = await fetchAllCompletedTrips(context.supabase, data);
+    const odometers = comparisonOdometers(trips, data);
 
     const { data: carsData } = await context.supabase.from("cars").select("plate, code, description, type");
     const carByPlate = new Map<string, any>();
@@ -392,11 +394,14 @@ export const getCarDriverComparisonReport = createServerFn({ method: "GET" })
         });
 
         breakdown.sort((a, b) => b.km - a.km);
-        const minStart = r.min_start === Number.POSITIVE_INFINITY ? 0 : r.min_start;
-        const spanKm = Math.max(0, r.max_end - minStart);
+        const periodReadings = odometers.get(r.car_plate);
+        const minStart = periodReadings?.first ?? 0;
+        const maxEnd = periodReadings?.last ?? 0;
+        const spanKm = Math.max(0, maxEnd - minStart);
         return {
           ...r,
           min_start: minStart,
+          max_end: maxEnd,
           car_span_km: spanKm,
           drivers_count: _drivers.size,
           top_driver: top,

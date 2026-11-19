@@ -1,4 +1,5 @@
 import { arabicError } from "@/lib/errors";
+import { exceedsTripDistanceLimit } from "@/lib/trip-distance";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useId, type FormEvent, type ReactNode } from "react";
@@ -128,7 +129,7 @@ function TripDetail() {
     const endVal = parseInt(endKm, 10);
     if (isNaN(endVal)) return toast.error("أدخل قراءة العداد");
     if (endVal <= lastOdometer) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
-    if (endVal - lastOdometer > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
+    if (exceedsTripDistanceLimit(lastOdometer, endVal, isAdmin)) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     setSaving(true);
     try {
       const path = await uploadOdometerPhoto(endPhoto, "end", setPhotoStatus);
@@ -515,7 +516,7 @@ function EditTripDialog({ trip, isAdmin, open, onClose, onSaved }: { trip: any; 
     if (endVal != null && !Number.isFinite(endVal)) return toast.error("قراءة عداد النهاية غير صحيحة");
     if (endVal != null && endVal < 0) return toast.error("لا يمكن أن تكون قراءة العداد بالسالب");
     if (endVal != null && endVal <= startVal) return toast.error("قراءة نهاية العداد يجب أن تكون أكبر من قراءة البداية");
-    if (endVal != null && endVal - startVal > 1000) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
+    if (exceedsTripDistanceLimit(startVal, endVal, isAdmin)) return toast.error("لا يمكن أن تتجاوز مسافة الرحلة 1000 كم");
     if (form.car_type === "rental" && !form.office_id) return toast.error("المكتب مطلوب لسيارات الإيجار");
     if (form.route_start.trim().length > 40) return toast.error("يجب ألا يزيد وصف خط السير عن 40 حرف");
     if (!form.governorate_id) return toast.error("المحافظة مطلوبة");

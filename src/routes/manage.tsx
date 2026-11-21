@@ -73,12 +73,13 @@ function Manage() {
 
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 sm:grid-cols-9 w-full h-auto">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-10 w-full h-auto">
           <TabsTrigger value="users">المستخدمون</TabsTrigger>
           <TabsTrigger value="messages">الرسائل</TabsTrigger>
           <TabsTrigger value="offices">المكاتب</TabsTrigger>
           <TabsTrigger value="managers">المديرون</TabsTrigger>
           <TabsTrigger value="technicians">متلقي الخدمة أو فنى</TabsTrigger>
+          <TabsTrigger value="tech_managers">مديرو الفنيين</TabsTrigger>
           <TabsTrigger value="drivers">السائقون</TabsTrigger>
           <TabsTrigger value="cars">السيارات</TabsTrigger>
           <TabsTrigger value="services">الخدمات</TabsTrigger>
@@ -91,6 +92,7 @@ function Manage() {
         <TabsContent value="offices"><LookupManager table="offices" title="المكاتب" withCode /></TabsContent>
         <TabsContent value="managers"><LookupManager table="managers" title="المديرون" withSap withCostCenter /></TabsContent>
         <TabsContent value="technicians"><LookupManager table="technicians" title="متلقي الخدمة أو فنى" withSap /></TabsContent>
+        <TabsContent value="tech_managers"><TechnicianManagersManager /></TabsContent>
 
         <TabsContent value="drivers"><DriversManager /></TabsContent>
         <TabsContent value="cars"><CarsManager /></TabsContent>
@@ -1260,6 +1262,122 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter, withPm
           ))}
         </div>
 
+      </CardContent>
+    </Card>
+  );
+}
+
+/** ربط كل فني (متلقي خدمة) بالمديرين المسؤولين عنه — تُستخدم في تعبئة المدير تلقائيًا عند إنشاء الطلب. */
+function TechnicianManagersManager() {
+  const qc = useQueryClient();
+  const [techId, setTechId] = useState("");
+  const [mgrId, setMgrId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const technicians = useQuery({
+    queryKey: ["technicians"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("technicians").select("id, name, sap_number").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const managers = useQuery({
+    queryKey: ["managers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("managers").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const links = useQuery({
+    queryKey: ["technician_managers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("technician_managers" as any).select("id, technician_id, manager_id");
+      if (error) throw error;
+      return (data as any[]) ?? [];
+    },
+  });
+
+  const techName = (id: string) => technicians.data?.find((t) => t.id === id)?.name ?? "—";
+  const mgrName = (id: string) => managers.data?.find((m) => m.id === id)?.name ?? "—";
+
+  async function addLink() {
+    if (!techId || !mgrId) return toast.error("اختر الفني والمدير");
+    setSaving(true);
+    const { error } = await supabase.from("technician_managers" as any).insert({ technician_id: techId, manager_id: mgrId });
+    setSaving(false);
+    if (error) {
+      if ((error as any).code === "23505") return toast.error("هذا الربط موجود بالفعل");
+      return toast.error(arabicError(error));
+    }
+    setMgrId("");
+    qc.invalidateQueries({ queryKey: ["technician_managers"] });
+    toast.success("تمت إضافة الربط");
+  }
+
+  async function removeLink(id: string) {
+    if (!confirm("هل أنت متأكد من حذف هذا الربط؟")) return;
+    const { error } = await supabase.from("technician_managers" as any).delete().eq("id", id);
+    if (error) return toast.error(arabicError(error));
+    qc.invalidateQueries({ queryKey: ["technician_managers"] });
+    toast.success("تم الحذف");
+  }
+
+  const filtered = (links.data ?? []).filter((l: any) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return techName(l.technician_id).toLowerCase().includes(q) || mgrName(l.manager_id).toLowerCase().includes(q);
+  });
+
+  return (
+    <Card className="mt-4">
+      <CardHeader><CardTitle className="text-base">مديرو الفنيين</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-xs text-muted-foreground">
+          عند اختيار فني له مدير واحد فقط هنا، يُملأ المدير تلقائيًا في الطلب الجديد. إذا كان للفني أكثر من مدير تُترك الخانة فارغة للاختيار اليدوي.
+        </p>
+        <div className="grid gap-2 grid-cols-1 sm:grid-cols-[1fr_1fr_auto]">
+          <UiSelect value={techId} onValueChange={setTechId}>
+            <UiSelectTrigger><UiSelectValue placeholder="اختر الفني / متلقي الخدمة" /></UiSelectTrigger>
+            <UiSelectContent>
+              {(technicians.data ?? []).map((t) => (
+                <UiSelectItem key={t.id} value={t.id}>{t.name}{t.sap_number ? ` — ${t.sap_number}` : ""}</UiSelectItem>
+              ))}
+            </UiSelectContent>
+          </UiSelect>
+          <UiSelect value={mgrId} onValueChange={setMgrId}>
+            <UiSelectTrigger><UiSelectValue placeholder="اختر المدير" /></UiSelectTrigger>
+            <UiSelectContent>
+              {(managers.data ?? []).map((m) => (
+                <UiSelectItem key={m.id} value={m.id}>{m.name}</UiSelectItem>
+              ))}
+            </UiSelectContent>
+          </UiSelect>
+          <Button onClick={addLink} disabled={saving} className="w-full sm:w-auto">
+            {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+          </Button>
+        </div>
+
+        <Input placeholder="بحث بالفني أو المدير..." value={search} onChange={(e) => setSearch(e.target.value)} />
+
+        <div className="space-y-1.5">
+          {links.isLoading && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}
+          {filtered.length === 0 && !links.isLoading && <p className="text-sm text-muted-foreground text-center py-4">لا توجد روابط</p>}
+          {filtered.map((l: any) => (
+            <div key={l.id} className="flex items-center justify-between bg-muted/50 rounded-md p-2.5 gap-2">
+              <div className="text-sm min-w-0">
+                <span className="font-medium">{techName(l.technician_id)}</span>
+                <span className="text-muted-foreground"> ← </span>
+                <span>{mgrName(l.manager_id)}</span>
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => removeLink(l.id)}>
+                <Trash2 className="size-4 text-destructive" />
+              </Button>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,5 +1,6 @@
 import { getLastClosedTripPhoto } from "@/lib/last-photo.functions";
 import { canReuseStartPhoto } from "@/lib/automatic-start-photo";
+import { autoManagerForTechnician } from "@/lib/technician-manager";
 import { arabicError } from "@/lib/errors";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect, type FormEvent } from "react";
@@ -99,6 +100,14 @@ function NewTrip() {
   const offices = useLookup("offices");
   const managers = useLookup("managers");
   const technicians = useLookup("technicians");
+  const techManagers = useQuery({
+    queryKey: ["technician_managers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("technician_managers" as any).select("technician_id, manager_id");
+      if (error) throw error;
+      return (data as any[]) ?? [];
+    },
+  });
   const drivers = useLookup("drivers");
   const services = useLookup("service_types");
   const governorates = useLookup("governorates");
@@ -607,7 +616,12 @@ function NewTrip() {
           )}
           {services.data?.find((s) => s.id === form.service_type_id)?.name !== "نقل عاملين" && (
             <Field label="متلقي الخدمة أو فنى (رقم الساب)" invalid={errors.technician_id}>
-              <SapSelect items={technicians.data} value={form.technician_id} onChange={(v) => set("technician_id", v)} placeholder="اختر رقم الساب أو اكتب: لا يوجد" allowNone noneLabel="لا يوجد متلقى خدمة أو فنى" />
+              <SapSelect items={technicians.data} value={form.technician_id} onChange={(v) => {
+                // تعبئة المدير تلقائيًا: فقط إذا كان للفني مدير واحد مرتبط به.
+                // عند تعدد المديرين أو عدم وجود رابط تُترك الخانة فارغة للإدخال اليدوي.
+                const auto = autoManagerForTechnician(v, techManagers.data);
+                setForm((f) => ({ ...f, technician_id: v, manager_id: auto ?? "" }));
+              }} placeholder="اختر رقم الساب أو اكتب: لا يوجد" allowNone noneLabel="لا يوجد متلقى خدمة أو فنى" />
 
               {selectedTech && (
                 <div className="mt-2 p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">

@@ -265,6 +265,42 @@ export type Database = {
         }
         Relationships: []
       }
+      technician_managers: {
+        Row: {
+          created_at: string
+          id: string
+          manager_id: string
+          technician_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          manager_id: string
+          technician_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          manager_id?: string
+          technician_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_managers_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technician_managers_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "technicians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technicians: {
         Row: {
           created_at: string

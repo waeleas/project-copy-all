@@ -10,6 +10,7 @@ import { Car, ListChecks, Plus, Settings, LogOut, Loader2, User, Mail, BarChart3
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NetworkBanner } from "@/components/network-banner";
+import { isQuietHours } from "@/lib/quiet-hours";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -18,11 +19,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { canCreateTrips } = usePermissions();
   const navigate = useNavigate();
   const { location } = useRouterState();
+  const [quiet, setQuiet] = useState(false);
+  useEffect(() => {
+    const check = () => setQuiet(isQuietHours());
+    check();
+    const t = setInterval(check, 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["messages-unread", user?.id],
-    enabled: !!user?.id,
-    refetchInterval: 60_000,
+    enabled: !!user?.id && !quiet,
     queryFn: async () => {
       // Direct unread messages
       const { count: directUnread } = await supabase
@@ -53,8 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Overdue open trips (> 23:59 since start) — remind every 6 hours
   const { data: overdue } = useQuery({
     queryKey: ["overdue-open-trip", user?.id],
-    enabled: !!user?.id,
-    refetchInterval: 5 * 60_000,
+    enabled: !!user?.id && !quiet,
     queryFn: async () => {
       const cutoff = new Date(Date.now() - (23 * 60 + 59) * 60_000).toISOString();
       const { data } = await supabase
@@ -84,6 +90,17 @@ export function AppShell({ children }: { children: ReactNode }) {
     const t = Date.now();
     localStorage.setItem(remindKey, String(t));
     setLastShown(t);
+  }
+
+  if (quiet) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 text-center" dir="rtl">
+        <div className="space-y-2">
+          <p className="text-xl font-bold">البرنامج متوقف مؤقتًا</p>
+          <p className="text-muted-foreground">يتوقف البرنامج يوميًا من 11:59 مساءً حتى 2:00 صباحًا لتوفير التشغيل. سيعود تلقائيًا بعد الساعة 2:00.</p>
+        </div>
+      </div>
+    );
   }
 
   if (loading || !user) {

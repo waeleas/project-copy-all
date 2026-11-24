@@ -21,3 +21,4 @@
 - Keep automatic starting-photo eligibility in a pure tested device-local calendar helper; return the previous reading date and status so the UI can enforce eligibility.
 - Keep comparison-report odometer boundaries in a pure tested helper selecting the first and last completed trips chronologically within the requested period, not numeric extrema; stably order paged report reads to avoid gaps.
 - Keep trip-distance validation in a shared tested browser-safe helper using managed role status, so closing and editing apply the same admin exception without changing odometer validity checks.
+- Nightly closure 23:59–02:00 device time lives in src/lib/quiet-hours.ts (tested); AppShell renders a closed screen and disables queries then so the database can idle.

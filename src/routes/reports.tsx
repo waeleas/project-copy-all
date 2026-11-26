@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { getCarKmReport, getDriverKmReport, getCarDriverComparisonReport } from "@/lib/reports.functions";
 import { exportToXlsx } from "@/components/data-toolbar";
 import { arabicError } from "@/lib/errors";
+import { currentMonthRange } from "@/lib/trip-list-loading";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({ meta: [
@@ -51,6 +52,15 @@ function ReportsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [range, setRange] = useState<{ from: string | null; to: string | null }>({ from: null, to: null });
+  const [datesReady, setDatesReady] = useState(false);
+  const [tab, setTab] = useState("cars");
+  useEffect(() => {
+    const month = currentMonthRange();
+    setFrom(month.from);
+    setTo(month.to);
+    setRange(month);
+    setDatesReady(true);
+  }, []);
 
   useEffect(() => {
     if (!la && !lv && !isAdmin && !isViewer) {
@@ -65,14 +75,23 @@ function ReportsPage() {
 
   const cars = useQuery({
     queryKey: ["report", "cars", range.from, range.to],
+    enabled: datesReady && (isAdmin || isViewer) && tab === "cars",
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: () => carsFn({ data: localRange(range) }),
   });
   const drivers = useQuery({
     queryKey: ["report", "drivers", range.from, range.to],
+    enabled: datesReady && (isAdmin || isViewer) && tab === "drivers",
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: () => driversFn({ data: localRange(range) }),
   });
   const compare = useQuery({
     queryKey: ["report", "compare", range.from, range.to],
+    enabled: datesReady && (isAdmin || isViewer) && tab === "compare",
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: () => compareFn({ data: localRange(range) }),
   });
 
@@ -85,9 +104,10 @@ function ReportsPage() {
   }
 
   function clearRange() {
-    setFrom("");
-    setTo("");
-    setRange({ from: null, to: null });
+    const month = currentMonthRange();
+    setFrom(month.from);
+    setTo(month.to);
+    setRange(month);
   }
 
   const carsFiltered = useMemo(() => {
@@ -163,7 +183,7 @@ function ReportsPage() {
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
         </div>
         <Button size="sm" onClick={applyRange}>تطبيق</Button>
-        <Button size="sm" variant="outline" onClick={clearRange}>الكل</Button>
+        <Button size="sm" variant="outline" onClick={clearRange}>الشهر الحالي</Button>
         <Input
           placeholder="بحث..."
           value={q}
@@ -173,7 +193,7 @@ function ReportsPage() {
       </div>
 
 
-      <Tabs defaultValue="cars">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="cars"><CarIcon className="size-4 ml-1" /> السيارات</TabsTrigger>
           <TabsTrigger value="drivers"><UserIcon className="size-4 ml-1" /> السائقون</TabsTrigger>

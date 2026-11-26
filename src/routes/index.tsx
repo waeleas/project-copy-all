@@ -16,7 +16,7 @@ import { SapOrdersImport } from "@/components/sap-orders-import";
 
 import { toast } from "sonner";
 import { arabicError } from "@/lib/errors";
-import { loadAllTripPages, tripDateBounds, tripPageRange, TRIP_PAGE_SIZE } from "@/lib/trip-list-loading";
+import { currentMonthRange, loadAllTripPages, tripDateBounds, tripPageRange, TRIP_PAGE_SIZE } from "@/lib/trip-list-loading";
 import { countTripsByService, filterTripsByService } from "@/lib/trip-service-filters";
 import { additionalRouteReportDate, tripReportDate } from "@/lib/trip-report-date";
 
@@ -42,6 +42,13 @@ function TripsList() {
   const [tripNoQ, setTripNoQ] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [datesReady, setDatesReady] = useState(false);
+  useEffect(() => {
+    const month = currentMonthRange();
+    setDateFrom(month.from);
+    setDateTo(month.to);
+    setDatesReady(true);
+  }, []);
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "completed">("all");
   const [serviceFilter, setServiceFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
@@ -71,6 +78,10 @@ function TripsList() {
   function applyServerFilters(q: any) {
     if (statusFilter === "open") q = q.eq("status", "open");
     if (statusFilter === "completed") q = q.neq("status", "open");
+    return applyDateFilters(q);
+  }
+
+  function applyDateFilters(q: any) {
     const bounds = tripDateBounds(dateFrom, dateTo);
     if (bounds.start) q = q.gte("start_at", bounds.start);
     if (bounds.end) q = q.lte("start_at", bounds.end);
@@ -90,7 +101,9 @@ function TripsList() {
 
   const { data: serverServiceCounts, error: serviceCountsError } = useQuery({
     queryKey: ["trips", "service-counts", statusFilter, dateFrom, dateTo, serviceTypes.map(s => s.id)],
-    enabled: !needsAll && serviceTypes.length > 0,
+    enabled: datesReady && !needsAll && serviceTypes.length > 0,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => Object.fromEntries(await Promise.all(serviceTypes.map(async (service) => {
       const { count, error } = await applyServerFilters(
         supabase.from("trips").select("id", { count: "exact", head: true }).eq("service_type_id", service.id),
@@ -101,11 +114,14 @@ function TripsList() {
   });
 
   const { data: counts = { all: 0, open: 0, completed: 0 }, refetch: refetchCounts } = useQuery({
-    queryKey: ["trips", "counts"],
+    queryKey: ["trips", "counts", dateFrom, dateTo],
+    enabled: datesReady,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const [a, o] = await Promise.all([
-        supabase.from("trips").select("id", { count: "exact", head: true }),
-        supabase.from("trips").select("id", { count: "exact", head: true }).eq("status", "open"),
+        applyDateFilters(supabase.from("trips").select("id", { count: "exact", head: true })),
+        applyDateFilters(supabase.from("trips").select("id", { count: "exact", head: true }).eq("status", "open")),
       ]);
       if (a.error) throw a.error;
       if (o.error) throw o.error;
@@ -116,6 +132,9 @@ function TripsList() {
 
   const { data: listData, isLoading, error: listError, refetch: refetchList } = useQuery({
     queryKey: ["trips", needsAll ? "all" : "page", statusFilter, dateFrom, dateTo, needsAll ? 0 : page],
+    enabled: datesReady,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       if (needsAll) {
         const rows = await fetchAllTrips();
@@ -192,7 +211,8 @@ function TripsList() {
   }
 
   function clearFilters() {
-    setTripNoQ(""); setDateFrom(""); setDateTo(""); setStatusFilter("all"); setServiceFilter("all");
+    const month = currentMonthRange();
+    setTripNoQ(""); setDateFrom(month.from); setDateTo(month.to); setStatusFilter("all"); setServiceFilter("all");
   }
 
   // صيغة ثابتة DD/MM/YYYY — مبنية يدويًا حتى لا تتأثر بإعدادات الجهاز

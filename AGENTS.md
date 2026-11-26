@@ -22,3 +22,4 @@
 - Keep comparison-report odometer boundaries in a pure tested helper selecting the first and last completed trips chronologically within the requested period, not numeric extrema; stably order paged report reads to avoid gaps.
 - Keep trip-distance validation in a shared tested browser-safe helper using managed role status, so closing and editing apply the same admin exception without changing odometer validity checks.
 - Nightly closure 23:59–04:00 device time lives in src/lib/quiet-hours.ts (tested); AppShell renders a closed screen and disables queries then so the database can idle.
+- Initialize trip/report date ranges after hydration using the tested device-local month helper and gate reads until ready; date-scope trip counts and load only the active report tab, caching unchanged reads for five minutes to avoid unnecessary transfers.

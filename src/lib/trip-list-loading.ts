@@ -1,5 +1,15 @@
 export const TRIP_PAGE_SIZE = 100;
 
+export function currentMonthRange(now: Date = new Date()) {
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+  return {
+    from: `${prefix}-01`,
+    to: `${prefix}-${new Date(year, month + 1, 0).getDate()}`,
+  };
+}
+
 export function tripPageRange(page: number) {
   const from = (Math.max(1, Math.floor(page)) - 1) * TRIP_PAGE_SIZE;
   return { from, to: from + TRIP_PAGE_SIZE - 1 };

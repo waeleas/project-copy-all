@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { loadAllTripPages, tripDateBounds, tripPageRange } from "../src/lib/trip-list-loading";
+import { currentMonthRange, loadAllTripPages, tripDateBounds, tripPageRange } from "../src/lib/trip-list-loading";
 
 describe("trip list loading", () => {
+  test("defaults to the first and last day of the current device-local month", () => {
+    expect(currentMonthRange(new Date(2026, 10, 26))).toEqual({ from: "2026-11-01", to: "2026-11-30" });
+    expect(currentMonthRange(new Date(2026, 11, 31))).toEqual({ from: "2026-12-01", to: "2026-12-31" });
+    expect(currentMonthRange(new Date(2028, 1, 15))).toEqual({ from: "2028-02-01", to: "2028-02-29" });
+    expect(currentMonthRange(new Date(2026, 1, 15))).toEqual({ from: "2026-02-01", to: "2026-02-28" });
+  });
   test("list loads only 100 trips per page without overlapping pages", () => {
     expect(tripPageRange(1)).toEqual({ from: 0, to: 99 });
     expect(tripPageRange(2)).toEqual({ from: 100, to: 199 });

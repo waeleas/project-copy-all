@@ -1356,14 +1356,35 @@ function TechnicianManagersManager() {
 
   async function importLinks(rows: any[]) {
     const norm = (v: any) => String(v ?? "").trim().replace(/\s+/g, " ").toLowerCase();
-    const findBy = (list: any[] | undefined, sap: string, name: string) =>
-      (sap && list?.find((x) => norm(x.sap_number) === norm(sap))) || (name && list?.find((x) => norm(x.name) === norm(name))) || null;
+    const techList: any[] = [...(technicians.data ?? [])];
+    const mgrList: any[] = [...(managers.data ?? [])];
+    const findBy = (list: any[], sap: string, name: string) =>
+      (sap && list.find((x) => norm(x.sap_number) === norm(sap))) || (name && list.find((x) => norm(x.name) === norm(name))) || null;
+    const parsed = rows.map((r) => ({
+      tSap: pick(r, "رقم ساب الفني", "رقم الساب", "technician_sap", "sap"),
+      tName: pick(r, "الفني", "متلقي الخدمة", "متلاقى الخدمه او فنى", "متلقي الخدمة او فني", "technician"),
+      mSap: pick(r, "رقم ساب المدير", "manager_sap"),
+      mName: pick(r, "المدير", "المديرون", "المديرين", "manager"),
+    })).filter((r) => (r.tSap || r.tName) && (r.mSap || r.mName));
+    const newMgrs = new Map<string, any>();
+    const newTechs = new Map<string, any>();
+    for (const r of parsed) {
+      if (!findBy(mgrList, r.mSap, r.mName) && r.mName && !newMgrs.has(norm(r.mName))) newMgrs.set(norm(r.mName), { name: r.mName.replace(/\s+/g, " "), sap_number: r.mSap || null });
+      if (!findBy(techList, r.tSap, r.tName) && r.tSap && r.tName && !newTechs.has(norm(r.tSap))) newTechs.set(norm(r.tSap), { name: r.tName.replace(/\s+/g, " "), sap_number: r.tSap });
+    }
+    for (const [table, items, list] of [["managers", [...newMgrs.values()], mgrList], ["technicians", [...newTechs.values()], techList]] as const) {
+      for (let i = 0; i < items.length; i += 500) {
+        const { data, error } = await supabase.from(table as any).insert(items.slice(i, i + 500)).select("*");
+        if (error) throw error;
+        (list as any[]).push(...((data as any[]) ?? []));
+      }
+    }
     const existing = new Set((links.data ?? []).map((l: any) => `${l.technician_id}|${l.manager_id}`));
     const toInsert: any[] = [];
     let missing = 0, dup = 0;
-    for (const r of rows) {
-      const t = findBy(technicians.data, pick(r, "رقم ساب الفني", "technician_sap"), pick(r, "الفني", "متلقي الخدمة", "technician"));
-      const m = findBy(managers.data, pick(r, "رقم ساب المدير", "manager_sap"), pick(r, "المدير", "manager"));
+    for (const r of parsed) {
+      const t = findBy(techList, r.tSap, r.tName);
+      const m = findBy(mgrList, r.mSap, r.mName);
       if (!t || !m) { missing++; continue; }
       const k = `${t.id}|${m.id}`;
       if (existing.has(k)) { dup++; continue; }
@@ -1375,7 +1396,9 @@ function TechnicianManagersManager() {
       if (error) throw error;
     }
     qc.invalidateQueries({ queryKey: ["technician_managers"] });
-    toast.success(`تمت إضافة ${toInsert.length} ربط — مكرر: ${dup} — فني/مدير غير موجود: ${missing}`);
+    qc.invalidateQueries({ queryKey: ["technicians"] });
+    qc.invalidateQueries({ queryKey: ["managers"] });
+    toast.success(`تمت إضافة ${toInsert.length} ربط — مديرون جدد: ${newMgrs.size} — فنيون جدد: ${newTechs.size} — مكرر: ${dup} — صفوف ناقصة: ${missing}`);
   }
 
   const filtered = (links.data ?? []).filter((l: any) => {

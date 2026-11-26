@@ -1354,6 +1354,30 @@ function TechnicianManagersManager() {
     toast.success("تم الحذف");
   }
 
+  async function importLinks(rows: any[]) {
+    const norm = (v: any) => String(v ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+    const findBy = (list: any[] | undefined, sap: string, name: string) =>
+      (sap && list?.find((x) => norm(x.sap_number) === norm(sap))) || (name && list?.find((x) => norm(x.name) === norm(name))) || null;
+    const existing = new Set((links.data ?? []).map((l: any) => `${l.technician_id}|${l.manager_id}`));
+    const toInsert: any[] = [];
+    let missing = 0, dup = 0;
+    for (const r of rows) {
+      const t = findBy(technicians.data, pick(r, "رقم ساب الفني", "technician_sap"), pick(r, "الفني", "متلقي الخدمة", "technician"));
+      const m = findBy(managers.data, pick(r, "رقم ساب المدير", "manager_sap"), pick(r, "المدير", "manager"));
+      if (!t || !m) { missing++; continue; }
+      const k = `${t.id}|${m.id}`;
+      if (existing.has(k)) { dup++; continue; }
+      existing.add(k);
+      toInsert.push({ technician_id: t.id, manager_id: m.id });
+    }
+    for (let i = 0; i < toInsert.length; i += 500) {
+      const { error } = await supabase.from("technician_managers" as any).insert(toInsert.slice(i, i + 500));
+      if (error) throw error;
+    }
+    qc.invalidateQueries({ queryKey: ["technician_managers"] });
+    toast.success(`تمت إضافة ${toInsert.length} ربط — مكرر: ${dup} — فني/مدير غير موجود: ${missing}`);
+  }
+
   const filtered = (links.data ?? []).filter((l: any) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
@@ -1389,7 +1413,17 @@ function TechnicianManagersManager() {
           </Button>
         </div>
 
-        <Input placeholder="بحث بالفني أو المدير..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <DataToolbar
+          search={search}
+          onSearch={setSearch}
+          placeholder="بحث بالفني أو المدير..."
+          onExport={() => exportToXlsx("مديرو_الفنيين", (links.data ?? []).map((l: any) => {
+            const t = technicians.data?.find((x) => x.id === l.technician_id);
+            const m = managers.data?.find((x) => x.id === l.manager_id);
+            return { "الفني": t?.name ?? "", "رقم ساب الفني": t?.sap_number ?? "", "المدير": m?.name ?? "", "رقم ساب المدير": m?.sap_number ?? "" };
+          }), "مديرو الفنيين")}
+          onImportRows={importLinks}
+        />
 
         <div className="space-y-1.5">
           {links.isLoading && <p className="text-sm text-muted-foreground text-center py-4">جاري التحميل...</p>}

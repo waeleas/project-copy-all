@@ -1144,14 +1144,28 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter, withPm
       deduped.push(p);
     }
 
+    // تجاهل السجلات الموجودة مسبقًا (بالاسم أو رقم الساب) بدل الاعتماد على قيد فريد قد لا يوجد
+    const { data: existing, error: exErr } = await supabase.from(table as any).select(withSap ? "name, sap_number" : "name");
+    if (exErr) return toast.error(`تعذر قراءة البيانات الحالية: ${arabicError(exErr)}`);
+    const norm = (v: any) => (v ?? "").toString().trim().toLowerCase();
+    const exNames = new Set((existing ?? []).map((e: any) => norm(e.name)));
+    const exSaps = new Set((existing ?? []).map((e: any) => norm(e.sap_number)).filter(Boolean));
+    const fileSaps = new Set<string>();
+    let already = 0;
+    const fresh = deduped.filter((p) => {
+      const sap = norm(p.sap_number);
+      if (exNames.has(norm(p.name)) || (sap && (exSaps.has(sap) || fileSaps.has(sap)))) { already++; return false; }
+      if (sap) fileSaps.add(sap);
+      return true;
+    });
+    dupInFile += already;
+
     const chunkSize = 200;
     let ok = 0;
     let firstError: any = null;
-    for (let i = 0; i < deduped.length; i += chunkSize) {
-      const chunk = deduped.slice(i, i + chunkSize);
-      const { error } = await supabase
-        .from(table as any)
-        .upsert(chunk, { onConflict: "name", ignoreDuplicates: true });
+    for (let i = 0; i < fresh.length; i += chunkSize) {
+      const chunk = fresh.slice(i, i + chunkSize);
+      const { error } = await supabase.from(table as any).insert(chunk);
       if (error) { firstError = error; break; }
       ok += chunk.length;
     }
@@ -1159,7 +1173,7 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter, withPm
     if (firstError) {
       return toast.error(`فشل الاستيراد بعد ${ok} صف: ${arabicError(firstError)}`);
     }
-    const extra = dupInFile ? ` — تم تجاهل ${dupInFile} صف مكرر` : "";
+    const extra = dupInFile ? ` — تم تجاهل ${dupInFile} صف مكرر أو موجود مسبقًا` : "";
     toast.success(`تم استيراد ${ok} صف${extra}`);
   }
 

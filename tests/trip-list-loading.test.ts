@@ -22,6 +22,23 @@ describe("trip list loading", () => {
     expect(rows).toEqual(source);
     expect(calls).toEqual([[0, 999], [1000, 1999], [2000, 2999]]);
   });
+  test("lookup export includes all 1994 technicians beyond the 1000-row API limit", async () => {
+    const source = Array.from({ length: 1994 }, (_, id) => ({ id, name: `technician-${id}` }));
+    const calls: number[][] = [];
+    const rows = await loadAllTripPages(async (from, to) => {
+      calls.push([from, to]);
+      return source.slice(from, to + 1);
+    });
+    expect(rows).toEqual(source);
+    expect(calls).toEqual([[0, 999], [1000, 1999]]);
+  });
+  test("lookup export rejects a failed later page instead of exporting an incomplete list", async () => {
+    const failure = new Error("page unavailable");
+    await expect(loadAllTripPages(async (from) => {
+      if (from > 0) throw failure;
+      return Array.from({ length: 1000 }, (_, id) => ({ id }));
+    })).rejects.toThrow("page unavailable");
+  });
   test("same-day filter includes the complete device-local day", () => {
     const bounds = tripDateBounds("2026-10-08", "2026-10-08");
     expect(bounds.start).toBe(new Date(2026, 9, 8, 0, 0, 0, 0).toISOString());

@@ -1071,15 +1071,17 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter, withPm
   const [search, setSearch] = useState("");
 
 
+  async function loadCompleteList() {
+    return loadAllTripPages(async (from, to) => {
+      const { data, error } = await supabase.from(table as any).select("*").order("name").order("id").range(from, to);
+      if (error) throw error;
+      return (data ?? []) as any[];
+    });
+  }
+
   const { data, isLoading } = useQuery({
     queryKey: [table],
-    queryFn: async () => {
-      return loadAllTripPages(async (from, to) => {
-        const { data, error } = await supabase.from(table as any).select("*").order("name").order("id").range(from, to);
-        if (error) throw error;
-        return (data ?? []) as any[];
-      });
-    },
+    queryFn: loadCompleteList,
   });
 
   async function add() {
@@ -1213,7 +1215,7 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter, withPm
         <DataToolbar
           search={search}
           onSearch={setSearch}
-          onExport={() => exportToXlsx(`${table}.xlsx`, (data ?? []).map((i: any) => ({
+          onExport={async () => exportToXlsx(`${table}.xlsx`, (await loadCompleteList()).map((i: any) => ({
             name: i.name,
             ...(withSap ? { sap_number: i.sap_number } : {}),
             ...(withCostCenter ? { cost_center: i.cost_center } : {}),

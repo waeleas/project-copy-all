@@ -1,3 +1,4 @@
+import { loadAllTripPages } from "@/lib/trip-list-loading";
 import { arabicError } from "@/lib/errors";
 import { exceedsTripDistanceLimit } from "@/lib/trip-distance";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -429,9 +430,11 @@ function useLookup(table: string) {
   return useQuery({
     queryKey: [table],
     queryFn: async () => {
-      const { data, error } = await supabase.from(table as any).select("*").order("name");
-      if (error) throw error;
-      return data as any[];
+      return loadAllTripPages(async (from, to) => {
+        const { data, error } = await supabase.from(table as any).select("*").order("name").order("id").range(from, to);
+        if (error) throw error;
+        return (data ?? []) as any[];
+      });
     },
   });
 }

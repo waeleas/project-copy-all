@@ -200,12 +200,22 @@ export const getDriverKmReport = createServerFn({ method: "GET" })
     });
 
     // أرقام الساب للفنيين والمديرين كبديل عند عدم وجودها في السائقين
-    const { data: techData } = await context.supabase.from("technicians").select("name, sap_number");
+    const techData: any[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data } = await context.supabase.from("technicians").select("name, sap_number").order("id").range(from, from + 999);
+      techData.push(...(data ?? []));
+      if ((data ?? []).length < 1000) break;
+    }
     (techData ?? []).forEach((d: any) => {
       const sap = String(d.sap_number ?? "").trim();
       if (sap && !sapByName.has(normName(d.name))) sapByName.set(normName(d.name), sap);
     });
-    const { data: mgrData } = await context.supabase.from("managers").select("name, sap_number");
+    const mgrData: any[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data } = await context.supabase.from("managers").select("name, sap_number").order("id").range(from, from + 999);
+      mgrData.push(...(data ?? []));
+      if ((data ?? []).length < 1000) break;
+    }
     (mgrData ?? []).forEach((d: any) => {
       const sap = String(d.sap_number ?? "").trim();
       if (sap && !sapByName.has(normName(d.name))) sapByName.set(normName(d.name), sap);

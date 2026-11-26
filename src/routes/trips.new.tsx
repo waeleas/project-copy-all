@@ -1,3 +1,4 @@
+import { loadAllTripPages } from "@/lib/trip-list-loading";
 import { getLastClosedTripPhoto } from "@/lib/last-photo.functions";
 import { canReuseStartPhoto } from "@/lib/automatic-start-photo";
 import { autoManagerForTechnician } from "@/lib/technician-manager";
@@ -40,9 +41,11 @@ function useLookup(table: string) {
   return useQuery({
     queryKey: [table],
     queryFn: async () => {
-      const { data, error } = await supabase.from(table as any).select("*").order("name");
-      if (error) throw error;
-      return data as any[];
+      return loadAllTripPages(async (from, to) => {
+        const { data, error } = await supabase.from(table as any).select("*").order("name").order("id").range(from, to);
+        if (error) throw error;
+        return (data ?? []) as any[];
+      });
     },
   });
 }

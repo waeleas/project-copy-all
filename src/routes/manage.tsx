@@ -1,3 +1,4 @@
+import { loadAllTripPages } from "@/lib/trip-list-loading";
 import { arabicError } from "@/lib/errors";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1073,9 +1074,11 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter, withPm
   const { data, isLoading } = useQuery({
     queryKey: [table],
     queryFn: async () => {
-      const { data, error } = await supabase.from(table as any).select("*").order("name");
-      if (error) throw error;
-      return data as any[];
+      return loadAllTripPages(async (from, to) => {
+        const { data, error } = await supabase.from(table as any).select("*").order("name").order("id").range(from, to);
+        if (error) throw error;
+        return (data ?? []) as any[];
+      });
     },
   });
 
@@ -1145,7 +1148,12 @@ function LookupManager({ table, title, withSap, withCode, withCostCenter, withPm
     }
 
     // تجاهل السجلات الموجودة مسبقًا (بالاسم أو رقم الساب) بدل الاعتماد على قيد فريد قد لا يوجد
-    const { data: existing, error: exErr } = await supabase.from(table as any).select(withSap ? "name, sap_number" : "name");
+    let exErr: any = null;
+    const existing = await loadAllTripPages(async (from, to) => {
+      const { data, error } = await supabase.from(table as any).select(withSap ? "id, name, sap_number" : "id, name").order("id").range(from, to);
+      if (error) { exErr = error; return []; }
+      return (data ?? []) as any[];
+    });
     if (exErr) return toast.error(`تعذر قراءة البيانات الحالية: ${arabicError(exErr)}`);
     const norm = (v: any) => (v ?? "").toString().trim().toLowerCase();
     const exNames = new Set((existing ?? []).map((e: any) => norm(e.name)));
@@ -1292,17 +1300,21 @@ function TechnicianManagersManager() {
   const technicians = useQuery({
     queryKey: ["technicians"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("technicians").select("id, name, sap_number").order("name");
-      if (error) throw error;
-      return data ?? [];
+      return loadAllTripPages(async (from, to) => {
+        const { data, error } = await supabase.from("technicians" as any).select("*").order("name").order("id").range(from, to);
+        if (error) throw error;
+        return (data ?? []) as any[];
+      });
     },
   });
   const managers = useQuery({
     queryKey: ["managers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("managers").select("id, name").order("name");
-      if (error) throw error;
-      return data ?? [];
+      return loadAllTripPages(async (from, to) => {
+        const { data, error } = await supabase.from("managers" as any).select("*").order("name").order("id").range(from, to);
+        if (error) throw error;
+        return (data ?? []) as any[];
+      });
     },
   });
   const links = useQuery({

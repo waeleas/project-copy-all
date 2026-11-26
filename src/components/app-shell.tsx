@@ -97,7 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex items-center justify-center p-6 text-center" dir="rtl">
         <div className="space-y-2">
           <p className="text-xl font-bold">البرنامج متوقف مؤقتًا</p>
-          <p className="text-muted-foreground">يتوقف البرنامج يوميًا من 11:59 مساءً حتى 2:00 صباحًا لتوفير التشغيل. سيعود تلقائيًا بعد الساعة 2:00.</p>
+          <p className="text-muted-foreground">يتوقف البرنامج يوميًا من 11:59 مساءً حتى 4:00 صباحًا لتوفير التشغيل. سيعود تلقائيًا بعد الساعة 4:00.</p>
         </div>
       </div>
     );

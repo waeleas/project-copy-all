@@ -1320,9 +1320,12 @@ function TechnicianManagersManager() {
   const links = useQuery({
     queryKey: ["technician_managers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("technician_managers" as any).select("id, technician_id, manager_id");
-      if (error) throw error;
-      return (data as any[]) ?? [];
+      const data = await loadAllTripPages(async (from, to) => {
+        const { data, error } = await supabase.from("technician_managers" as any).select("id, technician_id, manager_id").order("id").range(from, to);
+        if (error) throw error;
+        return (data ?? []) as any[];
+      });
+      return data;
     },
   });
 
